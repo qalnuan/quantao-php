@@ -1,0 +1,27 @@
+<view class="body">
+	<scroll-view class="news-list"  scroll-y="true" bindscrolltolower="contentLower">
+		<block wx:for="{{list}}">
+			<view class='news-item'>
+				<navigator class='flex' url="/pages/newcontent/index?id={{item.id}}" hover-class="none">
+					<view class='picture'><image src="{{url}}{{item.image_input}}"></image></view>
+					<view class='pro-txt'>
+						<text class='tit'>{{item.title}}</text>
+						<text class='description'>{{item.synopsis}}</text>
+						<view class='time-wrapper flex'>
+							<view class='time'>{{item.add_time}}</view>
+							<view class='count'>浏览: {{item.visit}}次</view>
+						</view>
+					</view>
+				</navigator>
+			</view>
+		</block>
+	</scroll-view>
+  <view class='loading flex'><icon class='iconfont icon-jiazaizhong loadingpic' hidden='{{hidden}}'></icon>{{title}}</view>
+</view>
+<movable-area class='index-con' >
+  <movable-view class='index-area' direction="all">
+      <navigator url='/pages/index/index' hover-class='none' open-type = "switchTab" >
+      <image src='/images/home.png'></image>
+      </navigator>
+  </movable-view>
+</movable-area>

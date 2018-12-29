@@ -1,0 +1,1 @@
+<?phpnamespace app\admin\controller\system;use app\admin\controller\AuthController;use app\admin\model\system\SystemRemarks as SystemRemarksModel;/** * 设置表备注 * Class SystemRemarks * @package app\admin\controller\system */class SystemRemarks extends AuthController{    public function index(){        SystemRemarksModel::getTableInfoRemarks();    }}

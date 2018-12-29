@@ -1,0 +1,10 @@
+<view class='container'>
+	 <!-- <view class='title'>
+	   <text>{{content.title}}</text>
+	   <view class='time'><text>时间：{{content.add_time}}</text> <text>浏览量：{{content.visit}}</text></view>
+	</view>  -->
+	<view class='con-box'>
+    <template is="wxParse" data="{{wxParseData:description.nodes}}"/>
+	</view>
+</view>
+<import src="/wxParse/wxParse.wxml"/>

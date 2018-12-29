@@ -1,0 +1,143 @@
+<!--banner-->
+<view class='index-bg'>
+  <swiper indicator-dots="{{indicatorDots}}"
+        autoplay="{{autoplay}}" interval="{{interval}}" duration="{{duration}}" circular='{{circular}}' indicator-color="rgba(28,162,127,.1)" indicator-active-color="#1ca27f">
+        <block wx:for="{{imgUrls}}">
+          <swiper-item>
+            <image src="{{url}}{{item.pic}}" class="slide-image"/>
+          </swiper-item>
+        </block>
+    </swiper>
+  <!-- <form bindsubmit="formSubmit" report-submit='true'>
+      <view class='search flex'>
+          <text class='iconfont icon-xiazai5'></text>
+          <input placeholder='憋说话，搜我' placeholder-class='placeholder' bindconfirm="formSubmit"></input>
+      </view>
+    </form> -->
+</view>
+<!-- 导航  -->
+<view class='nav flex'>
+    <view class='nav-item'>
+      <navigator class='flex' hover-class="none" url='/pages/coupon-status/coupon-status'>
+        <image src='/images/nav-6.png'></image>
+        <view class='nav-title'>优惠券领取</view>
+      </navigator>
+    </view>
+    <view class='nav-item'>
+      <navigator class='flex' hover-class="none" url="/pages/newlist/index">
+        <image src='/images/nav-7.png'></image>
+        <view class='nav-title'>商城资讯</view>
+      </navigator>
+    </view>
+    <view class='nav-item' bindtap='torday'>
+      <navigator class='flex' hover-class="none">
+        <image src='/images/nav-05.png'></image>
+        <view class='nav-title'>全部商品</view>
+      </navigator>
+    </view>
+    <view class='nav-item'>
+      <navigator class='flex' hover-class="none" url='/pages/cut-list/cut-list'>
+        <image src='/images/nav-02.png'></image>
+        <view class='nav-title'>砍价</view>
+      </navigator>
+    </view>
+    <view class='nav-item'>
+      <navigator class='flex' hover-class="none" url='/pages/miao-list/miao-list'>
+        <image src='/images/nav-03.png'></image>
+        <view class='nav-title'>限时秒杀</view>
+      </navigator>
+    </view>
+</view>
+<!-- 今日上新 -->
+<view class='new'>
+   <view class='title' bindtap='torday' style='color:#fa3b0f;'>
+   <text class='iconfont icon-biaoqian1'></text>新品推荐<navigator hover-class='none' bindtap='torday'><view class='flex more'>更多<text class='iconfont icon-youjian'></text></view></navigator></view>
+   <view class='picture' wx:if="{{newbanner}}"><image src='{{url}}{{newbanner}}'></image></view>
+   <view class='scroll-product'>
+    <scroll-view class="scroll-view_x" scroll-x style="width:auto;overflow:hidden;">
+      <block wx:for="{{newList}}">
+        <view class='item'>
+          <navigator class='flex' hover-class="none" url="/pages/product-con/index?id={{item.id}}">
+            <view class='img-box'>
+               <image src='{{url}}{{item.image}}'></image>
+               <view class='line label'>上架新品</view>
+            </view>
+            <view class='pro-info'>
+              <view class='pro-title line'>{{item.store_name}}</view>
+              <view class='price-small'>￥{{item.price}}</view>
+            </view>
+          </navigator>  
+        </view>
+      </block>  
+    </scroll-view>
+  </view>
+</view>
+<!-- 限时秒杀 -->
+<view class='second-kill'>
+   <view class='title' style='color:#fa3b0f;'><text class='iconfont icon-miaosha'></text>限时秒杀
+   <navigator hover-class='none' url='/pages/miao-list/miao-list'><view class='flex more'>更多<text class='iconfont icon-youjian'></text></view></navigator></view>
+   <view class='picture' wx:if="{{secbanner}}"><image src='{{url}}{{secbanner}}'></image></view>
+   <view class='kill-list'>
+       <block wx:for="{{seckillList}}">
+           <navigator hover-class="none" class='kill-item flex' url="/pages/product-countdown/index?id={{item.id}}">
+               <image src='{{url}}{{item.image}}'></image>
+               <view class='text flex'>
+                   <view class='name line'>{{item.title}}</view>
+                   <view class='kill-time flex'><text class='iconfont icon-icon-shijian'></text>距离结束
+                   <text class='time'>{{item.difftime}}</text></view>
+                   <view class='flex progress'>
+                      <view class='progress-bar'>已抢{{item.proportion}}%<text class='kill-bar'>
+                      <text class='kill-fill' style='width:{{100-item.proportion}}%;'></text></text></view>
+                      <view class='money'>￥<text class='num'>{{item.price}}</text></view>
+                   </view>
+               </view>
+           </navigator>
+       </block>
+   </view>
+</view>
+<!-- 团购商品 -->
+<view class='buying-goods'>
+   <view class='title' style='color:#fa3b0f;'><text class='iconfont icon-tuangoujie'></text>团购商品
+      <navigator hover-class='none' url='/pages/pink-list/index'>
+      <view class='flex more'>更多<text class='iconfont icon-youjian'></text></view></navigator>
+   </view>
+   <view class='picture' wx:if="{{pinkbanner}}"><image src='{{url}}{{pinkbanner}}'></image></view>
+   <view class='goods-scroll'>
+       <scroll-view class="scroll-view_x" scroll-x style="width:auto;overflow:hidden;">
+           <block wx:for="{{pinkList}}">
+               <view class='item'>
+                  <navigator hover-class='none' url="/pages/product-pinke/index?id={{item.id}}">
+                     <view class='picture'><image src='{{url}}{{item.image}}'></image></view>
+                     <view class='text'>
+                        <view class='name'>{{item.title}}</view>
+                        <view class='purchase'>{{item.people}}人团丨已团{{item.sales}}件</view>
+                        <view class='but'><text class='iconfont icon-cart-copy'></text>拼团价￥{{item.price}}</view>
+                     </view>
+                  </navigator>
+               </view>
+           </block>
+       </scroll-view>
+   </view>
+</view>
+<!-- 猜你喜欢 -->
+<view class='like'>
+   <view class='title' style='color:#fa3b0f;'><text class='iconfont icon-aixin'></text>猜你喜欢</view>
+   <view class='like-list flex'>
+      <block wx:for="{{likeList}}">
+          <view class='item'>
+          <navigator hover-class="none" url="/pages/product-con/index?id={{item.id}}">
+              <view class='picture'><image src='{{url}}{{item.image}}'></image></view>
+              <view class='text flex'>
+                  <view class='name line'>{{item.store_name}}</view>
+                  <view class='money'>￥<text>{{item.price}}</text></view>
+              </view>
+              </navigator>
+          </view>
+      </block>
+   </view>
+   <view class='loading flex'><icon class='iconfont icon-jiazaizhong loadingpic' hidden='{{hidden}}'></icon>{{title}}</view>
+</view>
+<!-- <view class='empty' wx:if='{{likeList==false && pinkList==false && seckillList==false && newList==false}}'>
+  <view class='picture'><image src='/images/empty.png'></image></view>
+  <text class>暂无商品信息!</text>
+</view> -->
