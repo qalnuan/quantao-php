@@ -9,10 +9,46 @@ use service\JsonService;
 use service\UtilService;
 use think\Controller;
 use think\Request;
+use app\routine\model\store\StoreBargainUser;
+
+use service\GroupDataService;
+use service\SystemConfigService;
+use app\routine\model\store\StoreProduct;
+use app\routine\model\store\StoreSeckill;
+use app\routine\model\store\StoreCombination;
 
 class Login extends Controller{
 
 
+    public function test(){
+        $bargain = StoreBargain::getList();
+        $bargain = StoreBargainUser::getUserList($bargain);
+        return JsonService::successful($bargain);
+    }
+
+    public function get_home_info(){
+        $banner = GroupDataService::getData('store_home_banner')?:[];//banner图
+        $pinkbanner = SystemConfigService::get('collage_banner')?:'';//banner图
+        $secbanner = SystemConfigService::get('seckill_banner')?:'';//banner图
+        $newbanner = SystemConfigService::get('index_new_banner')?:'';//banner图
+        $lovely = GroupDataService::getData('routine_lovely')?:[];//猜你喜欢图
+        $best = StoreProduct::getBestProduct('id,image,store_name,cate_id,price,unit_name,sort',8);//精品推荐
+        $new = StoreProduct::getNewProduct('id,image,store_name,cate_id,price,unit_name,sort',10);//今日上新
+        $hot = StoreProduct::getHotProduct('id,image,store_name,cate_id,price,unit_name,sort',6);//猜你喜欢
+        $pink = StoreCombination::getCombinationBest(6);//拼团商品
+        $seckill = StoreSeckill::getHotList(6);//秒杀商品
+        $data['banner'] = $banner;
+        $data['lovely'] = $lovely;
+        $data['pinkbanner'] = $pinkbanner;
+        $data['secbanner'] = $secbanner;
+        $data['newbanner'] = $newbanner;
+        $data['best'] = $best;
+        $data['new'] = $new;
+        $data['hot'] = $hot;
+        $data['pink'] = $pink;
+        $data['seckill'] = $seckill;
+        return JsonService::successful($data);
+    }
 
     /**
      * 获取用户信息

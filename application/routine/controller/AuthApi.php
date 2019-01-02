@@ -62,8 +62,12 @@ use app\admin\model\wechat\WechatNews;
  * https://qipei.9gt.net/routine/auth_api/get_id_cate  二级分类
  * https://qipei.9gt.net/routine/auth_api/get_product_list  分类页面产品
  */
-class AuthApi extends AuthController{
-
+class AuthApi extends Controller{
+    public function test(){
+        $bargain = StoreBargain::getList();
+        $bargain = StoreBargainUser::getUserList($bargain);
+        return JsonService::successful($bargain);
+    }
     /**
      * 获取用户信息
      * @return \think\response\Json
