@@ -19,7 +19,7 @@ class AuthController extends Controller
     protected function _initialize()
     {
         parent::_initialize();
-        $uid = Request::instance()->get('uid',0);
+        $uid = '1';//Request::instance()->get('uid',0);
         $userInfo = User::get($uid);
         if($userInfo) $userInfo->toArray();
         else return JsonService::fail('没有获取用户UID');

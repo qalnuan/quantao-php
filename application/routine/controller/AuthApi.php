@@ -62,7 +62,7 @@ use app\admin\model\wechat\WechatNews;
  * https://qipei.9gt.net/routine/auth_api/get_id_cate  二级分类
  * https://qipei.9gt.net/routine/auth_api/get_product_list  分类页面产品
  */
-class AuthApi extends Controller{
+class AuthApi extends AuthController{
     public function test(){
         $bargain = StoreBargain::getList();
         $bargain = StoreBargainUser::getUserList($bargain);
@@ -265,7 +265,7 @@ class AuthApi extends Controller{
     public function details(Request $request){
         $data = UtilService::postMore(['id'],$request);
         $id = $data['id'];
-        if(!$id || !($storeInfo = StoreProduct::getValidProduct($id))) return JsonService::fail('商品不存在或已下架');
+        if(!$id || !($storeInfo = StoreProduct::getValidProduct($id))) return JsonService::fail('商品不存在或已下架'. $id);
         $storeInfo['userCollect'] = StoreProductRelation::isProductRelation($id,$this->userInfo['uid'],'collect');
         list($productAttr,$productValue) = StoreProductAttr::getProductAttrDetail($id);
         setView($this->userInfo['uid'],$id,$storeInfo['cate_id'],'viwe');
