@@ -633,6 +633,82 @@ class StoreOrder extends ModelBasic
         return $order;
     }
 
+    public static function tidyOrderNew($order,$detail = false)
+    {
+        if($detail == true && isset($order['id'])){
+            $cartInfo = self::getDb('StoreOrderCartInfo')->where('oid',$order['id'])->column('cart_info')?:[];
+            foreach ($cartInfo as $k => $cart) {
+                $cartInfo[$k] = json_decode($cart, true);
+                $cartInfo[$k]['unique'] = $k;
+                $cartInfo=$cartInfo[$k];
+            }
+            $order['cartInfo'] = $cartInfo;
+        }
+
+        $status = [];
+        if(!$order['paid'] && $order['pay_type'] == 'offline' && !$order['status'] >= 2){
+            $status['_type'] = 9;
+            $status['_title'] = '线下付款';
+            $status['_msg'] = '等待商家处理,请耐心等待';
+            $status['_class'] = 'nobuy';
+        }else if(!$order['paid']){
+            $status['_type'] = 0;
+            $status['_title'] = '未支付';
+            $status['_msg'] = '立即支付订单吧';
+            $status['_class'] = 'nobuy';
+        }else if($order['refund_status'] == 1){
+            $status['_type'] = -1;
+            $status['_title'] = '申请退款中';
+            $status['_msg'] = '商家审核中,请耐心等待';
+            $status['_class'] = 'state-sqtk';
+        }else if($order['refund_status'] == 2){
+            $status['_type'] = -2;
+            $status['_title'] = '已退款';
+            $status['_msg'] = '已为您退款,感谢您的支持';
+            $status['_class'] = 'state-sqtk';
+        }else if(!$order['status']){
+            if($order['pink_id']){
+                if(StorePink::where('id',$order['pink_id'])->where('status',1)->count()){
+                    $status['_type'] = 1;
+                    $status['_title'] = '拼团中';
+                    $status['_msg'] = '等待其他人参加拼团';
+                    $status['_class'] = 'state-nfh';
+                }else{
+                    $status['_type'] = 1;
+                    $status['_title'] = '未发货';
+                    $status['_msg'] = '商家未发货,请耐心等待';
+                    $status['_class'] = 'state-nfh';
+                }
+            }else{
+                $status['_type'] = 1;
+                $status['_title'] = '未发货';
+                $status['_msg'] = '商家未发货,请耐心等待';
+                $status['_class'] = 'state-nfh';
+            }
+        }else if($order['status'] == 1){
+            $status['_type'] = 2;
+            $status['_title'] = '待收货';
+            $status['_msg'] = date('m月d日H时i分',StoreOrderStatus::getTime($order['id'],'delivery_goods')).'服务商已发货';
+            $status['_class'] = 'state-ysh';
+        }else if($order['status'] == 2){
+            $status['_type'] = 3;
+            $status['_title'] = '待评价';
+            $status['_msg'] = '已收货,快去评价一下吧';
+            $status['_class'] = 'state-ypj';
+        }else if($order['status'] == 3){
+            $status['_type'] = 4;
+            $status['_title'] = '交易完成';
+            $status['_msg'] = '交易完成,感谢您的支持';
+            $status['_class'] = 'state-ytk';
+        }
+        if(isset($order['pay_type']))
+            $status['_payType'] = isset(self::$payType[$order['pay_type']]) ? self::$payType[$order['pay_type']] : '其他方式';
+        if(isset($order['delivery_type']))
+            $status['_deliveryType'] = isset(self::$deliveryType[$order['delivery_type']]) ? self::$deliveryType[$order['delivery_type']] : '其他方式';
+        $order['_status'] = $status;
+        return $order;
+    }
+
     public static function statusByWhere($status,$model = null)
     {
         $orderId = StorePink::where('uid',User::getActiveUid())->where('status',1)->column('order_id','id');//获取正在拼团的订单编号
@@ -657,6 +733,8 @@ class StoreOrder extends ModelBasic
             return $model->where('paid',1)->where('refund_status','IN','1,2');
         else if($status == 11){
             return $model->where('order_id','IN',implode(',',$orderId));
+        } else if ($status == -4) {
+            return $model->where('paid', 1)->where('status', 'NOT IN', '0,1,2');
         }
         else
             return $model;
@@ -668,7 +746,7 @@ class StoreOrder extends ModelBasic
             ->field('seckill_id,bargain_id,combination_id,id,order_id,pay_price,total_num,total_price,pay_postage,total_postage,paid,status,refund_status,pay_type,coupon_price,deduction_price,pink_id,delivery_type')
             ->order('add_time DESC')->limit($first,$limit)->select()->toArray();
         foreach ($list as $k=>$order){
-            $list[$k] = self::tidyOrder($order,true);
+            $list[$k] = self::tidyOrderNew($order,true);
         }
        
         return $list;

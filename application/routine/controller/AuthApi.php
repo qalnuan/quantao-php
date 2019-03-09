@@ -263,7 +263,7 @@ class AuthApi extends AuthController{
      * @param Request $request
      */
     public function details(Request $request){
-        $data = UtilService::postMore(['id'],$request);
+        $data = UtilService::getMore(['id'],$request);
         $id = $data['id'];
         if(!$id || !($storeInfo = StoreProduct::getValidProduct($id))) return JsonService::fail('商品不存在或已下架'. $id);
         $storeInfo['userCollect'] = StoreProductRelation::isProductRelation($id,$this->userInfo['uid'],'collect');
@@ -797,14 +797,14 @@ class AuthApi extends AuthController{
         }else{
             $list = StoreOrder::getUserOrderList($this->userInfo['uid'],$type,$first,$limit);
         }
-        foreach ($list as $k=>$order){
-            $list[$k] = StoreOrder::tidyOrder($order,true);
-            if($list[$k]['_status']['_type'] == 3){
-                foreach ($order['cartInfo']?:[] as $key=>$product){
-                    $list[$k]['cartInfo'][$key]['is_reply'] = StoreProductReply::isReply($product['unique'],'product');
-                }
-            }
-        }
+        // foreach ($list as $k=>$order){
+        //     $list[$k] = StoreOrder::tidyOrder($order,true);
+        //     if($list[$k]['_status']['_type'] == 3){
+        //         foreach ($order['cartInfo']?:[] as $key=>$product){
+        //             $list[$k]['cartInfo'][$key]['is_reply'] = StoreProductReply::isReply($product['unique'],'product');
+        //         }
+        //     }
+        // }
         return JsonService::successful($list);
     }
 
