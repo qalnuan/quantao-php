@@ -817,7 +817,7 @@ class AuthApi extends AuthController{
         if($uni == '') return JsonService::fail('参数错误');
         $order = StoreOrder::getUserOrderDetail($this->userInfo['uid'],$uni);
         if(!$order) return JsonService::fail('订单不存在');
-        return JsonService::successful(StoreOrder::tidyOrder($order,true));
+        return JsonService::successful(StoreOrder::tidyOrderNew($order,true));
     }
 
     /**
