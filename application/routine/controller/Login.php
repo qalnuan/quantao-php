@@ -57,17 +57,37 @@ class Login extends Controller{
      */
 
     public function index(Request $request){
-        $data = UtilService::postMore([['info',[]]],$request);//获取前台传的code
-        $data = $data['info'];
-        unset($data['info']);
-        $res = $this->setCode($data['code']);
+        $code = UtilService::getMore(['code'], $request);
+        $res = $this->setCode($code['code']);
+        if(!isset($res['access_token'])) return JsonService::fail('access_token获取失败');
         if(!isset($res['openid'])) return JsonService::fail('openid获取失败');
-        if(isset($res['unionid'])) $data['unionid'] = $res['unionid'];
-        else $data['unionid'] = '';
         $data['routine_openid'] = $res['openid'];
-        $data['session_key'] = $res['session_key'];
+        $data['session_key'] = $res['access_token'];
+        $resUser = $this->setUserIno($data['session_key'], $data['routine_openid']);
+        
+        $data['nickname'] = $resUser['nickname'];
+        $data['sex'] = $resUser['sex'];
+        $data['province'] = $resUser['province'];
+        $data['city'] = $resUser['city'];
+        $data['country'] = $resUser['country'];
+        $data['headimgurl'] = $resUser['headimgurl'];
+        $data['privilege'] = $resUser['privilege'];
+        $data['language'] = 'zh_CN';
+
+        if (isset($resUser['unionid'])) {
+            $data['unionid'] = $resUser['unionid'];
+        } else {
+            $data['unionid'] = '';
+        }
+
         $data['uid'] = RoutineUser::routineOauth($data);
         return JsonService::successful($data);
+    }
+
+    public function setUserIno($access_token = '', $openid = ''){
+        if($access_token == '') return [];
+        $url = 'https://api.weixin.qq.com/sns/userinfo?access_token='.$access_token.'&openid='.$openid.'&lang=zh_CN';
+        return json_decode(RoutineServer::curlGet($url),true);
     }
 
     /**
@@ -79,7 +99,8 @@ class Login extends Controller{
         if($code == '') return [];
         $routineAppId = SystemConfig::getValue('routine_appId');//小程序appID
         $routineAppSecret = SystemConfig::getValue('routine_appsecret');//小程序AppSecret
-        $url = 'https://api.weixin.qq.com/sns/jscode2session?appid='.$routineAppId.'&secret='.$routineAppSecret.'&js_code='.$code.'&grant_type=authorization_code';
+        $url = 'https://api.weixin.qq.com/sns/oauth2/access_token?appid='.$routineAppId.'&secret='.$routineAppSecret.'&code='.$code.'&grant_type=authorization_code';
+        // return $url;
         return json_decode(RoutineServer::curlGet($url),true);
     }
 

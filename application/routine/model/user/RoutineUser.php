@@ -21,13 +21,13 @@ class RoutineUser extends ModelBasic
      * @return mixed
      */
     public static function routineOauth($routine){
-        $routineInfo['nickname'] = $routine['nickName'];//姓名
-        $routineInfo['sex'] = $routine['gender'];//性别
+        $routineInfo['nickname'] = $routine['nickname'];//姓名
+        $routineInfo['sex'] = $routine['sex'];//性别
         $routineInfo['language'] = $routine['language'];//语言
         $routineInfo['city'] = $routine['city'];//城市
         $routineInfo['province'] = $routine['province'];//省份
         $routineInfo['country'] = $routine['country'];//国家
-        $routineInfo['headimgurl'] = $routine['avatarUrl'];//头像
+        $routineInfo['headimgurl'] = $routine['headimgurl'];//头像
 //        $routineInfo[''] = $routine['code'];//临时登录凭证  是获取用户openid和session_key(会话密匙)
         $routineInfo['routine_openid'] = $routine['routine_openid'];//openid
         $routineInfo['session_key'] = $routine['session_key'];//会话密匙
@@ -45,7 +45,7 @@ class RoutineUser extends ModelBasic
         }else{
             $routineInfo['add_time'] = time();//用户添加时间
             $routineInfo = WechatUser::set($routineInfo);
-            if(User::isUserSpread($routine['spid'])) {
+            if(isset($routine['spid']) && User::isUserSpread($routine['spid'])) {
                 $res = User::setRoutineUser($routineInfo,$routine['spid']); //用户上级
             } else  $res = User::setRoutineUser($routineInfo);
             $uid = $res->uid;
@@ -61,5 +61,15 @@ class RoutineUser extends ModelBasic
     public static function isRoutineUser($uid = 0){
         if(!$uid) return false;
         return WechatUser::where('uid',$uid)->where('user_type','routine')->count();
+    }
+
+     /**
+     * 判断是否是小程序用户
+     * @param int $uid
+     * @return bool|int|string
+     */
+    public static function getRoutineUser($uid = 0){
+        if(!$uid) return false;
+        return WechatUser::where('uid',$uid)->where('user_type','routine')->find();
     }
 }

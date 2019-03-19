@@ -402,7 +402,7 @@
                                         {/if}
                                     </td>
                                     <td class="text-center">
-                                        {if isset($vo.qr_code.url)}
+                                        {if (isset($vo.qr_code) && isset($vo.qr_code.url))}
                                         <img src="{$vo.qr_code.url}" alt="{$vo.nickname}" title="{$vo.nickname}" style="width:50px;height: 50px;cursor: pointer;" class="head_image" data-image="{$vo.qr_code.url}">
                                         {/if}
                                     </td>
