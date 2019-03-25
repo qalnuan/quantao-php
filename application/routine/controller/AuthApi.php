@@ -699,7 +699,6 @@ class AuthApi extends AuthController{
         return JsonService::successful($addressInfo);
     }
 
-
     /**
      * 获取默认地址
      * @return \think\response\Json
@@ -725,6 +724,89 @@ class AuthApi extends AuthController{
             return JsonService::successful();
         else
             return JsonService::fail('删除地址失败!');
+    }
+
+    /**
+     * 创建订单
+     * @param string $key
+     * @return \think\response\Json
+     */
+    public function create_order_new()
+    {
+        list($productId,$totalNum,$payPrice,$addressId,$realName,$phoneNo,$couponId,$payType,$useIntegral,$mark,$combinationId,$pinkId,$seckill_id,$formId,$bargainId) = UtilService::getMore([
+            'productId','totalNum','payPrice','addressId','realName','phoneNo','couponId','payType','useIntegral','mark',['combinationId',0],['pinkId',0],['seckill_id',0],['formId',''],['bargainId','']
+        ],Request::instance(),true);
+        
+        $addressInfo['real_name'] = $realName;
+        $addressInfo['phone'] = $phoneNo;
+        $addressInfo['province'] = $this->userInfo['province'];
+        $addressInfo['city'] = $this->userInfo['city'];
+        $addressInfo['district'] = '';
+        $addressInfo['detail'] = '';
+        $addressInfo['is_default'] = 1;
+        $addressInfo['uid'] = $this->userInfo['uid'];
+
+        $payType = strtolower($payType);
+        if ($bargainId) {
+            StoreBargainUser::setBargainUserStatus($bargainId, $this->userInfo['uid']);
+        }
+        //修改砍价状态
+        if ($pinkId) {
+            if (StorePink::getIsPinkUid($pinkId, $this->userInfo['uid'])) {
+                return JsonService::status('ORDER_EXIST', '订单生成失败，你已经在该团内不能再参加了', ['orderId' => StoreOrder::getStoreIdPink($pinkId, $this->userInfo['uid'])]);
+            }
+        }
+
+        if ($pinkId) {
+            if (StoreOrder::getIsOrderPink($pinkId, $this->userInfo['uid'])) {
+                return JsonService::status('ORDER_EXIST', '订单生成失败，你已经参加该团了，请先支付订单', ['orderId' => StoreOrder::getStoreIdPink($pinkId, $this->userInfo['uid'])]);
+            }
+        }
+
+        $order = StoreOrder::cacheKeyCreateOrderNew($this->userInfo['uid'], $productId, $addressId, $addressInfo, $payType, $payPrice, $totalNum, $useIntegral, $couponId, $mark, $combinationId, $pinkId, $seckill_id, $bargainId);
+        $orderId = $order['order_id'];
+        $info = compact('orderId', 'key');
+        if ($orderId) {
+            if ($payType == 'weixin') {
+                $orderInfo = StoreOrder::where('order_id', $orderId)->find();
+                if (!$orderInfo || !isset($orderInfo['paid'])) {
+                    exception('支付订单不存在!');
+                }
+
+                if ($orderInfo['paid']) {
+                    exception('支付已支付!');
+                }
+
+                if ($orderInfo['pay_price'] <= 0) {
+                    if (StoreOrder::jsPayPrice($orderId, $this->userInfo['uid'], $formId)) {
+                        return JsonService::status('success', '微信支付成功', $info);
+                    } else {
+                        return JsonService::status('pay_error', StoreOrder::getErrorInfo());
+                    }
+
+                } else {
+                    try {
+                        $jsConfig = StoreOrder::jsPay($orderId);
+                    } catch (\Exception $e) {
+                        return JsonService::status('pay_error', $e->getMessage(), $info);
+                    }
+                    $info['jsConfig'] = $jsConfig;
+                    return JsonService::status('wechat_pay', '订单创建成功', $info);
+                }
+            } else if ($payType == 'yue') {
+                if (StoreOrder::yuePay($orderId, $this->userInfo['uid'], $formId)) {
+                    return JsonService::status('success', '余额支付成功', $info);
+                } else {
+                    return JsonService::status('pay_error', StoreOrder::getErrorInfo());
+                }
+
+            } else if ($payType == 'offline') {
+                StoreOrder::createOrderTemplate($order);
+                return JsonService::status('success', '订单创建成功', $info);
+            }
+        } else {
+            return JsonService::fail(StoreOrder::getErrorInfo('订单生成失败!'));
+        }
     }
 
     /**
