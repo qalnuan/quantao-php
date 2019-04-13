@@ -8,8 +8,9 @@
 namespace app\admin\model\wechat;
 
 
-use app\admin\model\store\StoreOrder;
+use app\admin\model\order\StoreOrder;
 use app\admin\model\user\User;
+use app\admin\model\user\UserExtract;
 use service\ExportService;
 use service\QrcodeService;
 use think\Cache;
@@ -17,6 +18,8 @@ use think\Config;
 use traits\ModelTrait;
 use basic\ModelBasic;
 use service\WechatService;
+use service\PHPExcelService;
+use service\SystemConfigService;
 
 /**
  * 微信用户 model
@@ -28,6 +31,37 @@ use service\WechatService;
     use ModelTrait;
 
     protected $insert = ['add_time'];
+
+     /**
+      * 用uid获得 微信openid
+      * @param $uid
+      * @return mixed
+      */
+     public static function uidToOpenid($uid,$update = false)
+     {
+         $cacheName = 'openid_'.$uid;
+         $openid = Cache::get($cacheName);
+         if($openid && !$update) return $openid;
+         $openid = self::where('uid',$uid)->value('openid');
+         if(!$openid) exception('对应的openid不存在!');
+         Cache::set($cacheName,$openid,0);
+         return $openid;
+     }
+     /**
+      * 用uid获得 小程序 openid
+      * @param $uid
+      * @return mixed
+      */
+     public static function uidToRoutineOpenid($uid,$update = false)
+     {
+         $cacheName = 'routine_openid'.$uid;
+         $openid = Cache::get($cacheName);
+         if($openid && !$update) return $openid;
+         $openid = self::where('uid',$uid)->value('routine_openid');
+         if(!$openid) exception('对应的routine_openid不存在!');
+         Cache::set($cacheName,$openid,0);
+         return $openid;
+     }
 
     public static function setAddTimeAttr($value)
     {
@@ -82,9 +116,9 @@ use service\WechatService;
      * @param array $where
      * @return array
      */
-    public static function systemPage($where = array(),$status=0){
-        self::setWechatUserOrder();//设置 一级推荐人 二级推荐人 一级推荐人订单 二级推荐人订单 佣金
+    public static function systemPage($where = array(),$isall=false){
         $model = new self;
+        $model = $model->where('openid','NOT NULL');
         if($where['nickname'] !== '') $model = $model->where('nickname','LIKE',"%$where[nickname]%");
         if($where['data'] !== ''){
             list($startTime,$endTime) = explode(' - ',$where['data']);
@@ -98,41 +132,96 @@ use service\WechatService;
             }
         }
         if(isset($where['groupid']) && $where['groupid'] !== '-1' ) $model = $model->where('groupid',"$where[groupid]");
-            if(!$status){
-                if($where['sex'] !== '' ) $model = $model->where('sex',"$where[sex]");
-                if($where['subscribe'] !== '' ) $model = $model->where('subscribe',"$where[subscribe]");
-                if($where['stair'] != '') $model = $model->order($where['stair']);
-                if($where['second'] != '') $model = $model->order($where['second']);
-                if($where['order_stair'] != '') $model = $model->order($where['order_stair']);
-                if($where['order_second'] != '') $model = $model->order($where['order_second']);
-                if($where['now_money'] != '') $model = $model->order($where['now_money']);
-                if($where['export'] == 1){
-                    $list = $model->select()->toArray();
-                    $export = [];
-                    foreach ($list as $index=>$item){
-                        $export[] = [
-                            $item['nickname'],
-                            $item['sex'],
-                            $item['country'].$item['province'].$item['city'],
-                            $item['stair'],
-                            $item['second'],
-                            $item['order_stair'],
-                            $item['order_second'],
-                            $item['now_money'],
-                            $item['subscribe'] == 1? '关注':'未关注',
-                        ];
-                        $list[$index] = $item;
-                    }
-                    ExportService::exportCsv($export,'微信用户导出'.time(),['名称','性别','地区','一级推荐人','二级推荐人','一级推荐订单个数','二级推荐订单个数','获得佣金','是否关注公众号']);
+        if(isset($where['sex']) && $where['sex'] !== '' ) $model = $model->where('sex',"$where[sex]");
+        if(isset($where['subscribe']) && $where['subscribe'] !== '' ) $model = $model->where('subscribe',"$where[subscribe]");
+        $model = $model->order('uid desc');
+        if(isset($where['export']) && $where['export'] == 1){
+            $list = $model->select()->toArray();
+            $export = [];
+            foreach ($list as $index=>$item){
+                $export[] = [
+                    $item['nickname'],
+                    $item['sex'],
+                    $item['country'].$item['province'].$item['city'],
+                    $item['subscribe'] == 1? '关注':'未关注',
+                ];
+                $list[$index] = $item;
+            }
+            PHPExcelService::setExcelHeader(['名称','性别','地区','是否关注公众号'])
+                ->setExcelTile('微信用户导出','微信用户导出'.time(),' 生成时间：'.date('Y-m-d H:i:s',time()))
+                ->setExcelContent($export)
+                ->ExcelSave();
+        }
+        return self::page($model,$where);
+    }
+/**
+     * 获取分销用户
+     * @param array $where
+     * @return array
+     */
+    public static function agentSystemPage($where = array(),$isall=false){
+//        self::setWechatUserOrder();//设置 一级推荐人 二级推荐人 一级推荐人订单 二级推荐人订单 佣金
+        $model = new self;
+        if($isall==false) {
+            $status = (int)SystemConfigService::get('store_brokerage_statu');
+            if ($status == 1) {
+                if ($uids = User::where(['is_promoter' => 1])->column('uid')) {
+                    $model = $model->where('uid', 'in', implode(',', $uids));
                 }
             }
-
+        }
+//        $model = $model->where('openid','NOT NULL');
+        if($where['nickname'] !== '') $model = $model->where('nickname','LIKE',"%$where[nickname]%");
+        if($where['data'] !== ''){
+            list($startTime,$endTime) = explode(' - ',$where['data']);
+            $model = $model->where('add_time','>',strtotime($startTime));
+            $model = $model->where('add_time','<',strtotime($endTime));
+        }
+        if(isset($where['tagid_list']) && $where['tagid_list'] !== ''){
+            $tagid_list = explode(',',$where['tagid_list']);
+            foreach ($tagid_list as $v){
+                $model = $model->where('tagid_list','LIKE',"%$v%");
+            }
+        }
+        if(isset($where['groupid']) && $where['groupid'] !== '-1' ) $model = $model->where('groupid',"$where[groupid]");
+        if(isset($where['sex']) && $where['sex'] !== '' ) $model = $model->where('sex',"$where[sex]");
+        if(isset($where['subscribe']) && $where['subscribe'] !== '' ) $model = $model->where('subscribe',"$where[subscribe]");
+        if(isset($where['stair']) && $where['stair'] != '') $model = $model->order($where['stair']);
+        if(isset($where['second']) && $where['second'] != '') $model = $model->order($where['second']);
+        if(isset($where['order_stair']) && $where['order_stair'] != '') $model = $model->order($where['order_stair']);
+        if(isset($where['order_second']) && $where['order_second'] != '') $model = $model->order($where['order_second']);
+        if(isset($where['now_money']) && $where['now_money'] != '') $model = $model->order($where['now_money']);
         $model = $model->order('uid desc');
-
+        if(isset($where['export']) && $where['export'] == 1){
+            $list = $model->select()->toArray();
+            $export = [];
+            foreach ($list as $index=>$item){
+                $export[] = [
+                    $item['nickname'],
+                    $item['sex'],
+                    $item['country'].$item['province'].$item['city'],
+                    $item['stair'],
+                    $item['second'],
+                    $item['order_stair'],
+                    $item['order_second'],
+                    $item['now_money'],
+                    $item['subscribe'] == 1? '关注':'未关注',
+                ];
+                $list[$index] = $item;
+            }
+            PHPExcelService::setExcelHeader(['名称','性别','地区','一级推荐人','二级推荐人','一级推荐订单个数','二级推荐订单个数','获得佣金','是否关注公众号'])
+                ->setExcelTile('微信用户导出','微信用户导出'.time(),' 生成时间：'.date('Y-m-d H:i:s',time()))
+                ->setExcelContent($export)
+                ->ExcelSave();
+        }
         return self::page($model,function ($item){
             try{
                 $item['qr_code'] = QrcodeService::getForeverQrcode('spread',$item['uid']);
-            }catch (\Exception $e){}
+            }catch (\Exception $e){
+                $item['qr_code'] = '';
+            }
+            $item['extract_count_price'] = UserExtract::getUserCountPrice($item['uid']);//累计提现
+            $item['extract_count_num'] = UserExtract::getUserCountNum($item['uid']);//提现次数
         },$where);
     }
 
@@ -149,11 +238,11 @@ use service\WechatService;
             $model = $model->where('add_time','>',strtotime($startTime));
             $model = $model->where('add_time','<',strtotime($endTime));
         }
-        if(isset($where['tagid_list']) && $where['tagid_list'] !== ''){
+        if($where['tagid_list'] !== ''){
             $model = $model->where('tagid_list','LIKE',"%$where[tagid_list]%");
         }
-        if(isset($where['groupid']) && $where['groupid'] !== '-1' ) $model = $model->where('groupid',"$where[groupid]");
-        if(isset($where['sex']) && $where['sex'] !== '' ) $model = $model->where('sex',"$where[sex]");
+        if($where['groupid'] !== '-1' ) $model = $model->where('groupid',"$where[groupid]");
+        if($where['sex'] !== '' ) $model = $model->where('sex',"$where[sex]");
         return $model->column('uid','uid');
     }
 

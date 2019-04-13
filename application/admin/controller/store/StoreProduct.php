@@ -3,13 +3,11 @@
 namespace app\admin\controller\store;
 
 use app\admin\controller\AuthController;
-use app\admin\library\FormBuilder;
+use service\FormBuilder as Form;
 use app\admin\model\store\StoreProductAttr;
 use app\admin\model\store\StoreProductAttrResult;
 use app\admin\model\store\StoreProductRelation;
-use app\admin\model\store\StoreSeckill;
 use app\admin\model\system\SystemConfig;
-use app\admin\model\store\StoreBargain;
 use service\JsonService;
 use traits\CurdControllerTrait;
 use service\UtilService as Util;
@@ -19,9 +17,9 @@ use think\Request;
 use app\admin\model\store\StoreCategory as CategoryModel;
 use app\admin\model\store\StoreProduct as ProductModel;
 use think\Url;
-use app\admin\model\store\StoreSeckill as StoreSeckillModel;
-use app\admin\model\store\StoreOrder as StoreOrderModel;
-use app\admin\model\store\StoreBargain as StoreBargainModel;
+
+use app\admin\model\system\SystemAttachment;
+
 
 /**
  * 产品管理
@@ -42,39 +40,88 @@ class StoreProduct extends AuthController
      */
     public function index()
     {
-        $where = Util::getMore([
-            ['is_show',''],
-            ['is_hot',''],
-            ['is_benefit',''],
-            ['is_best',''],
-            ['is_new',''],
-            ['data',''],
-            ['sex',''],
-            ['sex1',''],
-            ['store_name',''],
-            ['export',0]
-        ],$this->request);
-        $limitTimeList = [
-            'today'=>implode(' - ',[date('Y/m/d'),date('Y/m/d',strtotime('+1 day'))]),
-            'week'=>implode(' - ',[
-                date('Y/m/d', (time() - ((date('w') == 0 ? 7 : date('w')) - 1) * 24 * 3600)),
-                date('Y/m/d', (time() + (7 - (date('w') == 0 ? 7 : date('w'))) * 24 * 3600))
-            ]),
-            'month'=>implode(' - ',[date('Y/m').'/01',date('Y/m').'/'.date('t')]),
-            'quarter'=>implode(' - ',[
-                date('Y').'/'.(ceil((date('n'))/3)*3-3+1).'/01',
-                date('Y').'/'.(ceil((date('n'))/3)*3).'/'.date('t',mktime(0,0,0,(ceil((date('n'))/3)*3),1,date('Y')))
-            ]),
-            'year'=>implode(' - ',[
-                date('Y').'/01/01',date('Y/m/d',strtotime(date('Y').'/01/01 + 1year -1 day'))
-            ])
-        ];
-        $this->assign('where',$where);
-        $this->assign('limitTimeList',$limitTimeList);
-        $this->assign(ProductModel::systemPage($where,$this->adminId));
+
+        $type=$this->request->param('type');
+        //获取分类
+        $this->assign('cate',CategoryModel::getTierList());
+        //出售中产品
+        $onsale =  ProductModel::where(['is_show'=>1,'is_del'=>0])->count();
+        //待上架产品
+        $forsale =  ProductModel::where(['is_show'=>0,'is_del'=>0])->count();
+        //仓库中产品
+        $warehouse =  ProductModel::where(['is_del'=>0])->count();
+        //已经售馨产品
+        $outofstock = ProductModel::getModelObject()->where(ProductModel::setData(4))->count();
+        //警戒库存
+        $policeforce =ProductModel::getModelObject()->where(ProductModel::setData(5))->count();
+        //回收站
+        $recycle =  ProductModel::where(['is_del'=>1])->count();
+
+        $this->assign(compact('type','onsale','forsale','warehouse','outofstock','policeforce','recycle'));
         return $this->fetch();
     }
-
+    /**
+     * 异步查找产品
+     *
+     * @return json
+     */
+    public function product_ist(){
+        $where=Util::getMore([
+            ['page',1],
+            ['limit',20],
+            ['store_name',''],
+            ['cate_id',''],
+            ['excel',0],
+            ['order',''],
+            ['type',$this->request->param('type')]
+        ]);
+        return JsonService::successlayui(ProductModel::ProductList($where));
+    }
+    /**
+     * 设置单个产品上架|下架
+     *
+     * @return json
+     */
+    public function set_show($is_show='',$id=''){
+        ($is_show=='' || $id=='') && JsonService::fail('缺少参数');
+        $res=ProductModel::where(['id'=>$id])->update(['is_show'=>(int)$is_show]);
+        if($res){
+            return JsonService::successful($is_show==1 ? '上架成功':'下架成功');
+        }else{
+            return JsonService::fail($is_show==1 ? '上架失败':'下架失败');
+        }
+    }
+    /**
+     * 快速编辑
+     *
+     * @return json
+     */
+    public function set_product($field='',$id='',$value=''){
+        $field=='' || $id=='' || $value=='' && JsonService::fail('缺少参数');
+        if(ProductModel::where(['id'=>$id])->update([$field=>$value]))
+            return JsonService::successful('保存成功');
+        else
+            return JsonService::fail('保存失败');
+    }
+    /**
+     * 设置批量产品上架
+     *
+     * @return json
+     */
+    public function product_show(){
+        $post=Util::postMore([
+            ['ids',[]]
+        ]);
+        if(empty($post['ids'])){
+            return JsonService::fail('请选择需要上架的产品');
+        }else{
+            $res=ProductModel::where('id','in',$post['ids'])->update(['is_show'=>1]);
+            if($res)
+                return JsonService::successful('上架成功');
+            else
+                return JsonService::fail('上架失败');
+        }
+    }
     /**
      * 显示创建资源表单页.
      *
@@ -82,46 +129,42 @@ class StoreProduct extends AuthController
      */
     public function create()
     {
-        $this->assign(['title'=>'添加产品','action'=>Url::build('save'),'rules'=>$this->rules()->getContent()]);
-        return $this->fetch('public/common_form');
-    }
-
-    /**
-     * @return \think\response\Json
-     */
-    public function rules()
-    {
-        $list = CategoryModel::getTierList();
-        if(!$list) return $this->failed('请先添加分类');
-        FormBuilder::select('cate_id','产品分类',function(){
-            $list = CategoryModel::getTierList();
-            foreach ($list as $menu){
-                $menus[] = ['value'=>$menu['id'],'label'=>$menu['html'].$menu['cate_name']];//,'disabled'=>$menu['pid']== 0];
-            }
-            return $menus;
-        });
-        FormBuilder::text('store_name','产品名称');
-//        FormBuilder::text('store_info','产品简介');
-        FormBuilder::text('keyword','产品关键字')->placeholder('多个用英文状态下的逗号隔开');
-        FormBuilder::text('unit_name','产品单位','件');
-        FormBuilder::upload('image','产品主图片(305*305px)')->maxLength(1);
-        FormBuilder::upload('slider_image','产品轮播图(640*640px)')->maxLength(5)->multiple();
-        FormBuilder::number('price','产品售价')->min(0);
-        FormBuilder::number('ot_price','产品市场价')->min(0);
-//        FormBuilder::number('give_integral','赠送积分')->min(0)->precision(0);
-        FormBuilder::number('postage','邮费')->min(0);
-        FormBuilder::number('sales','销量')->min(0)->precision(0);
-        FormBuilder::number('stock','库存')->min(0)->precision(0);
-//        FormBuilder::number('cost','产品成本价')->min(0);
-        FormBuilder::number('sort','排序');
-        FormBuilder::radio('is_show','产品状态',[['label'=>'上架','value'=>1],['label'=>'下架','value'=>0]],0);
-        FormBuilder::radio('is_hot','热卖单品',[['label'=>'是','value'=>1],['label'=>'否','value'=>0]],0);
-        FormBuilder::radio('is_benefit','促销单品',[['label'=>'是','value'=>1],['label'=>'否','value'=>0]],0);
-        FormBuilder::radio('is_best','精品推荐',[['label'=>'是','value'=>1],['label'=>'否','value'=>0]],0);
-        FormBuilder::radio('is_new','首发新品',[['label'=>'是','value'=>1],['label'=>'否','value'=>0]],0);
-//        FormBuilder::radio('mer_use','商户是否可用',[['label'=>'可用','value'=>1],['label'=>'不可用','value'=>0]],0);
-        FormBuilder::radio('is_postage','是否包邮',[['label'=>'是','value'=>1],['label'=>'否','value'=>0]],0);
-        return FormBuilder::builder();
+//        $this->assign(['title'=>'添加产品','action'=>Url::build('save'),'rules'=>$this->rules()->getContent()]);
+//        return $this->fetch('public/common_form');
+        $field = [
+            Form::select('cate_id','产品分类')->setOptions(function(){
+                $list = CategoryModel::getTierList();
+                $menus=[];
+                foreach ($list as $menu){
+                    $menus[] = ['value'=>$menu['id'],'label'=>$menu['html'].$menu['cate_name'],'disabled'=>$menu['pid']== 0];//,'disabled'=>$menu['pid']== 0];
+                }
+                return $menus;
+            })->filterable(1)->multiple(1),
+            Form::input('store_name','产品名称')->col(Form::col(24)),
+            Form::input('store_info','产品简介')->type('textarea'),
+            Form::input('keyword','产品关键字')->placeholder('多个用英文状态下的逗号隔开'),
+            Form::input('unit_name','产品单位','件'),
+            Form::frameImageOne('image','产品主图片(305*305px)',Url::build('admin/widget.images/index',array('fodder'=>'image')))->icon('image')->width('100%')->height('500px'),
+            Form::frameImages('slider_image','产品轮播图(640*640px)',Url::build('admin/widget.images/index',array('fodder'=>'slider_image')))->maxLength(5)->icon('images')->width('100%')->height('500px')->spin(0),
+            Form::number('price','产品售价')->min(0)->col(8),
+            Form::number('ot_price','产品市场价')->min(0)->col(8),
+            Form::number('give_integral','赠送积分')->min(0)->precision(0)->col(8),
+            Form::number('postage','邮费')->min(0)->col(Form::col(8)),
+            Form::number('sales','销量',0)->min(0)->precision(0)->col(8)->readonly(1),
+            Form::number('ficti','虚拟销量')->min(0)->precision(0)->col(8),
+            Form::number('stock','库存')->min(0)->precision(0)->col(8),
+            Form::number('cost','产品成本价')->min(0)->col(8),
+            Form::number('sort','排序')->col(8),
+            Form::radio('is_show','产品状态',0)->options([['label'=>'上架','value'=>1],['label'=>'下架','value'=>0]])->col(8),
+            Form::radio('is_hot','热卖单品',0)->options([['label'=>'是','value'=>1],['label'=>'否','value'=>0]])->col(8),
+            Form::radio('is_benefit','促销单品',0)->options([['label'=>'是','value'=>1],['label'=>'否','value'=>0]])->col(8),
+            Form::radio('is_best','精品推荐',0)->options([['label'=>'是','value'=>1],['label'=>'否','value'=>0]])->col(8),
+            Form::radio('is_new','首发新品',0)->options([['label'=>'是','value'=>1],['label'=>'否','value'=>0]])->col(8),
+            Form::radio('is_postage','是否包邮',0)->options([['label'=>'是','value'=>1],['label'=>'否','value'=>0]])->col(8)
+        ];
+        $form = Form::make_post_form('添加产品',$field,Url::build('save'),2);
+        $this->assign(compact('form'));
+        return $this->fetch('public/form-builder');
     }
 
     /**
@@ -130,8 +173,11 @@ class StoreProduct extends AuthController
      */
     public function upload()
     {
-        $res = Upload::image('file','store/product');
+        $res = Upload::image('file','store/product/'.date('Ymd'));
         $thumbPath = Upload::thumb($res->dir);
+        //产品图片上传记录
+        $fileInfo = $res->fileInfo->getinfo();
+        SystemAttachment::attachmentAdd($res->fileInfo->getSaveName(),$fileInfo['size'],$fileInfo['type'],$res->dir,$thumbPath,1);
         if($res->status == 200)
             return Json::successful('图片上传成功!',['name'=>$res->fileInfo->getSaveName(),'url'=>Upload::pathToUrl($thumbPath)]);
         else
@@ -147,19 +193,20 @@ class StoreProduct extends AuthController
     public function save(Request $request)
     {
         $data = Util::postMore([
-            'cate_id',
+            ['cate_id',[]],
             'store_name',
             'store_info',
             'keyword',
             ['unit_name','件'],
             ['image',[]],
             ['slider_image',[]],
-            'postage',
-            'ot_price',
-            'price',
-            'sort',
-            'stock',
+            ['postage',0],
+            ['ot_price',0],
+            ['price',0],
+            ['sort',0],
+            ['stock',100],
             'sales',
+            ['ficti',100],
             ['give_integral',0],
             ['is_show',0],
             ['cost',0],
@@ -170,19 +217,14 @@ class StoreProduct extends AuthController
             ['mer_use',0],
             ['is_postage',0],
         ],$request);
-        if($data['cate_id'] == '') return Json::fail('请选择产品分类');
+        if(count($data['cate_id']) < 1) return Json::fail('请选择产品分类');
+        $data['cate_id'] = implode(',',$data['cate_id']);
         if(!$data['store_name']) return Json::fail('请输入产品名称');
-//        if(!$data['store_info']) return Json::fail('请输入产品简介');
-//        if(!$data['keyword']) return Json::fail('请输入产品关键字');
         if(count($data['image'])<1) return Json::fail('请上传产品图片');
         if(count($data['slider_image'])<1) return Json::fail('请上传产品轮播图');
         if($data['price'] == '' || $data['price'] < 0) return Json::fail('请输入产品售价');
         if($data['ot_price'] == '' || $data['ot_price'] < 0) return Json::fail('请输入产品市场价');
-        if($data['postage'] == '' || $data['postage'] < 0) return Json::fail('请输入邮费');
         if($data['stock'] == '' || $data['stock'] < 0) return Json::fail('请输入库存');
-//        if($data['cost'] == '' || $data['cost'] < 0) return Json::fail('请输入产品成本价');
-        if($data['sales'] == '' || $data['sales'] < 0) return Json::fail('请输入销量');
-//        if($data['give_integral'] < 0) return Json::fail('请输入赠送积分');
         $data['image'] = $data['image'][0];
         $data['slider_image'] = json_encode($data['slider_image']);
         $data['add_time'] = time();
@@ -215,54 +257,43 @@ class StoreProduct extends AuthController
         if(!$id) return $this->failed('数据不存在');
         $product = ProductModel::get($id);
         if(!$product) return Json::fail('数据不存在!');
-        $this->assign([
-            'title'=>'编辑产品','rules'=>$this->read($id)->getContent(),
-            'action'=>Url::build('update',array('id'=>$id))
-        ]);
-        return $this->fetch('public/common_form');
+        $field = [
+            Form::select('cate_id','产品分类',explode(',',$product->getData('cate_id')))->setOptions(function(){
+                $list = CategoryModel::getTierList();
+                $menus=[];
+                foreach ($list as $menu){
+                    $menus[] = ['value'=>$menu['id'],'label'=>$menu['html'].$menu['cate_name'],'disabled'=>$menu['pid']== 0];//,'disabled'=>$menu['pid']== 0];
+                }
+                return $menus;
+            })->filterable(1)->multiple(1),
+            Form::input('store_name','产品名称',$product->getData('store_name')),
+            Form::input('store_info','产品简介',$product->getData('store_info'))->type('textarea'),
+            Form::input('keyword','产品关键字',$product->getData('keyword'))->placeholder('多个用英文状态下的逗号隔开'),
+            Form::input('unit_name','产品单位',$product->getData('unit_name')),
+            Form::frameImageOne('image','产品主图片(305*305px)',Url::build('admin/widget.images/index',array('fodder'=>'image')),$product->getData('image'))->icon('image')->width('100%')->height('500px'),
+            Form::frameImages('slider_image','产品轮播图(640*640px)',Url::build('admin/widget.images/index',array('fodder'=>'slider_image')),json_decode($product->getData('slider_image'),1))->maxLength(5)->icon('images')->width('100%')->height('500px'),
+            Form::number('price','产品售价',$product->getData('price'))->min(0)->precision(2)->col(8),
+            Form::number('ot_price','产品市场价',$product->getData('ot_price'))->min(0)->col(8),
+            Form::number('give_integral','赠送积分',$product->getData('give_integral'))->min(0)->precision(0)->col(8),
+            Form::number('postage','邮费',$product->getData('postage'))->min(0)->col(8),
+            Form::number('sales','销量',$product->getData('sales'))->min(0)->precision(0)->col(8)->readonly(1),
+            Form::number('ficti','虚拟销量',$product->getData('ficti'))->min(0)->precision(0)->col(8),
+            Form::number('stock','库存',ProductModel::getStock($id)>0?ProductModel::getStock($id):$product->getData('stock'))->min(0)->precision(0)->col(8),
+            Form::number('cost','产品成本价',$product->getData('cost'))->min(0)->col(8),
+            Form::number('sort','排序',$product->getData('sort'))->col(8),
+            Form::radio('is_show','产品状态',$product->getData('is_show'))->options([['label'=>'上架','value'=>1],['label'=>'下架','value'=>0]])->col(8),
+            Form::radio('is_hot','热卖单品',$product->getData('is_hot'))->options([['label'=>'是','value'=>1],['label'=>'否','value'=>0]])->col(8),
+            Form::radio('is_benefit','促销单品',$product->getData('is_benefit'))->options([['label'=>'是','value'=>1],['label'=>'否','value'=>0]])->col(8),
+            Form::radio('is_best','精品推荐',$product->getData('is_best'))->options([['label'=>'是','value'=>1],['label'=>'否','value'=>0]])->col(8),
+            Form::radio('is_new','首发新品',$product->getData('is_new'))->options([['label'=>'是','value'=>1],['label'=>'否','value'=>0]])->col(8),
+            Form::radio('is_postage','是否包邮',$product->getData('is_postage'))->options([['label'=>'是','value'=>1],['label'=>'否','value'=>0]])->col(8)
+        ];
+        $form = Form::make_post_form('编辑产品',$field,Url::build('update',array('id'=>$id)),2);
+        $this->assign(compact('form'));
+        return $this->fetch('public/form-builder');
     }
 
-    /**
-     * 显示指定的资源
-     *
-     * @param  int  $id
-     * @return \think\Response
-     */
-    public function read($id)
-    {
-        if(!$id) return $this->failed('数据不存在');
-        $product = ProductModel::get($id);
-        if(!$product) return Json::fail('数据不存在!');
-        FormBuilder::select('cate_id','产品分类',function(){
-            $list = CategoryModel::getTierList();
-            foreach ($list as $menu){
-                $menus[] = ['value'=>$menu['id'],'label'=>$menu['html'].$menu['cate_name']];//,'disabled'=>$menu['pid']== 0];
-            }
-            return $menus;
-        },$product->getData('cate_id'));
-        FormBuilder::text('store_name','产品名称',$product->getData('store_name'));
-//        FormBuilder::text('store_info','产品简介',$product->getData('store_info'));
-        FormBuilder::text('keyword','产品关键字',$product->getData('keyword'));
-        FormBuilder::text('unit_name','产品单位',$product->getData('unit_name'),'件');
-        FormBuilder::upload('image','产品主图片(305*305px)')->defaultFileList($product->getData('image'))->maxLength(1);
-        FormBuilder::upload('slider_image','产品轮播图(640*640px)')->defaultFileList(json_decode($product->getData('slider_image'),true))->maxLength(5)->multiple();
-        FormBuilder::number('price','产品售价',$product->getData('price'))->min(0);
-        FormBuilder::number('ot_price','产品市场价',$product->getData('ot_price'))->min(0);
-//        FormBuilder::number('give_integral','赠送积分',$product->getData('give_integral'))->min(0)->precision(0);
-        FormBuilder::number('postage','邮费',$product->getData('postage'))->min(0);
-        FormBuilder::number('sales','销量',$product->getData('sales'))->min(0)->precision(0);
-        FormBuilder::number('stock','库存',$product->getData('stock'))->min(0)->precision(0);
-//        FormBuilder::number('cost','产品成本价',$product->getData('cost'))->min(0);
-        FormBuilder::number('sort','排序',$product->getData('sort'));
-        FormBuilder::radio('is_show','产品状态',[['label'=>'上架','value'=>1],['label'=>'下架','value'=>0]],$product->getData('is_show'));
-        FormBuilder::radio('is_hot','热卖单品',[['label'=>'是','value'=>1],['label'=>'否','value'=>0]],$product->getData('is_hot'));
-        FormBuilder::radio('is_benefit','促销单品',[['label'=>'是','value'=>1],['label'=>'否','value'=>0]],$product->getData('is_benefit'));
-        FormBuilder::radio('is_best','精品推荐',[['label'=>'是','value'=>1],['label'=>'否','value'=>0]],$product->getData('is_best'));
-        FormBuilder::radio('is_new','首发新品',[['label'=>'是','value'=>1],['label'=>'否','value'=>0]],$product->getData('is_new'));
-//        FormBuilder::radio('mer_use','商户是否可用',[['label'=>'可用','value'=>1],['label'=>'不可用','value'=>0]],$product->getData('mer_use'));
-        FormBuilder::radio('is_postage','是否包邮',[['label'=>'是','value'=>1],['label'=>'否','value'=>0]],$product->getData('is_postage'));
-        return FormBuilder::builder();
-    }
+
 
     /**
      * 保存更新的资源
@@ -274,19 +305,19 @@ class StoreProduct extends AuthController
     public function update(Request $request, $id)
     {
         $data = Util::postMore([
-            'cate_id',
+            ['cate_id',[]],
             'store_name',
             'store_info',
             'keyword',
             ['unit_name','件'],
             ['image',[]],
             ['slider_image',[]],
-            'postage',
-            'ot_price',
-            'price',
-            'sort',
-            'stock',
-            'sales',
+            ['postage',0],
+            ['ot_price',0],
+            ['price',0],
+            ['sort',0],
+            ['stock',0],
+            ['ficti',100],
             ['give_integral',0],
             ['is_show',0],
             ['cost',0],
@@ -297,19 +328,15 @@ class StoreProduct extends AuthController
             ['mer_use',0],
             ['is_postage',0],
         ],$request);
-        if($data['cate_id'] == '') return Json::fail('请选择产品分类');
+        if(count($data['cate_id']) < 1) return Json::fail('请选择产品分类');
+        $data['cate_id'] = implode(',',$data['cate_id']);
         if(!$data['store_name']) return Json::fail('请输入产品名称');
-//        if(!$data['store_info']) return Json::fail('请输入产品简介');
-//        if(!$data['keyword']) return Json::fail('请输入产品关键字');
         if(count($data['image'])<1) return Json::fail('请上传产品图片');
         if(count($data['slider_image'])<1) return Json::fail('请上传产品轮播图');
+        if(count($data['slider_image'])>5) return Json::fail('轮播图最多5张图');
         if($data['price'] == '' || $data['price'] < 0) return Json::fail('请输入产品售价');
         if($data['ot_price'] == '' || $data['ot_price'] < 0) return Json::fail('请输入产品市场价');
-        if($data['postage'] == '' || $data['postage'] < 0) return Json::fail('请输入邮费');
-//        if($data['cost'] == '' || $data['cost'] < 0) return Json::fail('请输入产品成本价');
         if($data['stock'] == '' || $data['stock'] < 0) return Json::fail('请输入库存');
-        if($data['sales'] == '' || $data['sales'] < 0) return Json::fail('请输入销量');
-//        if($data['give_integral'] < 0) return Json::fail('请输入赠送积分');
         $data['image'] = $data['image'][0];
         $data['slider_image'] = json_encode($data['slider_image']);
         ProductModel::edit($data,$id);
@@ -342,13 +369,15 @@ class StoreProduct extends AuthController
                 foreach ($detail as $kk=>$vv){
                     if($v['detail'] == $vv['detail']){
                         $attrFormat[$k]['price'] = $vv['price'];
+                        $attrFormat[$k]['cost'] = isset($vv['cost']) ? $vv['cost'] : $product['cost'];
                         $attrFormat[$k]['sales'] = $vv['sales'];
                         $attrFormat[$k]['pic'] = $vv['pic'];
                         $attrFormat[$k]['check'] = false;
                         break;
                     }else{
-                        $attrFormat[$k]['price'] = $product['price'];
-                        $attrFormat[$k]['sales'] = $product['stock'];
+                        $attrFormat[$k]['cost'] = $product['cost'];
+                        $attrFormat[$k]['price'] = '';
+                        $attrFormat[$k]['sales'] = '';
                         $attrFormat[$k]['pic'] = $product['image'];
                         $attrFormat[$k]['check'] = true;
                     }
@@ -356,6 +385,7 @@ class StoreProduct extends AuthController
             }
         }else{
             foreach ($attrFormat as $k=>$v){
+                $attrFormat[$k]['cost'] = $product['cost'];
                 $attrFormat[$k]['price'] = $product['price'];
                 $attrFormat[$k]['sales'] = $product['stock'];
                 $attrFormat[$k]['pic'] = $product['image'];
@@ -396,99 +426,26 @@ class StoreProduct extends AuthController
      */
     public function delete($id)
     {
+
         if(!$id) return $this->failed('数据不存在');
-        $data['is_del'] = 1;
-        if(!ProductModel::edit($data,$id))
-            return Json::fail(ProductModel::getErrorInfo('删除失败,请稍候再试!'));
-        else
-            return Json::successful('删除成功!');
+        if(!ProductModel::be(['id'=>$id])) return $this->failed('产品数据不存在');
+        if(ProductModel::be(['id'=>$id,'is_del'=>1])){
+            $data['is_del'] = 0;
+            if(!ProductModel::edit($data,$id))
+                return Json::fail(ProductModel::getErrorInfo('恢复失败,请稍候再试!'));
+            else
+                return Json::successful('成功恢复产品!');
+        }else{
+            $data['is_del'] = 1;
+            if(!ProductModel::edit($data,$id))
+                return Json::fail(ProductModel::getErrorInfo('删除失败,请稍候再试!'));
+            else
+                return Json::successful('成功移到回收站!');
+        }
+
     }
 
-    public function seckill($id){
-        if(!$id) return $this->failed('数据不存在');
-        $product = ProductModel::get($id);
-        if(!$product) return Json::fail('数据不存在!');
-        $this->assign([
-            'title'=>'添加产品','rules'=>$this->readSeckill($id)->getContent(),
-            'action'=>Url::build('updateSeckill',array('id'=>$id))
-        ]);
-        return $this->fetch('public/common_form');
-    }
 
-
-    public function readSeckill($id)
-    {
-        if(!$id) return $this->failed('数据不存在');
-        $product = ProductModel::get($id);
-        if(!$product) return Json::fail('数据不存在!');
-        $storeseckill=StoreSeckill::where('product_id',$id)->find();
-        if(!empty($storeseckill)){ProductModel::edit(['is_seckill'=>1],$id,'id');return $this->failed('秒杀已开启！');}
-        FormBuilder::text('title','产品标题',$product->getData('store_name'));
-        FormBuilder::text('info','产品简介',$product->getData('store_info'));
-        FormBuilder::text('unit_name','单位')->placeholder('个、位');
-        FormBuilder::dateTimeRange('section_time','活动时间')->format("yyyy-MM-dd HH:mm:ss");
-        FormBuilder::upload('img','推荐图(305*305px)')->maxLength(1)->defaultFileList($product->getData('image'));
-        FormBuilder::upload('images','轮播图(640*640px)')->maxLength(5)->defaultFileList(json_decode($product->getData('slider_image'),true));
-        FormBuilder::number('price','秒杀价')->min(0);
-        FormBuilder::number('ot_price','原价',$product->getData('price'))->min(0);
-        FormBuilder::number('stock','库存',$product->getData('stock'))->min(0)->precision(0);
-        FormBuilder::number('sales','销量',$product->getData('sales'))->min(0)->precision(0);
-//        FormBuilder::number('cost','产品成本价',$product->getData('cost'))->min(0);
-        FormBuilder::number('sort','排序',$product->getData('sort'))->precision(0);
-//        FormBuilder::number('give_integral','赠送积分',$product->getData('give_integral'))->min(0)->precision(0);
-        FormBuilder::number('postage','邮费',$product->getData('postage'))->min(0);
-        FormBuilder::radio('is_postage','是否包邮',[['label'=>'是','value'=>1],['label'=>'否','value'=>0]],$product->getData('is_postage'));
-        FormBuilder::radio('is_hot','热门推荐',[['label'=>'开启','value'=>1],['label'=>'关闭','value'=>0]],0);
-        FormBuilder::radio('status','活动状态',[['label'=>'开启','value'=>1],['label'=>'关闭','value'=>0]],0);
-        return FormBuilder::builder();
-    }
-
-    public function updateSeckill(Request $request,$id)
-    {
-        if(!$id) return $this->failed('数据不存在');
-        $product = ProductModel::get($id);
-        if(!$product) return Json::fail('数据不存在!');
-        $data = Util::postMore([
-            'title',
-            'info',
-            'unit_name',
-            ['img',[]],
-            ['images',[]],
-            'price',
-            'ot_price',
-            'cost',
-            'sales',
-            'stock',
-            'sort',
-            'give_integral',
-            'postage',
-            ['section_time',[]],
-            ['is_postage',0],
-            ['cost',0],
-            ['is_hot',0],
-            ['status',0],
-        ],$request);
-        $data['product_id'] = $product['id'];
-        if(!$data['title']) return Json::fail('请输入产品标题');
-        if(!$data['unit_name']) return Json::fail('请输入产品单位');
-        if(count($data['section_time'])<1) return Json::fail('请选择活动时间');
-        $data['start_time'] = $data['section_time'][0];
-        $data['stop_time'] = $data['section_time'][1];
-        unset($data['section_time']);
-        if(count($data['img'])<1) return Json::fail('请选择推荐图');
-        $data['image'] = $data['img'][0];
-        if(count($data['images'])<1) return Json::fail('请选择轮播图');
-        $data['images'] = json_encode($data['images']);
-        if($data['price'] == '' || $data['price'] < 0) return Json::fail('请输入产品秒杀售价');
-        if($data['ot_price'] == '' || $data['ot_price'] < 0) return Json::fail('请输入产品原售价');
-//        if($data['cost'] == '' || $data['cost'] < 0) return Json::fail('请输入产品成本价');
-        if($data['stock'] == '' || $data['stock'] < 0) return Json::fail('请输入库存');
-        unset($data['img']);
-        $data['add_time'] = time();
-        StoreSeckillModel::set($data);
-        ProductModel::edit(['is_seckill'=>1],$id,'id');
-        return Json::successful('开启成功!');
-    }
 
 
     /**
@@ -517,219 +474,35 @@ class StoreProduct extends AuthController
         return $this->fetch();
     }
     /**
-     * 产品统计
-     * @return mixed
-     */
-    public function statistics(){
-        $where = Util::getMore([
-            ['is_show',''],
-            ['is_hot',''],
-            ['is_benefit',''],
-            ['is_best',''],
-            ['is_new',''],
-            ['data',''],
-            ['sex',''],
-            ['sex1',''],
-            ['store_name',''],
-            ['export',0]
-        ],$this->request);
-        $limitTimeList = [
-            'today'=>implode(' - ',[date('Y/m/d'),date('Y/m/d',strtotime('+1 day'))]),
-            'week'=>implode(' - ',[
-                date('Y/m/d', (time() - ((date('w') == 0 ? 7 : date('w')) - 1) * 24 * 3600)),
-                date('Y/m/d', (time() + (7 - (date('w') == 0 ? 7 : date('w'))) * 24 * 3600))
-            ]),
-            'month'=>implode(' - ',[date('Y/m').'/01',date('Y/m').'/'.date('t')]),
-            'quarter'=>implode(' - ',[
-                date('Y').'/'.(ceil((date('n'))/3)*3-3+1).'/01',
-                date('Y').'/'.(ceil((date('n'))/3)*3).'/'.date('t',mktime(0,0,0,(ceil((date('n'))/3)*3),1,date('Y')))
-            ]),
-            'year'=>implode(' - ',[
-                date('Y').'/01/01',date('Y/m/d',strtotime(date('Y').'/01/01 + 1year -1 day'))
-            ])
-        ];
-        $replenishment_num = SystemConfig::getValue('replenishment_num');
-        $replenishment_num = $replenishment_num > 0 ? $replenishment_num : 20;
-        $stock=ProductModel::column('stock');
-        $sums=array_sum($stock);
-        $is_new=ProductModel::where('is_new',1)->column('stock');
-        $new=array_sum($is_new);
-        $stores=StoreOrderModel::column('total_num');
-        $strsum=array_sum($stores);
-        $stock1=ProductModel::where('stock','<',$replenishment_num)->column('stock');
-        $cunt=count($stock1);
-        $stk=[];
-        for($i=0;$i<$cunt;$i++){
-            $stk[]=$replenishment_num-$stock1[$i];
-        }
-        $lack=array_sum($stk);
-        $header=[
-            ['name'=>'商品总数', 'class'=>'fa fa-ioxhost', 'value'=>$sums, 'color'=>'red'],
-            ['name'=>'新增商品', 'class'=>'fa-line-chart', 'value'=>$new, 'color'=>'lazur'],
-            ['name'=>'活动商品', 'class'=>'fa-bar-chart', 'value'=>$strsum, 'color'=>'navy'],
-            ['name'=>'缺货商品', 'class'=>'fa-cube', 'value'=>$lack, 'color'=>'yellow']
-        ];
-//        var_dump($where);
-        //进度条的颜色
-        $color=['progress-bar-success','progress-bar-info','progress-bar-warning','progress-bar-success','progress-bar-danger','progress-bar-warning','progress-bar-info','progress-bar-warning','progress-bar-danger','progress-bar-success'];
-        if($where['data']!=''){
-            $dat=explode('-',$where['data']);
-            $orderPrice = StoreOrderModel::whereTime('add_time', 'between', $dat)->select();
-            $sto=ProductModel::salesVolume($where,$color,$dat);//销量前十
-            $stores=$sto['c1'];
-            $storeSum1=$sto['c2'];
-            $total=$sto['c3'];
-            $price=$sto['c4'];
-            $sto1=ProductModel::profit($where,$color,$dat);//利润前十
-            $stor=$sto1['c1'];
-            $priceSum=$sto1['c2'];
-            $total1=$sto1['c3'];
-            $price1=$sto1['c4'];
-            $stock=ProductModel::where('stock','<',$replenishment_num)->order('stock asc')->select();//库存
-            $stor1=ProductModel::ncomment($dat);//差评
-            $refund=ProductModel::refund($dat);//退款
-        }else {
-            $orderPrice = StoreOrderModel::select();
-            $sto=ProductModel::salesVolume($where,$color);//销量前十
-            $stores=$sto['c1'];
-            $storeSum1=$sto['c2'];
-            $total=$sto['c3'];
-            $price=$sto['c4'];
-            $sto1=ProductModel::profit($where,$color);//利润前十
-            $stor=$sto1['c1'];
-            $priceSum=$sto1['c2'];
-            $total1=$sto1['c3'];
-            $price1=$sto1['c4'];
-            $stock=ProductModel::where('stock','<',$replenishment_num)->order('stock asc')->select();//库存
-            $stor1=ProductModel::ncomment();//差评
-            $refund=ProductModel::refund();//退款
-        }
-        $orde=ProductModel::brokenLine($orderPrice);//销量折线图
-        $orderDays=$orde['c1'];
-        $sum=$orde['c2'];
-        $this->assign(compact('limitTimeList','where','orderDays','sum','stores','storeSum1','total','price','stor','priceSum','total1','price1','stock','stor1','refund','header'));
-        return $this->fetch();
-
-    }
-
-
-    /**
-     * 开启砍价产品
-     * @param int $id
-     * @return mixed|\think\response\Json|void
-     */
-    public function bargain($id = 0){
-        if(!$id) return $this->failed('数据不存在');
-        $product = ProductModel::get($id);
-        if(!$product) return Json::fail('数据不存在!');
-        $this->assign([
-            'title'=>'添加砍价产品','rules'=>$this->readBargain($id)->getContent(),
-            'action'=>Url::build('updateBargain',array('id'=>$id))
-        ]);
-        return $this->fetch('public/common_form');
-    }
-
-    /**
-     * 砍价产品页面
-     * @param $id
-     * @return \think\response\Json
-     */
-    public function readBargain($id){
-        if(!$id) return $this->failed('数据不存在');
-        $product = ProductModel::get($id);
-        if(!$product) return Json::fail('数据不存在!');
-        $storeBargain = StoreBargainModel::where('product_id',$id)->find();
-        if(!empty($storeBargain)){
-            ProductModel::edit(['is_bargain'=>1],$id,'id');return $this->failed('砍价已开启！');
-        }
-        FormBuilder::text('title','砍价活动名称');
-        FormBuilder::text('info','砍价活动简介');
-        FormBuilder::text('store_name','砍价产品名称',$product->getData('store_name'));
-        FormBuilder::text('unit_name','单位',$product->getData('unit_name'))->placeholder('个、位');
-        FormBuilder::dateTimeRange('section_time','活动时间')->format("yyyy-MM-dd HH:mm:ss");
-        FormBuilder::upload('img','推荐图(305*305px)')->maxLength(1)->defaultFileList($product->getData('image'));
-        FormBuilder::upload('images','轮播图(640*640px)')->maxLength(5)->defaultFileList(json_decode($product->getData('slider_image'),true));
-        FormBuilder::number('price','砍价金额',$product->getData('price'))->min(0);
-        FormBuilder::number('min_price','砍价最低金额')->min(0);
-        FormBuilder::number('bargain_max_price','用户单次砍价的最大金额')->min(0);
-        FormBuilder::number('bargain_min_price','用户单次砍价的最小金额')->min(0);
-//        FormBuilder::number('cost','成本价',$product->getData('cost'))->min(0);
-        FormBuilder::number('bargain_num','用户单次砍价的次数')->min(1);
-        FormBuilder::number('stock','库存',$product->getData('stock'))->min(0)->precision(0);
-        FormBuilder::number('sales','销量',$product->getData('sales'))->min(0)->precision(0);
-        FormBuilder::number('sort','排序');
-        FormBuilder::number('num','单次购买的砍价产品数量')->min(1)->precision(0);
-//        FormBuilder::number('give_integral','赠送积分',$product->getData('give_integral'))->min(0)->precision(0);
-        FormBuilder::number('postage','邮费',$product->getData('postage'))->min(0);
-        FormBuilder::radio('is_postage','是否包邮',[['label'=>'是','value'=>1],['label'=>'否','value'=>0]],0);
-        FormBuilder::radio('is_hot','热门推荐',[['label'=>'开启','value'=>1],['label'=>'关闭','value'=>0]],0);
-        FormBuilder::radio('status','活动状态',[['label'=>'开启','value'=>1],['label'=>'关闭','value'=>0]],0);
-        return FormBuilder::builder();
-    }
-
-    /**
-     * 砍价产品保存
+     * 修改产品价格
      * @param Request $request
-     * @param $id
-     * @return \think\response\Json|void
      */
-    public function updateBargain(Request $request,$id){
-        if(!$id) return Json::fail('数据不存在');
-        $product = ProductModel::get($id);
-        if(!$product) return Json::fail('数据不存在!');
+    public function edit_product_price(Request $request){
         $data = Util::postMore([
-            ['title',''],
-            ['info',''],
-            ['store_name',''],
-            ['unit_name',''],
-            ['section_time',[]],
-            ['img',[]],
-            ['images',[]],
+            ['id',0],
             ['price',0],
-            ['min_price',0],
-            ['bargain_max_price',0],
-            ['bargain_min_price',0],
-            ['cost',0],
-            ['bargain_num',0],
-            ['stock',0],
-            ['sales',0],
-            ['sort',0],
-            ['num',0],
-            ['give_integral',0],
-            ['postage',0],
-            ['is_postage',0],
-            ['is_hot',0],
-            ['status',0],
         ],$request);
-        if($data['title'] == '') return Json::fail('请输入砍价活动名称');
-        if($data['info'] == '') return Json::fail('请输入砍价活动简介');
-        if($data['store_name'] == '') return Json::fail('请输入砍价产品名称');
-        if($data['unit_name'] == '') return Json::fail('请输入产品单位');
-        if(count($data['section_time'])<1) return Json::fail('请选择活动时间');
-        if(!$data['section_time'][0]) return Json::fail('请选择活动时间');
-        if(!$data['section_time'][1]) return Json::fail('请选择活动时间');
-        $data['start_time'] = $data['section_time'][0];
-        $data['stop_time'] = $data['section_time'][1];
-        unset($data['section_time']);
-        if(count($data['img'])<1) return Json::fail('请选择推荐图');
-        $data['image'] = $data['img'][0];
-        if(count($data['images'])<1) return Json::fail('请选择轮播图');
-        $data['images'] = json_encode($data['images']);
-        if($data['price'] == '' || $data['price'] < 0) return Json::fail('请输入砍价金额');
-        if($data['min_price'] == '' || $data['min_price'] < 0) return Json::fail('请输入砍价最低金额');
-        if($data['bargain_max_price'] == '' || $data['bargain_max_price'] < 0) return Json::fail('请输入用户单次砍价的最大金额');
-        if($data['bargain_min_price'] == '' || $data['bargain_min_price'] < 0) return Json::fail('请输入用户单次砍价的最小金额');
-//        if($data['cost'] == '' || $data['cost'] < 0) return Json::fail('请输入成本价');
-        if($data['bargain_num'] == '' || $data['bargain_num'] < 0) return Json::fail('请输入用户单次砍价的次数');
-        if($data['stock'] == '' || $data['stock'] < 0) return Json::fail('请输入库存');
-        if($data['num'] == '' || $data['num'] < 0) return Json::fail('请输入单次购买的砍价产品数量');
-        unset($data['img']);
-        $data['product_id'] = $product['id'];
-        $data['add_time'] = time();
-        $data['is_del'] = 0;
-        $res = StoreBargain::set($data);
-        ProductModel::edit(['is_bargain'=>1],$id);
-        if($res) return Json::successful('添加成功');
-        else return Json::fail('添加失败');
+        if(!$data['id']) return Json::fail('参数错误');
+        $res = ProductModel::edit(['price'=>$data['price']],$data['id']);
+        if($res) return Json::successful('修改成功');
+        else return Json::fail('修改失败');
     }
+
+    /**
+     * 修改产品库存
+     * @param Request $request
+     */
+    public function edit_product_stock(Request $request){
+        $data = Util::postMore([
+            ['id',0],
+            ['stock',0],
+        ],$request);
+        if(!$data['id']) return Json::fail('参数错误');
+        $res = ProductModel::edit(['stock'=>$data['stock']],$data['id']);
+        if($res) return Json::successful('修改成功');
+        else return Json::fail('修改失败');
+    }
+
+
+
 }

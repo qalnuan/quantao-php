@@ -7,9 +7,10 @@
 
 namespace app\routine\model\user;
 
+use app\routine\model\store\StoreCouponUser;
 use basic\ModelBasic;
+use service\SystemConfigService;
 use traits\ModelTrait;
-use service\CacheService as Cache;
 /**
  * 微信用户model
  * Class WechatUser
@@ -28,14 +29,25 @@ class WechatUser extends ModelBasic
      * @param $uid
      * @return mixed
      */
-    public static function uidToOpenid($uid,$update = false)
+    public static function uidToOpenid($uid)
     {
-        $cacheName = 'openid_'.$uid;
-        $openid = Cache::get($cacheName);
-        if($openid && !$update) return $openid;
         $openid = self::where('uid',$uid)->value('routine_openid');
-        if(!$openid) exception('对应的openid不存在!');
-        Cache::set($cacheName,$openid,0);
         return $openid;
+    }
+
+    /**
+     * 用openid获得uid
+     * @param $uid
+     * @return mixed
+     */
+    public static function openidTouid($openid)
+    {
+        return  self::where('routine_openid',$openid)->value('uid');
+    }
+
+    public static function userTakeOrderGiveCoupon($uid)
+    {
+        $couponId = SystemConfigService::get('store_order_give_coupon');
+        if($couponId) StoreCouponUser::addUserCoupon($uid,$couponId);
     }
 }

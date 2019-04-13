@@ -182,11 +182,9 @@
                     $eb.axios.post("{:Url('save_keyword',array('dis'=>$dis))}",{key:this.keyword,status:this.status,data:this.dataGroup[this.type],type:this.type}).then(function(res){
                         if(res.status == 200 && res.data.code == 200){
                             $eb.message('success','设置成功!');
-                            if(window.vm.add){
-                                setTimeout(function () {
-                                    window.history.go(-1);
-                                },600);
-                            }
+                            setTimeout(function () {
+                                window.history.go(-1);
+                            },800);
                         }
                         else
                             $eb.message('error',res.data.msg || '设置失败!');

@@ -59,10 +59,10 @@ class StoreBargainUserHelp extends ModelBasic
         $data['uid'] = $uid;
         $data['bargain_id'] = $bargainId;
         $data['bargain_user_id'] = $bargainUserTableId;
-        $data['price'] = mt_rand($priceSection['bargain_min_price'],$priceSection['bargain_max_price']);
+        $data['price'] = self::randomFloat($priceSection['bargain_min_price'],$priceSection['bargain_max_price']);
         $data['add_time'] = time();
         if($data['price'] > $surplusPrice) $data['price'] = $surplusPrice;
-        $price = bcadd($alreadyPrice,$data['price'],0);
+        $price = bcadd($alreadyPrice,$data['price'],2);
         $bargainUserData['price'] = $price;
         self::beginTrans();
         $res1 = StoreBargainUser::setBargainUserPrice($bargainUserTableId,$bargainUserData);
@@ -71,6 +71,17 @@ class StoreBargainUserHelp extends ModelBasic
         self::checkTrans($res);
         if($res) return $data;
         else return $res;
+    }
+
+    /**
+     * 获取俩个数之间的随机数
+     * @param int $min
+     * @param int $max
+     * @return string
+     */
+    public static function randomFloat($min = 0,$max = 1){
+        $num = $min + mt_rand() / mt_getrandmax() * ($max - $min);
+        return sprintf("%.2f",$num);
     }
 
     /**
@@ -125,7 +136,10 @@ class StoreBargainUserHelp extends ModelBasic
         $coverPrice = StoreBargainUser::getBargainUserDiffPrice($bargainId,$bargainUserId);//用户可以砍掉的金额
         $bargainUserTableId = StoreBargainUser::getBargainUserTableId($bargainId,$bargainUserId);
         $alreadyPrice= StoreBargainUser::getBargainUserPrice($bargainUserTableId);//用户已经砍掉的价格
-        return bcmul(bcdiv($alreadyPrice,$coverPrice,2),100,0);
+        if($alreadyPrice)
+            return bcmul(bcdiv($alreadyPrice,$coverPrice,2),100,0);
+        else
+            return 100;
     }
 }
 

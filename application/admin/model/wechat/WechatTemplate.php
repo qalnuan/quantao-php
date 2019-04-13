@@ -27,7 +27,6 @@ class WechatTemplate extends ModelBasic
         $model = new self;
         if($where['name'] !== '') $model = $model->where('name','LIKE',"%$where[name]%");
         if($where['status'] !== '') $model = $model->where('status',$where['status']);
-        if(isset($where['type'])) $model = $model->where('type',$where['type']);
         return self::page($model);
     }
 }

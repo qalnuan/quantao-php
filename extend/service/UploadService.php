@@ -13,7 +13,7 @@ class UploadService
     private static $uploadStatus;
 
     //上传图片的大小 2MB 单位字节
-    private static $imageValidate = ['size'=>2097152,'ext'=>'jpg,png,gif','mime'=>'image/jpeg,image/gif,image/png'];
+    private static $imageValidate = ['size'=>2097152,'ext'=>'jpg,jpeg,png,gif','mime'=>'image/jpeg,image/gif,image/png'];
 
     /**
      * 初始化
@@ -47,7 +47,11 @@ class UploadService
         self::$uploadStatus->filePath = self::pathToUrl($filePath);
         self::$uploadStatus->fileInfo = $fileInfo;
         self::$uploadStatus->uploadPath = $path;
-        self::$uploadStatus->dir = '.'.$filePath;
+        if(strpos(PUBILC_PATH,'public') !== false){
+            self::$uploadStatus->dir = $filePath;
+        }else{
+            self::$uploadStatus->dir = str_replace('/public','',$filePath);
+        }
         self::$uploadStatus->status = true;
         return self::$uploadStatus;
     }
@@ -79,7 +83,7 @@ class UploadService
      */
     protected static function uploadDir($path, $root=null)
     {
-        if($root === null) $root = 'public' . DS . 'uploads';
+        if($root === null) $root = UPLOAD_PATH;
         return $root . DS . $path;
     }
 
@@ -153,9 +157,11 @@ class UploadService
      * @param string $pre 前缀
      * @return string 压缩图片路径
      */
-    public static function thumb($filePath, $ratio=8, $pre='s_')
+    public static function thumb($filePath, $ratio=5, $pre='s_')
     {
-        $filePath = '.'.ltrim($filePath,'.');
+        $uname=php_uname('s');
+        if(strstr($uname,'Windows')!==false) $filePath = ltrim($filePath,'\\');
+        else $filePath = ltrim($filePath,'/');
         $img = self::openImage($filePath);
         $width = $img->width() * $ratio / 10;
         $height = $img->height() * $ratio / 10;
@@ -163,6 +169,6 @@ class UploadService
         $fileName = basename($filePath);
         $savePath = $dir.DS.$pre.$fileName;
         $img->thumb($width,$height)->save($savePath);
-        return $savePath;
+        return DS.$savePath;
     }
 }

@@ -25,22 +25,5 @@ return [
     'log_write'    => [],
     // 应用结束
     'app_end'      => [],
-    //添加素材
-    'wechat_material_after' =>[
-        \behavior\wechat\MaterialBehavior::class
-    ],
-    //添加临时素材
-    'wechat_material_temporary_after'=>[
-        \behavior\wechat\MaterialBehavior::class
-    ],
-//    //微信菜单点击事件
-//    'wecaht_event_click'=>\behavior\wechat\MessageBehavior::class,
-//    //微信菜单点击前置操作
-//    'wechat_event_click_before'=>[
-//        \behavior\wechat\MessageBehavior::class,
-//    ],
-//    //微信收到用户文字信息事件
-//    'wecaht_message_text'=>\behavior\wechat\MessageBehavior::class,
-//    //微信关注事件
-//    'wecaht_event_subscribe'=>\behavior\wechat\MessageBehavior::class
+
 ];

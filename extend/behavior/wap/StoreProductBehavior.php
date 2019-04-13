@@ -12,11 +12,11 @@ use app\wap\model\store\StoreOrder;
 use app\wap\model\store\StorePink;
 use app\wap\model\store\StoreProduct;
 use app\wap\model\user\User;
-use app\routine\model\user\UserAddress;
-// use app\wap\model\user\UserBill;
-// use app\wap\model\user\WechatUser;
+use app\wap\model\user\UserAddress;
+use app\wap\model\user\UserBill;
+use app\wap\model\user\WechatUser;
 use basic\ModelBasic;
-use app\admin\model\store\StoreOrder as StoreOrderAdminModel;
+use app\admin\model\order\StoreOrder as StoreOrderAdminModel;
 use service\SystemConfigService;
 use service\WechatTemplateService;
 
@@ -59,9 +59,9 @@ class StoreProductBehavior
      * @param $oid
      * $oid  string store_order表中的id
      */
-    public static function storeProductOrderDeliveryAfter($data,$oid){
-        StoreOrder::orderPostageAfter($data,$oid);
-    }
+//    public static function storeProductOrderDeliveryAfter($data,$oid){
+//        StoreOrder::orderPostageAfter($data,$oid);
+//    }
 
     /**
      * 修改发货状态  为发货
@@ -70,9 +70,9 @@ class StoreProductBehavior
      * @param $oid
      * $oid  string store_order表中的id
      */
-    public static function storeProductOrderDeliveryGoodsAfter($data,$oid){
-        StoreOrder::orderPostageAfter($data,$oid);
-    }
+//    public static function storeProductOrderDeliveryGoodsAfter($data,$oid){
+//        StoreOrder::orderPostageAfter($data,$oid);
+//    }
 
     /**
      * 修改状态 为已收货
@@ -85,7 +85,7 @@ class StoreProductBehavior
     {
         $res1 = StoreOrder::gainUserIntegral($order);
         $res2 = User::backOrderBrokerage($order);
-//        StoreOrder::orderTakeAfter($order);
+        StoreOrder::orderTakeAfter($order);
         if(!($res1 && $res2)) exception('收货失败!');
     }
 
@@ -98,9 +98,9 @@ class StoreProductBehavior
     {
         $res1 = StoreOrder::gainUserIntegral($order);
         $res2 = User::backOrderBrokerage($order);
-//        StoreOrder::orderTakeAfter($order);
-//        $giveCouponMinPrice = SystemConfigService::get('store_give_con_min_price');
-//        if($order['total_price'] >= $giveCouponMinPrice) WechatUser::userTakeOrderGiveCoupon($uid);
+        StoreOrder::orderTakeAfter($order);
+        $giveCouponMinPrice = SystemConfigService::get('store_give_con_min_price');
+        if($order['total_price'] >= $giveCouponMinPrice) WechatUser::userTakeOrderGiveCoupon($uid);
         if(!($res1 && $res2)) exception('收货失败!');
     }
 

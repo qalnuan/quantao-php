@@ -10,50 +10,7 @@
 // +----------------------------------------------------------------------
 
 // 应用公共文件
-/**
- * 获取用户名称
- * @param $uid
- * @return mixed
- */
-function getUserNickname($uid){
-    return \app\admin\model\user\User::where('uid',$uid)->value('nickname');
-}
 
-/**
- * 获取产品名称
- * @param $id
- * @return mixed
- */
-function getProductName($id){
-    return \app\admin\model\store\StoreProduct::where('id',$id)->value('store_name');
-}
-
-/**
- * 获取拼团名称
- * @param $id
- * @return mixed
- */
-function getCombinationTitle($id){
-    return \app\admin\model\store\StoreCombination::where('id',$id)->value('title');
-}
-
-/**
- * 获取订单编号
- * @param $id
- */
-function getOrderId($id){
-    return \app\admin\model\store\StoreOrder::where('id',$id)->value('order_id');
-}
-
-
-/**
- * 根据用户uid获取订单数
- * @param $uid
- * @return int|string
- */
-function getOrderCount($uid){
-    return \app\admin\model\store\StoreOrder::where('uid',$uid)->where('paid',1)->where('refund_status',0)->where('status',2)->count();
-}
 /**
  * 格式化属性
  * @param $arr
@@ -98,6 +55,65 @@ function attrFormat($arr){
     return [$data,$res];
 }
 
-function is_window(){
-    return strstr(php_uname(),'Windows')!==false;
+/**
+ * 格式化月份
+ * @param string $time
+ * @param int $ceil
+ * @return array
+ */
+function getMonth($time='',$ceil=0){
+    if(empty($time)){
+        $firstday = date("Y-m-01",time());
+        $lastday = date("Y-m-d",strtotime("$firstday +1 month -1 day"));
+    }else if($time=='n'){
+        if($ceil!=0)
+            $season = ceil(date('n') /3)-$ceil;
+        else
+            $season = ceil(date('n') /3);
+        $firstday=date('Y-m-01',mktime(0,0,0,($season - 1) *3 +1,1,date('Y')));
+        $lastday=date('Y-m-t',mktime(0,0,0,$season * 3,1,date('Y')));
+    }else if($time=='y'){
+        $firstday=date('Y-01-01');
+        $lastday=date('Y-12-31');
+    }else if($time=='h'){
+        $firstday = date('Y-m-d', strtotime('this week +'.$ceil.' day')) . ' 00:00:00';
+        $lastday = date('Y-m-d', strtotime('this week +'.($ceil+1).' day')) . ' 23:59:59';
+    }
+    return array($firstday,$lastday);
+}
+/**删除目录下所有文件
+ * @param $path 目录或者文件路径
+ * @param string $ext
+ * @return bool
+ */
+function clearfile($path,$ext = '*.log')
+{
+    $files = (array) glob($path.DS.'*');
+    foreach ($files as $path) {
+        if (is_dir($path)) {
+            $matches = glob($path . '/'.$ext);
+            if (is_array($matches)) {
+                array_map('unlink', $matches);
+            }
+            rmdir($path);
+        } else {
+            unlink($path);
+        }
+    }
+    return true;
+}
+/**获取当前类方法
+ * @param $class
+ * @return array
+ */
+function get_this_class_methods($class,$array4 = []) {
+    $array1 = get_class_methods($class);
+    if ($parent_class = get_parent_class($class)) {
+        $array2 = get_class_methods($parent_class);
+        $array3 = array_diff($array1, $array2);//去除父级的
+    } else {
+        $array3 = $array1;
+    }
+    $array5 = array_diff($array3, $array4);//去除无用的
+    return $array5;
 }

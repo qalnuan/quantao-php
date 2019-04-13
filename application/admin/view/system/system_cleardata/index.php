@@ -1,45 +1,32 @@
 {include file="public/frame_head"}
-<div class="row" style="width: 100%;margin-top: 50px; text-align: center;">
+<style>
+    .panel{
+        width: 100%;margin-top:20px; text-align: left;padding: 20px 40px;
+    }
+    .panel button{display: block;margin:5px;}
+</style>
+<div class="col-sm-12">
+    <blockquote class="text-warning" style="font-size:14px">清除数据请谨慎，清除就无法恢复哦！
+    </blockquote>
 
-    <div >
-        <h2>1用户(注：请先清除用户相关数据和订单数据)</h2>
-        <button type="button" class="btn btn-w-m btn-primary" data-url="{:Url('system.system_cleardata/UserRelevant')}">清除用户相关数据</button>
-        <button type="button" class="btn btn-w-m btn-primary" data-url="{:Url('system.system_cleardata/orderdata')}">清除订单数据</button>
-        <button type="button" class="btn btn-w-m btn-primary" data-url="{:Url('system.system_cleardata/kefudata')}">清除客服数据</button>
-        <br>
-        <div style="padding-top: 18px;">
-            <button type="button" class="btn btn-w-m btn-danger"  data-url="{:Url('system.system_cleardata/userdate')}">清除用户数据</button>
-        </div>
+    <hr>
+</div>
+<div class="row panel">
 
-    </div>
-    <hr style="border-bottom: 1px solid #FF5722;padding-bottom: 14px; width:86% ;">
-    <br>
-   <div>
-       <h2>2微信</h2>
-       <button type="button" class="btn btn-w-m btn-primary" data-url="{:Url('system.system_cleardata/wechatdata')}">清除微信相关数据</button>
-       <button type="button" class="btn btn-w-m btn-primary" data-url="{:Url('system.system_cleardata/articledata')}">清除文字分类数据</button>
-       <br>
-       <div style="padding-top: 18px;">
-           <button type="button" class="btn btn-w-m btn-danger" data-url="{:Url('system.system_cleardata/wechatuserdata')}">清除微信用户数据</button>
-       </div>
-
-   </div>
-    <hr style="border-bottom: 1px solid #FF5722;padding-bottom: 14px;  width:86% ;">
-    <br>
-    <div >
-        <h2>3产品</h2>
-        <button type="button" class="btn btn-w-m  btn-primary" data-url="{:Url('system.system_cleardata/storedata')}">清除产品所有数据</button>
-
-        <div style="padding-top: 18px;">
-            <button type="button" class="btn btn-w-m btn-danger" data-url="{:Url('system.system_cleardata/categorydata')}">清除产品分类数据</button>
-
-            <button type="button" class="btn btn-w-m btn-danger" data-url="{:Url('system.system_cleardata/uploaddata')}">清除文件上传数据</button>
-        </div>
-    </div>
-    <hr style="border-bottom: 1px solid #FF5722;padding-bottom: 14px;  width:86% ;">
+<button type="button" class="btn btn-w-m btn-danger btn-primary cleardata" data-url="{:Url('system.SystemCleardata/userRelevantData')}">清除用户数据</button><br>
+<button type="button" class="btn btn-w-m btn-danger btn-primary cleardata" data-url="{:Url('system.SystemCleardata/storeData')}">清除商城数据</button><br>
+<button type="button" class="btn btn-w-m btn-danger btn-primary cleardata" data-url="{:Url('system.SystemCleardata/categoryData')}">清除产品分类</button><br>
+<button type="button" class="btn btn-w-m btn-danger btn-primary cleardata" data-url="{:Url('system.SystemCleardata/orderData')}">清除订单数据</button><br>
+<button type="button" class="btn btn-w-m btn-danger btn-primary cleardata" data-url="{:Url('system.SystemCleardata/kefuData')}">清除客服数据</button><br>
+<button type="button" class="btn btn-w-m btn-danger btn-primary cleardata" data-url="{:Url('system.SystemCleardata/wechatData')}">清除微信数据</button><br>
+<button type="button" class="btn btn-w-m btn-danger btn-primary cleardata" data-url="{:Url('system.SystemCleardata/wechatuserData')}">清除微信用户</button><br>
+<button type="button" class="btn btn-w-m btn-danger btn-primary cleardata" data-url="{:Url('system.SystemCleardata/articleData')}">清除内容分类</button><br>
+<button type="button" class="btn btn-w-m btn-danger btn-primary cleardata" data-url="{:Url('system.SystemCleardata/uploadData')}">清除所有附件</button><br>
+<button type="button" class="btn btn-w-m btn-danger btn-primary cleardata" data-url="{:Url('system.SystemCleardata/systemdata')}">清除系统记录</button><br>
+<!--<button type="button" class="btn btn-w-m btn-danger btn-primary creatuser" data-url="{:Url('system.SystemCleardata/userdate')}">创建前台用户用户名：crmeb 密码：123456</button>-->
 </div>
 <script>
-    $('button').on('click',function(){
+    $('.cleardata').on('click',function(){
         window.t = $(this);
         var _this = $(this),url =_this.data('url');
         $eb.$swal('delete',function(){
@@ -51,7 +38,21 @@
             }).catch(function(err){
                 $eb.$swal('error',err);
             });
-        },{'title':'您确定要进行此操作吗？','text':'操作后数据相应的数据将会被删除,请谨慎操作！','confirm':'是的，我要操作'})
-    })
+        },{'title':'您确定要进行此操作吗？','text':'数据清除无法恢复','confirm':'是的，我要操作'})
+    });
+    $('.creatuser').on('click',function(){
+            window.t = $(this);
+            var _this = $(this),url =_this.data('url');
+            $eb.$swal('delete',function(){
+                $eb.axios.get(url).then(function(res){
+                    if(res.status == 200 && res.data.code == 200) {
+                        $eb.$swal('success',res.data.msg);
+                    }else
+                        return Promise.reject(res.data.msg || '操作失败')
+                }).catch(function(err){
+                    $eb.$swal('error',err);
+                });
+            },{'title':'您确定要进行此操作吗？','text':'用户数据清除之后才能进行此操作','confirm':'是的，我要操作'})
+        })
 </script>
 {include file="public/inner_footer"}

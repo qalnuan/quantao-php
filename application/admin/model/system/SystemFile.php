@@ -11,12 +11,13 @@ use traits\ModelTrait;
 use basic\ModelBasic;
 
 /**
- * 文件检验model
- * Class SystemFile
+ * 附件管理model
+ * Class SystemAttachment
  * @package app\admin\model\system
  */
 class SystemFile extends ModelBasic
 {
     use ModelTrait;
+
 
 }

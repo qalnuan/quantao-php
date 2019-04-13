@@ -9,21 +9,8 @@
 // | Author: liu21st <liu21st@gmail.com>
 // +----------------------------------------------------------------------
 use \think\Route;
-
-//function resource($name,$controller){
-//    Route::rule('/'.$name.'/attr','admin/'.$controller.'/attribute','post');
-//    Route::rule('/'.$name.'/save','admin/'.$controller.'/save','post');
-//    Route::rule('/'.$name.'/rules','admin/'.$controller.'/rules','post');
-//    Route::rule('/'.$name.'/create','admin/'.$controller.'/create','get');
-//    Route::rule('/'.$name.'/page','admin/'.$controller.'/page','get');
-//    Route::rule('/'.$name.'/:id/edit','admin/'.$controller.'/edit','get');
-//    Route::rule('/'.$name.'/:id','admin/'.$controller.'/delete','delete');
-//    Route::rule('/'.$name.'/:id','admin/'.$controller.'/update','put');
-//    Route::rule('/'.$name.'/:id','admin/'.$controller.'/read','get');
-//    Route::rule('/'.$name,'admin/'.$controller.'/index','get');
-//    Route::alias($name,'\app\admin\controller\User'.$controller);
-//}
-
+//兼容模式 不支持伪静态可开启
+//\think\Url::root('index.php?s=');
 Route::group('admin',function(){
     Route::rule('/index2','admin/Index/index2','get');
 //    Route::controller('index','admin/Index');

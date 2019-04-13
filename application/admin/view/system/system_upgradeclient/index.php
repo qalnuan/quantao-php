@@ -2,23 +2,18 @@
 {block name="content"}
 <style>
     .code{
-        color: #97824B;
-        font-size: 3em;
-        border: 2px solid #ccc;
-        padding: 10px;
-        width: 50%;
+        color: #298dff;
+        font-size: 1.4em;
+        border: 1px solid #298dff;
+        padding: 20px 10px;
+        width: 30%;
         margin: 0 auto;
-        font-weight: 700;
-        font-family: 'Raleway', sans-serif;
         visibility: visible;
         animation-duration: 1000ms;
         animation-delay: 500ms;
         text-align: center;
-        -webkit-box-shadow:0 0 10px #000;
-        -moz-box-shadow:0 0 10px #000;
-        box-shadow:0 0 10px #000;
         cursor: pointer;
-        border-radius: 2%;
+        border-radius: .3em;
     }
     .colore{
         background-color: #CCCCCC;
@@ -71,17 +66,15 @@
                                                 <div class="feed-element">
                                                     <div class="media-body">
                                                        <div class="col-sm-2">版本号</div>
+                                                        <div class="col-sm-8">更新内容</div>
                                                         <div class="col-sm-2">更新时间</div>
-                                                        <div class="col-sm-4">更新内容</div>
-                                                        <div class="col-sm-4">更新文件ZIP</div>
                                                     </div>
                                                     <div  v-for="item in list" v-cloak="">
                                                         <hr>
                                                         <div class="media-body">
                                                             <div class="col-sm-2">{{item.version}}</div>
+                                                            <div class="col-sm-8">{{item.content}}</div>
                                                             <div class="col-sm-2">{{item.add_time}}</div>
-                                                            <div class="col-sm-4">{{item.content}}</div>
-                                                            <div class="col-sm-4">{{item.zip_name}}</div>
                                                         </div>
                                                     </div>
                                                 </div>

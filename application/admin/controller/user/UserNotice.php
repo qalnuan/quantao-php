@@ -2,7 +2,8 @@
 namespace app\admin\controller\user;
 
 use app\admin\controller\AuthController;
-use app\admin\library\FormBuilder;
+use service\FormBuilder as Form;
+use service\JsonService;
 use service\UtilService as Util;
 use service\JsonService as Json;
 use think\Request;
@@ -24,8 +25,15 @@ class UserNotice extends AuthController
      */
     public function index()
     {
-        $this->assign(UserNoticeModel::getList());
-        return $this->fetch();
+        if($this->request->isAjax()){
+            $where=Util::getMore([
+                ['page',1],
+                ['limit',20]
+            ]);
+            return Json::successlayui(UserNoticeModel::getList($where));
+        }else{
+            return $this->fetch();
+        }
     }
 
     /**
@@ -34,12 +42,14 @@ class UserNotice extends AuthController
      * @return \think\Response
      */
     public function create(){
-        FormBuilder::text('user','发送人','系统管理员');
-        FormBuilder::text('title','通知标题');
-        FormBuilder::textarea('content','通知内容');
-        FormBuilder::radio('type','消息类型',[['label'=>'系统消息','value'=>1],['label'=>'用户通知','value'=>2]],1);
-        $this->assign(['title'=>'添加通知','groups'=>FormBuilder::builder()->getContent(),'save'=>Url::build('save')]);
-        return $this->fetch();
+        $f = array();
+        $f[] = Form::input('user','发送人','系统管理员');
+        $f[] = Form::input('title','通知标题');
+        $f[] = Form::input('content','通知内容')->type('textarea');
+        $f[] = Form::radio('type','消息类型',1)->options([['label'=>'系统消息','value'=>1],['label'=>'用户通知','value'=>2]]);
+        $form = Form::make_post_form('添加用户通知',$f,Url::build('save'));
+        $this->assign(compact('form'));
+        return $this->fetch('public/form-builder');
     }
 
     /**
@@ -72,12 +82,14 @@ class UserNotice extends AuthController
     {
         $notice = UserNoticeModel::get($id);
         if(!$notice) return Json::fail('数据不存在!');
-        FormBuilder::text('user','发送人',$notice["user"]);
-        FormBuilder::text('title','通知标题',$notice["title"]);
-        FormBuilder::textarea('content','通知内容',$notice["content"]);
-        FormBuilder::radio('type','消息类型',[['label'=>'系统消息','value'=>1],['label'=>'用户通知','value'=>2]],$notice["type"]);
-        $this->assign(['title'=>'修改数据','groups'=>FormBuilder::builder()->getContent(),'save'=>Url::build('update',["id"=>$id])]);
-        return $this->fetch();
+        $f = array();
+        $f[] = Form::input('user','发送人',$notice["user"]);
+        $f[] = Form::input('title','通知标题',$notice["title"]);
+        $f[] = Form::input('content','通知内容',$notice["content"])->type('textarea');
+        $f[] = Form::radio('type','消息类型',$notice["type"])->options([['label'=>'系统消息','value'=>1],['label'=>'用户通知','value'=>2]]);
+        $form = Form::make_post_form('编辑通知',$f,Url::build('update',["id"=>$id]),2);
+        $this->assign(compact('form'));
+        return $this->fetch('public/form-builder');
     }
     /**
      * 保存新建的资源
@@ -131,7 +143,7 @@ class UserNotice extends AuthController
         $notice = UserNoticeModel::get($id)->toArray();
         $model = new UserModel;
         $model = $model::alias('A');
-        $model = $model->field('a.*');
+        $model = $model->field('A.*');
         if($notice["type"] == 2){
             if($notice["uid"] != ""){
                 $uids = explode(",",$notice["uid"]);
@@ -258,5 +270,35 @@ class UserNotice extends AuthController
         $value = count($res_uids) > 0 ? ",".implode(",",$res_uids)."," : "";
         UserNoticeModel::edit(array("uid"=>$value),$notice["id"]);
         return Json::successful('删除成功!');
+    }
+
+    /**
+     * @param $id
+     * @return mixed
+     */
+    public function notice($id){
+        $where = Util::getMore([
+            ['title',''],
+        ],$this->request);
+        $nickname = UserModel::where('uid','IN',$id)->column('uid,nickname');
+        $this->assign('where',$where);
+        $this->assign('uid',$id);
+        $this->assign('nickname',implode(',',$nickname));
+        $this->assign(UserNoticeModel::getUserList($where));
+        return $this->fetch();
+    }
+
+
+    /**
+     * 给指定用户发送站内信息
+     * @param $id
+     */
+    public function send_user($id = 0,$uid = '')
+    {
+        if(!$id || $uid == '') return JsonService::fail('参数错误');
+        $uids = UserNoticeModel::where(['id'=>$id])->value('uid');
+        $uid = rtrim($uids,',').",".$uid.",";
+        UserNoticeModel::edit(array("send_time"=>time(),'uid'=>$uid),$id);
+        return Json::successful('发送成功!');
     }
 }

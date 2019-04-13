@@ -115,7 +115,7 @@ class StoreBargainUser extends ModelBasic
      */
     public static function getBargainUserDiffPrice($bargainId = 0,$bargainUserId = 0){
         $price = self::where('bargain_id',$bargainId)->where('uid',$bargainUserId)->field('bargain_price,bargain_price_min')->find()->toArray();
-        return (float)bcsub($price['bargain_price'],$price['bargain_price_min'],0);
+        return (float)bcsub($price['bargain_price'],$price['bargain_price_min'],2);
     }
 
     /**
@@ -187,12 +187,16 @@ class StoreBargainUser extends ModelBasic
      * @return array|false|\PDOStatement|string|\think\Collection
      */
     public static function getBargainUserStatusSuccess(){
-        $bargainUser = self::where('status',3)->order('id desc')->field('uid,bargain_price_min,bargain_id')->select()->toArray();
+        $bargainUser = self::where('status',3)->order('id desc')->field('uid,bargain_price_min,bargain_id')->select();
         if($bargainUser) {
+            $bargainUser = $bargainUser->toArray();
             foreach ($bargainUser as $k=>$v){
                 $bargainUser[$k]['info'] = User::where('uid',$v['uid'])->value('nickname').'砍价成功了'.$v['bargain_price_min'].'砍到了'.StoreBargain::where('id',$v['bargain_id'])->value('title');
             }
-        } else $bargainUser[]['info'] = '砍价上线了，快邀请您的好友来砍价';
+        }
+        else{
+            $bargainUser[]['info'] = '砍价上线了，快邀请您的好友来砍价';
+        }
         return $bargainUser;
     }
 }

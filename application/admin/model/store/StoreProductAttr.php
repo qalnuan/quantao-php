@@ -53,6 +53,8 @@ class StoreProductAttr extends ModelBasic
                 return self::setErrorInfo('请填写正确的商品价格');
             if(!isset($value['sales']) || !is_numeric($value['sales']) || intval($value['sales']) != $value['sales'])
                 return self::setErrorInfo('请填写正确的商品库存');
+            if(!isset($value['cost']) || !is_numeric($value['cost']) || floatval($value['cost']) != $value['cost'])
+                return self::setErrorInfo('请填写正确的商品成本价格');
             if(!isset($value['pic']) || empty($value['pic']))
                 return self::setErrorInfo('请上传商品图片');
             foreach ($value['detail'] as $attrName=>$attrValue){
@@ -75,12 +77,13 @@ class StoreProductAttr extends ModelBasic
             ];
         }
         foreach ($valueList as $k=>$value){
-            ksort($value['detail'],SORT_STRING);
+            sort($value['detail'],SORT_STRING);
             $suk = implode(',',$value['detail']);
             $valueGroup[$suk] = [
                 'product_id'=>$productId,
                 'suk'=>$suk,
                 'price'=>$value['price'],
+                'cost'=>$value['cost'],
                 'stock'=>$value['sales'],
                 'image'=>$value['pic']
             ];

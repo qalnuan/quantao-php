@@ -164,131 +164,7 @@
                                     </div>
                                 </th>
                                 <th class="text-center no-sort">地区</th>
-                                <th class="text-center">
-                                    <div class="btn-group">
-                                        <button data-toggle="dropdown" class="btn btn-white btn-xs dropdown-toggle" style="font-weight: bold;background-color: #f5f5f6;border: solid 0;"
-                                                aria-expanded="false">一级推荐人
-                                            <span class="stair caret"></span>
-                                        </button>
-                                        <ul class="dropdown-menu search-item" data-name="stair">
-                                            <li data-value="">
-                                                <a class="save_mark" href="javascript:void(0);"  >
-                                                    <i class="fa fa-arrows-v"></i>默认
-                                                </a>
-                                            </li>
-                                            <li data-value="stair desc">
-                                                <a class="save_mark" href="javascript:void(0);"  >
-                                                    <i class="fa fa-sort-numeric-desc"></i>降序
-                                                </a>
-                                            </li>
-                                            <li data-value="stair asc">
-                                                <a class="save_mark" href="javascript:void(0);">
-                                                    <i class="fa fa-sort-numeric-asc"></i>升序
-                                                </a>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </th>
-                                <th class="text-center">
-                                    <div class="btn-group">
-                                        <button data-toggle="dropdown" class="btn btn-white btn-xs dropdown-toggle" style="font-weight: bold;background-color: #f5f5f6;border: solid 0;"
-                                                aria-expanded="false">二级推荐人
-                                            <span class="second caret"></span>
-                                        </button>
-                                        <ul class="dropdown-menu search-item" data-name="second">
-                                            <li data-value="">
-                                                <a class="save_mark" href="javascript:void(0);"  >
-                                                    <i class="fa fa-arrows-v"></i>默认
-                                                </a>
-                                            </li>
-                                            <li data-value="second desc">
-                                                <a class="save_mark" href="javascript:void(0);"  >
-                                                    <i class="fa fa-sort-numeric-desc"></i>降序
-                                                </a>
-                                            </li>
-                                            <li data-value="second asc">
-                                                <a class="save_mark" href="javascript:void(0);">
-                                                    <i class="fa fa-sort-numeric-asc"></i>升序
-                                                </a>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </th>
-                                <th class="text-center">
-                                    <div class="btn-group">
-                                        <button data-toggle="dropdown" class="btn btn-white btn-xs dropdown-toggle" style="font-weight: bold;background-color: #f5f5f6;border: solid 0;"
-                                                aria-expanded="false">一级推广订单
-                                            <span class="order_stair caret"></span>
-                                        </button>
-                                        <ul class="dropdown-menu search-item" data-name="order_stair">
-                                            <li data-value="">
-                                                <a class="save_mark" href="javascript:void(0);"  >
-                                                    <i class="fa fa-arrows-v"></i>默认
-                                                </a>
-                                            </li>
-                                            <li data-value="order_stair desc">
-                                                <a class="save_mark" href="javascript:void(0);"  >
-                                                    <i class="fa fa-sort-numeric-desc"></i>降序
-                                                </a>
-                                            </li>
-                                            <li data-value="order_stair asc">
-                                                <a class="save_mark" href="javascript:void(0);">
-                                                    <i class="fa fa-sort-numeric-asc"></i>升序
-                                                </a>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </th>
-                                <th class="text-center">
-                                    <div class="btn-group">
-                                        <button data-toggle="dropdown" class="btn btn-white btn-xs dropdown-toggle" style="font-weight: bold;background-color: #f5f5f6;border: solid 0;"
-                                                aria-expanded="false">所有推广订单
-                                            <span class="caret order_second"></span>
-                                        </button>
-                                        <ul class="dropdown-menu search-item" data-name="order_second">
-                                            <li data-value="">
-                                                <a class="save_mark" href="javascript:void(0);"  >
-                                                    <i class="fa fa-arrows-v"></i>默认
-                                                </a>
-                                            </li>
-                                            <li data-value="order_second desc">
-                                                <a class="save_mark" href="javascript:void(0);"  >
-                                                    <i class="fa fa-sort-numeric-asc"></i>降序
-                                                </a>
-                                            </li>
-                                            <li data-value="order_second asc">
-                                                <a class="save_mark" href="javascript:void(0);">
-                                                    <i class="fa fa-sort-numeric-desc"></i>升序
-                                                </a>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </th>
-                                <th class="text-center">
-                                    <div class="btn-group">
-                                        <button data-toggle="dropdown" class="btn btn-white btn-xs dropdown-toggle" style="font-weight: bold;background-color: #f5f5f6;border: solid 0;"
-                                                aria-expanded="false">获得佣金
-                                            <span class="now_money caret"></span>
-                                        </button>
-                                        <ul class="dropdown-menu search-item" data-name="now_money">
-                                            <li data-value="">
-                                                <a class="save_mark" href="javascript:void(0);"  >
-                                                    <i class="fa fa-arrows-v"></i>默认
-                                                </a>
-                                            </li>
-                                            <li data-value="now_money desc">
-                                                <a class="save_mark" href="javascript:void(0);"  >
-                                                    <i class="fa fa-sort-numeric-asc"></i>降序
-                                                </a>
-                                            </li>
-                                            <li data-value="now_money asc">
-                                                <a class="save_mark" href="javascript:void(0);">
-                                                    <i class="fa fa-sort-numeric-desc"></i>升序
-                                                </a>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </th>
+
                                 <th class="text-center">
                                     <div class="btn-group">
                                         <button data-toggle="dropdown" class="btn btn-white btn-xs dropdown-toggle" style="font-weight: bold;background-color: #f5f5f6;border: solid 0;"
@@ -314,7 +190,7 @@
                                         </ul>
                                     </div>
                                 </th>
-                                <th class="text-center">推广二维码</th>
+
                                 <th class="text-center">
                                     <div class="btn-group">
                                         <button data-toggle="dropdown" class="btn btn-white btn-xs dropdown-toggle" style="font-weight: bold;padding: 6px 50px;background-color: #f5f5f6;border: solid 0;"
@@ -373,27 +249,9 @@
                                     <td class="text-center">
                                         {$vo.country}{$vo.province}{$vo.city}
                                     </td>
-                                    <td class="text-center">
-                                        <button class="btn btn-white  btn-xs"  onclick="$eb.createModalFrame('推荐人列表','{:Url('stair',['uid'=>$vo['uid']])}',{'w':800})">
-                                            <i class="fa fa-street-view"></i>
-                                            {$vo.stair}
-                                        </button>
-                                    </td>
-                                    <td class="text-center">
-                                        {$vo.second}
-                                    </td>
-                                    <td class="text-center">
-                                        {$vo.order_stair}
-                                    </td>
-                                    <td class="text-center">
-                                        {$vo.order_second}
-                                    </td>
-                                    <td class="text-center">
-                                        <button class="btn btn-white  btn-xs"  onclick="$eb.createModalFrame('佣金记录','{:Url('now_money',['uid'=>$vo['uid']])}',{'w':800})">
-                                            <i class="fa fa-dollar"></i>
-                                            {$vo.now_money}
-                                        </button>
-                                    </td>
+
+
+
                                     <td class="text-center">
                                         {if condition="$vo['subscribe']"}
                                         关注
@@ -401,11 +259,7 @@
                                         未关注
                                         {/if}
                                     </td>
-                                    <td class="text-center">
-                                        {if (isset($vo.qr_code) && isset($vo.qr_code.url))}
-                                        <img src="{$vo.qr_code.url}" alt="{$vo.nickname}" title="{$vo.nickname}" style="width:50px;height: 50px;cursor: pointer;" class="head_image" data-image="{$vo.qr_code.url}">
-                                        {/if}
-                                    </td>
+
                                     <td class="text-center">
                                         <?php if(!is_array($groupList)){ ?>
                                             无
@@ -596,6 +450,7 @@
         $('input[name=export]').val(0);
         $('#form').submit();
     });
+    //发优惠券
     $('.grant').on('click',function (e) {
         var chk_value =[];
         var batch = $('#batch').val();
@@ -616,7 +471,7 @@
             }
         }
         var str = chk_value.join(',');
-        var url = "http://"+window.location.host+"/admin/store.store_coupon/grant/id/"+str;
+        var url = "http://"+window.location.host+"/admin/ump.store_coupon/grant/id/"+str;
         $eb.createModalFrame(this.innerText,url,{'w':800});
     })
     $('.news').on('click',function (e) {
@@ -639,7 +494,7 @@
             }
         }
         var str = chk_value.join(',');
-        var url = "http://"+window.location.host+"/admin/wechat.wechat_news_category/send_news/id/"+str;
+        var url = "{:Url('wechat.wechat_news_category/send_news')}?id="+str;
         $eb.createModalFrame(this.innerText,url,{'w':800});
     })
     $('.synchro').on('click',function(){

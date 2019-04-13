@@ -3,7 +3,7 @@
 namespace app\admin\controller\wechat;
 
 use app\admin\controller\AuthController;
-use app\admin\library\FormBuilder;
+use service\FormBuilder as Form;
 use service\UtilService as Util;
 use service\JsonService as Json;
 use service\WechatTemplateService;
@@ -32,10 +32,15 @@ class WechatTemplate extends AuthController
         $this->assign('where',$where);
         $this->assign(WechatTemplateModel::SystemPage($where));
         $industry = Cache::tag($this->cacheTag)->remember('_wechat_industry',function(){
-            $cache = WechatTemplateService::getIndustry();
-            if(!$cache) return [];
-            Cache::tag($this->cacheTag,['_wechat_industry']);
-            return $cache->toArray();
+            try{
+                $cache = WechatTemplateService::getIndustry();
+                if(!$cache) return [];
+                Cache::tag($this->cacheTag,['_wechat_industry']);
+                return $cache->toArray();
+            }catch (\Exception $e){
+                return $e->getMessage();
+            }
+
         },0)?:[];
         !is_array($industry) && $industry = [];
         $this->assign('industry',$industry);
@@ -48,17 +53,15 @@ class WechatTemplate extends AuthController
      */
     public function create()
     {
-        $this->assign(['title'=>'添加模板消息','action'=>Url::build('save'),'rules'=>$this->rules()->getContent()]);
-        return $this->fetch('public/common_form');
-    }
-    public function rules()
-    {
-        FormBuilder::text('tempkey','模板编号');
-        FormBuilder::text('tempid','模板ID');
-        FormBuilder::text('name','模板名');
-        FormBuilder::textarea('content','回复内容');
-        FormBuilder::radio('status','状态',[['label'=>'开启','value'=>1],['label'=>'关闭','value'=>0]],0);
-        return FormBuilder::builder();
+        $f = array();
+        $f[] = Form::input('tempkey','模板编号');
+        $f[] = Form::input('tempid','模板ID');
+        $f[] = Form::input('name','模板名');
+        $f[] = Form::input('content','回复内容')->type('textarea');
+        $f[] = Form::radio('status','状态',1)->options([['label'=>'开启','value'=>1],['label'=>'关闭','value'=>0]]);
+        $form = Form::make_post_form('添加模板消息',$f,Url::build('save'));
+        $this->assign(compact('form'));
+        return $this->fetch('public/form-builder');
     }
     public function save(Request $request)
     {
@@ -90,23 +93,16 @@ class WechatTemplate extends AuthController
         if(!$id) return $this->failed('数据不存在');
         $product = WechatTemplateModel::get($id);
         if(!$product) return Json::fail('数据不存在!');
-        $this->assign([
-            'title'=>'编辑模板消息','rules'=>$this->read($id)->getContent(),
-            'action'=>Url::build('update',array('id'=>$id))
-        ]);
-        return $this->fetch('public/common_form');
+        $f = array();
+        $f[] = Form::input('tempkey','模板编号',$product->getData('tempkey'))->disabled(1);
+        $f[] = Form::input('name','模板名',$product->getData('name'))->disabled(1);
+        $f[] = Form::input('tempid','模板ID',$product->getData('tempid'));
+        $f[] = Form::radio('status','状态',$product->getData('status'))->options([['label'=>'开启','value'=>1],['label'=>'关闭','value'=>0]]);
+        $form = Form::make_post_form('编辑模板消息',$f,Url::build('update',compact('id')));
+        $this->assign(compact('form'));
+        return $this->fetch('public/form-builder');
     }
-    public function read($id)
-    {
-        if(!$id) return $this->failed('数据不存在');
-        $product = WechatTemplateModel::get($id);
-        if(!$product) return Json::fail('数据不存在!');
-        FormBuilder::text('tempkey','模板编号',$product->getData('tempkey'))->readonly();
-        FormBuilder::text('name','模板名',$product->getData('name'))->readonly();
-        FormBuilder::text('tempid','模板ID',$product->getData('tempid'));
-        FormBuilder::radio('status','状态',[['value'=>1,'label'=>'开启'],['value'=>0,'label'=>'关闭']],$product->getData('status'));
-        return FormBuilder::builder();
-    }
+
     public function update(Request $request, $id)
     {
         $data = Util::postMore([

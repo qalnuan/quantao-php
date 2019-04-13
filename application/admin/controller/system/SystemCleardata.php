@@ -1,7 +1,7 @@
 <?php
 /**
  * Created by PhpStorm.
- * User: liying
+ * User: sugar1569
  * Date: 2018/5/24
  * Time: 10:58
  */
@@ -10,158 +10,145 @@ namespace app\admin\controller\system;
 
 
 use app\admin\controller\AuthController;
-use app\admin\model\user\User;
-use app\admin\model\wechat\WechatUser;
 use service\JsonService as Json;
 use think\db;
-use app\admin\controller\system\Clear;
-class SystemCleardata  extends AuthController
+use think\Config;
+/**
+ * 清除默认数据理控制器
+ * Class SystemclearData
+ * @package app\admin\controller\system
+ *
+ */
+class SystemclearData  extends AuthController
 {
-  public function index(){
 
+    public function index(){
       return $this->fetch();
-  }
-  
-    //  清除用户相关信息	 截断表
-    public function UserRelevant(){
-        SystemCleardata::ClearData('eb_user_recharge',1);
-        SystemCleardata::ClearData('eb_user_address',1);
-        SystemCleardata::ClearData('eb_user_bill',1);
-        SystemCleardata::ClearData('eb_user_enter',1);
-        SystemCleardata::ClearData('eb_user_extract',1);
-        SystemCleardata::ClearData('eb_user_notice',1);
-        SystemCleardata::ClearData('eb_user_notice_see',1);
-        SystemCleardata::ClearData('eb_wechat_qrcode',1);
-        SystemCleardata::ClearData('eb_wechat_message',1);
-        SystemCleardata::ClearData('eb_store_coupon_user',1);
-        SystemCleardata::ClearData('eb_store_coupon_issue_user',1);
-        SystemCleardata::ClearData('eb_store_bargain_user',1);
-        SystemCleardata::ClearData('eb_store_bargain_user_help',1);
-        SystemCleardata::ClearData('eb_store_product_reply',1);
+    }
+    //清除用户数据
+    public function userRelevantData(){
+        self::clearData('user_recharge',1);
+        self::clearData('user_address',1);
+        self::clearData('user_bill',1);
+        self::clearData('user_enter',1);
+        self::clearData('user_extract',1);
+        self::clearData('user_notice',1);
+        self::clearData('user_notice_see',1);
+        self::clearData('wechat_qrcode',1);
+        self::clearData('wechat_message',1);
+        self::clearData('store_visit',1);
+        self::clearData('store_coupon_user',1);
+        self::clearData('store_coupon_issue_user',1);
+        self::clearData('store_bargain_user',1);
+        self::clearData('store_bargain_user_help',1);
+        self::clearData('store_product_reply',1);
+        self::clearData('routine_qrcode',1);
+        self::clearData('routine_form_id',1);
         $this->delDirAndFile('./public/uploads/store/comment');
-        SystemCleardata::ClearData('eb_store_product_relation',1);
+        self::clearData('store_product_relation',1);
         return Json::successful('清除数据成功!');
     }
-	//清除商品信息  截断表
-    public function  storedata(){
-        SystemCleardata::ClearData('eb_store_coupon',1);
-        SystemCleardata::ClearData('eb_routine_form_id',1);
-        SystemCleardata::ClearData('eb_routine_access_token',1);
-        SystemCleardata::ClearData('eb_store_coupon_issue',1);
-        SystemCleardata::ClearData('eb_store_bargain',1);
-        SystemCleardata::ClearData('eb_store_combination',1);
-        SystemCleardata::ClearData('eb_store_product_attr',1);
-        SystemCleardata::ClearData('eb_store_product_attr_result',1);
-        SystemCleardata::ClearData('eb_store_product_attr_value',1);
-        SystemCleardata::ClearData('eb_store_seckill',1);
-        SystemCleardata::ClearData('eb_store_product',1);
-        SystemCleardata::ClearData('eb_store_visit',1);
-        $this->delDirAndFile('./public/uploads/store/product');
-
+    //清除商城数据
+    public function storeData(){
+        self::clearData('store_coupon',1);
+        self::clearData('store_coupon_issue',1);
+        self::clearData('store_bargain',1);
+        self::clearData('store_combination',1);
+        self::clearData('store_combination_attr',1);
+        self::clearData('store_combination_attr_result',1);
+        self::clearData('store_combination_attr_value',1);
+        self::clearData('store_product_attr',1);
+        self::clearData('store_product_attr_result',1);
+        self::clearData('store_product_attr_value',1);
+        self::clearData('store_seckill',1);
+        self::clearData('store_seckill_attr',1);
+        self::clearData('store_seckill_attr_result',1);
+        self::clearData('store_seckill_attr_value',1);
+        self::clearData('store_product',1);
+        self::clearData('store_visit',1);
         return Json::successful('清除数据成功!');
     }
-	
-	//清除商品分类  截断表
-    public function categorydata(){
-        SystemCleardata::ClearData('eb_store_category',1);
-        $this->delDirAndFile('./public/uploads/store/product');
+    //清除产品分类
+    public function categoryData(){
+        self::clearData('store_category',1);
         return Json::successful('清除数据成功!');
     }
-	
-	//  清除订单  截断表
-    public function orderdata(){
-        SystemCleardata::ClearData('eb_store_order',1);
-        SystemCleardata::ClearData('eb_store_order_cart_info',1);
-        SystemCleardata::ClearData('eb_store_order_copy',1);
-        SystemCleardata::ClearData('eb_store_order_status',1);
-        SystemCleardata::ClearData('eb_store_pink',1);
-        SystemCleardata::ClearData('eb_store_cart',1);
+    //清除订单数据
+    public function orderData(){
+        self::clearData('store_order',1);
+        self::clearData('store_order_cart_info',1);
+        self::clearData('store_order_status',1);
+        self::clearData('store_pink',1);
+        self::clearData('store_cart',1);
+        self::clearData('store_order_status',1);
         return Json::successful('清除数据成功!');
     }
-	
-	//清除客服表 截断表
-    public function kefudata(){
-        SystemCleardata::ClearData('eb_store_service',1);
+    //清除客服数据
+    public function kefuData(){
+        self::clearData('store_service',1);
         $this->delDirAndFile('./public/uploads/store/service');
-        SystemCleardata::ClearData('eb_store_service_log',1);
+        self::clearData('store_service_log',1);
         return Json::successful('清除数据成功!');
     }
 
-	//清除用户  截断表
-    public function userdate(){
-       SystemCleardata::ClearData('eb_user',1);
-        $headimgurl= WechatUser::Where('uid',1)->value('headimgurl');
-        $data['account']='crmeb';
-        $data['pwd']=md5(123456);
-        $data['avatar']=$headimgurl;
-        $data['add_time']=time();
-        $data['status']=1;
-        $data['level']=0;
-        $data['user_type']="wechat";
-        $data['is_promoter']=1;
-//        User::create($data);
+    //清除微信管理数据
+    public function wechatData(){
+        self::clearData('wechat_media',1);
+        self::clearData('wechat_reply',1);
+        self::clearData('cache',1);
+        $this->delDirAndFile('./public/uploads/wechat');
         return Json::successful('清除数据成功!');
     }
-	
-	//清除微信相关信息  截断表
-    public function wechatdata(){
-        SystemCleardata::ClearData('eb_wechat_media',1);
-        SystemCleardata::ClearData('eb_wechat_reply',1);
-        SystemCleardata::ClearData('eb_wechat_news_content',1);
-        SystemCleardata::ClearData('eb_wechat_news',1);
-        SystemCleardata::ClearData('eb_wechat_news_category',1);
-       $this->delDirAndFile('./public/uploads/wechat');
-        return Json::successful('清除数据成功!');
-    }
-	
-	//清除所有上传文件 
-    public function uploaddata(){
-        $this->delDirAndFile('./public/uploads');
+    //清除所有附件
+    public function uploadData(){
+        self::clearData('system_attachment',1);
+        self::clearData('system_attachment_category',1);
+        $this->delDirAndFile('./public/uploads/attach/');
+        $this->delDirAndFile('./public/uploads/editor/');
         return Json::successful('清除上传文件成功!');
     }
-	
-	//清除微信用户  截断表
-    public function  wechatuserdata(){
-        $data= WechatUser::get(1)->toArray();
-        SystemCleardata::ClearData('eb_wechat_user',1);
-        unset($data['uid']);
-//        WechatUser::set($data);
+    //清除微信用户
+    public function  wechatuserData(){
+        self::clearData('wechat_user',1);
+        self::clearData('user',1);
         return Json::successful('清除数据成功!');
     }
-	
-	//清除文章分类和上传文件分类图片   截断表
+    //清除内容分类
     public function articledata(){
-        SystemCleardata::ClearData('eb_article_category',1);
-        $this->delDirAndFile('./public/uploads/article/');
+        self::clearData('article_category',1);
+        self::clearData('article',1);
+        self::clearData('article_content',1);
         return Json::successful('清除数据成功!');
     }
-	
-	//表截断和删除   table_name 表名 status  状态  1 截断 0 删除
-    public  function  ClearData($table_name = '',$status = 0){
-        try{
-            if($status){
-                db::query('TRUNCATE TABLE '.$table_name);
-            }else{
-                db::query('DELETE FROM'.$table_name);
-            }
-        }catch (\Exception $e){
-            return $e->getMessage();
-        }
+    //清除系统记录
+    public function systemdata(){
+        self::clearData('system_notice_admin',1);
+        self::clearData('system_log',1);
+        return Json::successful('清除数据成功!');
     }
-	
-	//删除文件
-    function delDirAndFile($dirName = '',$subdir=true){
-//        if ($handle = opendir("$dirName")){
-//            while(false !== ($item = readdir($handle))){
-//                if($item != "." && $item != ".."){
-//                    if(is_dir("$dirName/$item"))
-//                        $this->delDirAndFile("$dirName/$item",false);
-//                    else
-//                        @unlink("$dirName/$item");
-//                }
-//            }
-//            closedir($handle);
-//            if(!$subdir) @rmdir($dirName);
-//        }
+    //清除制定表数据
+    public  function  clearData($table_name,$status){
+        $table_name = Config::get('database')['prefix'].$table_name;
+        if($status){
+            @db::query('TRUNCATE TABLE '.$table_name);
+        }else{
+            @db::query('DELETE FROM'.$table_name);
+        }
+
+    }
+    //递归删除文件
+    function delDirAndFile($dirName,$subdir=true){
+        if ($handle = @opendir("$dirName")){
+            while(false !== ($item = readdir($handle))){
+                if($item != "." && $item != ".."){
+                    if(is_dir("$dirName/$item"))
+                        $this->delDirAndFile("$dirName/$item",false);
+                    else
+                        @unlink("$dirName/$item");
+                }
+            }
+            closedir($handle);
+            if(!$subdir) @rmdir($dirName);
+        }
     }
 }

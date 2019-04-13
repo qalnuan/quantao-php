@@ -17,13 +17,7 @@ class StoreSeckill extends ModelBasic
     {
         return json_decode($value,true)?:[];
     }
-    
-    public static function getSubstrUTf8($str,$utf8len=100,$chaet='UTF-8',$file='....'){
-        if(mb_strlen($str,$chaet)>$utf8len){
-            $str=mb_substr($str,0,$utf8len,$chaet).$file;
-        }
-        return $str;
-    }
+
 
     /**
      * 获取所有秒杀产品
@@ -45,19 +39,14 @@ class StoreSeckill extends ModelBasic
      * @param string $field
      * @return array
      */
-    public static function getHotList($limit = 0,$field = 'id,product_id,image,title,price,ot_price,start_time,stop_time,stock,sales')
+    public static function getHotList($limit = 0,$field = 'id,product_id,image,title,price,ot_price,start_time,stop_time,stock')
     {
         $time = time();
         $model = self::where('is_hot',1)->where('is_del',0)->where('status',1)->where('stock','>',0)->field($field)
             ->where('start_time','<',$time)->where('stop_time','>',$time)->order('sort DESC,add_time DESC');
         if($limit) $model->limit($limit);
         $list = $model->select();
-        if(count($list)) {
-            foreach ($list as &$value){
-                $value['proportion']=bcmul(bcdiv($value['sales'],bcadd($value['sales'],$value['stock'],0),2),100,2);
-            }
-            return $list->toArray();
-        }
+        if($list) return $list->toArray();
         else return [];
     }
 
@@ -108,7 +97,7 @@ class StoreSeckill extends ModelBasic
     }
 
     /**
-     * 修改库存和销量
+     * 修改秒杀库存
      * @param int $num
      * @param int $seckillId
      * @return bool
@@ -118,4 +107,16 @@ class StoreSeckill extends ModelBasic
         return $res;
     }
 
+    /**
+     * TODO  判断是否可以出售
+     * @param $id
+     * @param int $cartNum
+     * @return int|string
+     * @throws \think\Exception
+     */
+    public static function isValidCartSeckill($id,$cartNum = 1){
+        if(!$id) return false;
+        $time = time();
+        return self::where('id',$id)->where('is_del',0)->where('status',1)->where('stock','>',$cartNum)->where('start_time','<',$time)->where('stop_time','>',$time)->count();
+    }
 }

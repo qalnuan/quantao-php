@@ -8,12 +8,10 @@
 namespace app\wap\model\store;
 
 
-use app\admin\model\store\StoreCombination;
+use app\wap\model\store\StoreCombination;
 use app\wap\model\store\StoreOrderCartInfo;
 use app\wap\model\store\StoreOrderStatus;
 use app\wap\model\store\StoreProductReply;
-use app\routine\model\routine\RoutineFormId;
-use app\routine\model\routine\RoutineTemplate;
 use app\wap\model\user\User;
 use app\wap\model\user\UserAddress;
 use app\wap\model\user\UserBill;
@@ -166,7 +164,7 @@ class StoreOrder extends ModelBasic
         Cache::clear('user_order_'.$uid.$key);
     }
 
-    public static function cacheKeyCreateOrder($uid,$key,$addressId,$payType,$useIntegral = false,$couponId = 0,$mark = '',$combinationId = 0,$pinkId = 0,$seckill_id=0)
+    public static function cacheKeyCreateOrder($uid,$key,$addressId,$payType,$useIntegral = false,$couponId = 0,$mark = '',$combinationId = 0,$pinkId = 0,$seckill_id=0,$bargainId = 0)
     {
         if(!array_key_exists($payType,self::$payType)) return self::setErrorInfo('选择支付方式有误!');
         if(self::be(['unique'=>$key,'uid'=>$uid])) return self::setErrorInfo('请勿重复提交订单');
@@ -198,11 +196,9 @@ class StoreOrder extends ModelBasic
             $couponPrice = 0;
         }
         if(!$res1) return self::setErrorInfo('使用优惠劵失败!');
-
         //是否包邮
         if((isset($other['offlinePostage'])  && $other['offlinePostage'] && $payType == 'offline')) $payPostage = 0;
         $payPrice = bcadd($payPrice,$payPostage,2);
-
         //积分抵扣
         $res2 = true;
         if($useIntegral && $userInfo['integral'] > 0){
@@ -217,7 +213,7 @@ class StoreOrder extends ModelBasic
                 $res2 = false !== User::bcDec($userInfo['uid'],'integral',$usedIntegral,'uid');
                 $payPrice = 0;
             }
-            $res2 = $res2 && false != UserBill::expend('积分抵扣',$uid,'integral','deduction',$usedIntegral,$key,$userInfo['integral'],'购买商品使用'.floatval($usedIntegral).'积分抵扣'.floatval($deductionPrice).'元');
+            $res2 = $res2 && false != UserBill::expend('积分抵扣',$uid,'integral','deduction',$usedIntegral,$key,bcsub($userInfo['integral'],$usedIntegral,2),'购买商品使用'.floatval($usedIntegral).'积分抵扣'.floatval($deductionPrice).'元');
         }else{
             $deductionPrice = 0;
             $usedIntegral = 0;
@@ -228,9 +224,9 @@ class StoreOrder extends ModelBasic
         $totalNum = 0;
         $gainIntegral = 0;
         foreach ($cartInfo as $cart){
-            $cartIds[] = $cart['id'];
-            $totalNum += $cart['cart_num'];
-            $gainIntegral = bcadd($gainIntegral,$cart['productInfo']['give_integral'],2);
+                $cartIds[] = $cart['id'];
+                $totalNum += $cart['cart_num'];
+                $gainIntegral = bcadd($gainIntegral,$cart['productInfo']['give_integral'],2);
         }
         $orderInfo = [
             'uid'=>$uid,
@@ -255,6 +251,7 @@ class StoreOrder extends ModelBasic
             'combination_id'=>$combinationId,
             'pink_id'=>$pinkId,
             'seckill_id'=>$seckill_id,
+            'bargain_id'=>$bargainId,
             'cost'=>$priceGroup['costPrice'],
             'unique'=>$key
         ];
@@ -264,8 +261,11 @@ class StoreOrder extends ModelBasic
         foreach ($cartInfo as $cart){
             //减库存加销量
             if($combinationId) $res5 = $res5 && StoreCombination::decCombinationStock($cart['cart_num'],$combinationId);
+            else if($seckill_id) $res5 = $res5 && StoreSeckill::decSeckillStock($cart['cart_num'],$seckill_id);
+            else if($bargainId) $res5 = $res5 && StoreBargain::decBargainStock($cart['cart_num'],$bargainId);
             else $res5 = $res5 && StoreProduct::decProductStock($cart['cart_num'],$cart['productInfo']['id'],isset($cart['productInfo']['attrInfo']) ? $cart['productInfo']['attrInfo']['unique']:'');
-        }
+
+         }
         //保存购物车商品信息
         $res4 = false !== StoreOrderCartInfo::setCartInfo($order['id'],$cartInfo);
         //购物车状态修改
@@ -319,7 +319,7 @@ class StoreOrder extends ModelBasic
             return self::setErrorInfo('余额不足'.floatval($orderInfo['pay_price']));
         self::beginTrans();
         $res1 = false !== User::bcDec($uid,'now_money',$orderInfo['pay_price'],'uid');
-        $res2 = UserBill::expend('购买商品',$uid,'now_money','pay_product',$orderInfo['pay_price'],$orderInfo['id'],$userInfo['now_money'],'余额支付'.floatval($orderInfo['pay_price']).'元购买商品');
+        $res2 = UserBill::expend('购买商品',$uid,'now_money','pay_product',$orderInfo['pay_price'],$orderInfo['id'],bcsub($userInfo['now_money'],$orderInfo['pay_price'],2),'余额支付'.floatval($orderInfo['pay_price']).'元购买商品');
         $res3 = self::paySuccess($order_id);
         try{
             HookService::listen('yue_pay_product',$userInfo,$orderInfo,false,PaymentBehavior::class);
@@ -391,23 +391,28 @@ class StoreOrder extends ModelBasic
      * @param $notify
      * @return bool
      */
-    public static function paySuccess($orderId,$formId = '')
+    public static function paySuccess($orderId)
     {
         $order = self::where('order_id',$orderId)->find();
         $resPink = true;
+        User::bcInc($order['uid'],'pay_count',1,'uid');
         $res1 = self::where('order_id',$orderId)->update(['paid'=>1,'pay_time'=>time()]);
         if($order->combination_id && $res1 && !$order->refund_status) $resPink = StorePink::createPink($order);//创建拼团
         $oid = self::where('order_id',$orderId)->value('id');
         StoreOrderStatus::status($oid,'pay_success','用户付款成功');
-        if($formId == '') $formId = RoutineFormId::getFormIdOne($order['uid']);
-        $data['keyword1']['value'] =  $orderId;
-        $data['keyword2']['value'] =  date('Y-m-d H:i:s',time());
-        $data['keyword3']['value'] =  '已支付';
-        $data['keyword4']['value'] =  $order['pay_price'];
-        if($order['pay_type'] == 'yue') $data['keyword5']['value'] =  '余额支付';
-        else if($order['pay_type'] == 'weixin') $data['keyword5']['value'] =  '微信支付';
-        RoutineFormId::delFormIdOne($formId);
-        RoutineTemplate::sendTemplate(WechatUser::getOpenId($order['uid']),RoutineTemplate::ORDER_PAY_SUCCESS,'',$data,$formId);
+        WechatTemplateService::sendTemplate(WechatUser::uidToOpenid($order['uid']),WechatTemplateService::ORDER_PAY_SUCCESS, [
+            'first'=>'亲，您购买的商品已支付成功',
+            'keyword1'=>$orderId,
+            'keyword2'=>$order['pay_price'],
+            'remark'=>'点击查看订单详情'
+        ],Url::build('wap/My/order',['uni'=>$orderId],true,true));
+        WechatTemplateService::sendAdminNoticeTemplate([
+            'first'=>"亲,您有一个新订单 \n订单号:{$order['order_id']}",
+            'keyword1'=>'新订单',
+            'keyword2'=>'已支付',
+            'keyword3'=>date('Y/m/d H:i',time()),
+            'remark'=>'请及时处理'
+        ]);
         $res = $res1 && $resPink;
         return false !== $res;
     }
@@ -476,7 +481,7 @@ class StoreOrder extends ModelBasic
     {
         $openid = WechatUser::uidToOpenid($order['uid']);
         WechatTemplateService::sendTemplate($openid,WechatTemplateService::ORDER_TAKE_SUCCESS,[
-            'first'=>'亲，您的订单以成功签收，快去评价一下吧',
+            'first'=>'亲，您的订单已成功签收，快去评价一下吧',
             'keyword1'=>$order['order_id'],
             'keyword2'=>'已收货',
             'keyword3'=>date('Y/m/d H:i',time()),
@@ -566,7 +571,7 @@ class StoreOrder extends ModelBasic
             $status['_msg'] = '已为您退款,感谢您的支持';
             $status['_class'] = 'state-sqtk';
         }else if(!$order['status']){
-            if($order['pink_id']){
+            if(isset($order['pink_id'])){
                 if(StorePink::where('id',$order['pink_id'])->where('status',1)->count()){
                     $status['_type'] = 1;
                     $status['_title'] = '拼团中';
@@ -676,13 +681,13 @@ class StoreOrder extends ModelBasic
 
     public static function getOrderStatusNum($uid)
     {
-        $noBuy = self::where('uid',$uid)->where('paid',0)->where('is_del',0)->where('pay_type','<>','offline')->count();
-        $noPostageNoPink = self::where('o.uid',$uid)->alias('o')->where('o.paid',1)->where('o.pink_id',0)->where('o.is_del',0)->where('o.status',0)->where('o.pay_type','<>','offline')->count();
-        $noPostageYesPink = self::where('o.uid',$uid)->alias('o')->join('StorePink p','o.pink_id = p.id')->where('p.status',2)->where('o.paid',1)->where('o.is_del',0)->where('o.status',0)->where('o.pay_type','<>','offline')->count();
-        $noPostage = bcadd($noPostageNoPink,$noPostageYesPink);
-        $noTake = self::where('uid',$uid)->where('paid',1)->where('is_del',0)->where('status',1)->where('pay_type','<>','offline')->count();
-        $noReply = self::where('uid',$uid)->where('paid',1)->where('is_del',0)->where('status',2)->count();
-        $noPink = self::where('o.uid',$uid)->alias('o')->join('StorePink p','o.pink_id = p.id')->where('p.status',1)->where('o.paid',1)->where('o.is_del',0)->where('o.status',0)->where('o.pay_type','<>','offline')->count();
+        $noBuy = self::where('uid',$uid)->where('paid',0)->where('is_del',0)->where('pay_type','<>','offline')->where('refund_status',0)->count();
+        $noPostageNoPink = self::where('o.uid',$uid)->alias('o')->where('o.paid',1)->where('o.pink_id',0)->where('o.is_del',0)->where('o.status',0)->where('o.pay_type','<>','offline')->where('o.refund_status',0)->count();
+        $noPostageYesPink = self::where('o.uid',$uid)->alias('o')->join('StorePink p','o.pink_id = p.id')->where('p.status',2)->where('o.paid',1)->where('o.is_del',0)->where('o.status',0)->where('o.refund_status',0)->where('o.pay_type','<>','offline')->count();
+        $noPostage = bcadd($noPostageNoPink,$noPostageYesPink,0);
+        $noTake = self::where('uid',$uid)->where('paid',1)->where('is_del',0)->where('status',1)->where('pay_type','<>','offline')->where('refund_status',0)->count();
+        $noReply = self::where('uid',$uid)->where('paid',1)->where('is_del',0)->where('status',2)->where('refund_status',0)->count();
+        $noPink = self::where('o.uid',$uid)->alias('o')->join('StorePink p','o.pink_id = p.id')->where('p.status',1)->where('o.paid',1)->where('o.is_del',0)->where('o.status',0)->where('o.pay_type','<>','offline')->where('o.refund_status',0)->count();
         return compact('noBuy','noPostage','noTake','noReply','noPink');
     }
 
@@ -692,7 +697,7 @@ class StoreOrder extends ModelBasic
             $userInfo = User::getUserInfo($order['uid']);
             ModelBasic::beginTrans();
             $res1 = false != User::where('uid',$userInfo['uid'])->update(['integral'=>bcadd($userInfo['integral'],$order['gain_integral'],2)]);
-            $res2 = false != UserBill::income('购买商品赠送积分',$order['uid'],'integral','gain',$order['gain_integral'],$order['id'],$userInfo['integral'],'购买商品赠送'.floatval($order['gain_integral']).'积分');
+            $res2 = false != UserBill::income('购买商品赠送积分',$order['uid'],'integral','gain',$order['gain_integral'],$order['id'],bcadd($userInfo['integral'],$order['gain_integral'],2),'购买商品赠送'.floatval($order['gain_integral']).'积分');
             $res = $res1 && $res2;
             ModelBasic::checkTrans($res);
             return $res;

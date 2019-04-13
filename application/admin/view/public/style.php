@@ -1,11 +1,11 @@
 <!--<script type="text/javascript" src="/static/plug/basket.js"></script>-->
-<script type="text/javascript" src="{__ADMIN_PATH}/plug/requirejs/require.js"></script>
+<script type="text/javascript" src="{__PLUG_PATH}requirejs/require.js"></script>
 <?php /*  <script type="text/javascript" src="/static/plug/requirejs/require-basket-load.js"></script>  */ ?>
 <script>
     requirejs.config({
         map: {
             '*': {
-                'css': '/public/static/plug/requirejs/require-css.js'
+                'css': '{__PUBLIC_PATH}static/plug/requirejs/require-css.js'
             }
         },
         shim:{
@@ -16,7 +16,7 @@
                 deps:['css!layercss']
             }
         },
-        baseUrl:'//'+location.host+'/public',
+        baseUrl:'//'+location.hostname+'{__PUBLIC_PATH}',
         paths: {
             'static':'static',
             'system':'system',
@@ -27,14 +27,14 @@
             'lodash':'static/plug/lodash',
             'layer':'static/plug/layer/layer',
             'layercss':'static/plug/layer/theme/default/layer',
-            'jquery':'static/plug/jquery-1.10.2.min',
+            'jquery':'static/plug/jquery/jquery.min',
             'moment':'static/plug/moment',
-            'mpBuilder':'system/util/mpBuilder',
             'sweetalert':'static/plug/sweetalert2/sweetalert2.all.min'
 
         },
         basket: {
-            excludes:['system/util/mpFormBuilder','system/js/index','system/util/mpVueComponent','system/util/mpVuePackage']
+            excludes:['system/js/index','system/util/mpVueComponent','system/util/mpVuePackage']
+//            excludes:['system/util/mpFormBuilder','system/js/index','system/util/mpVueComponent','system/util/mpVuePackage']
         }
     });
 </script>

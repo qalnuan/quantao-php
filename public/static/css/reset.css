@@ -24,7 +24,11 @@ input{line-height: normal;}
 .fr{ float:right; }
 .clear{ clear:both; height: 0; line-height: 0; font-size: 0; }
 .clearfix:after{ content:"."; display:block; height:0; visibility:hidden; clear:both; overflow: hidden; }
-.flex{ display:-webkit-flex; display:flex; }
+.flex{     display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;}
 .con-cell{ display: table-cell; height: 100%; vertical-align: middle; }
 .old-price{text-decoration: line-through;}
 

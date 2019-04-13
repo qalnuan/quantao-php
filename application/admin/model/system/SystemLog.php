@@ -11,6 +11,8 @@ namespace app\admin\model\system;
 use traits\ModelTrait;
 use basic\ModelBasic;
 use think\Request;
+use app\admin\model\system\SystemMenus;
+use app\admin\model\system\SystemAdmin;
 
 /**
  * 管理员操作记录
@@ -82,6 +84,8 @@ class SystemLog extends ModelBasic
         $model = new self;
         $model = $model->alias('l');
         if($where['pages'] !== '') $model = $model->where('l.page','LIKE',"%$where[pages]%");
+        if($where['path'] !== '') $model = $model->where('l.path','LIKE',"%$where[path]%");
+        if($where['ip'] !== '') $model = $model->where('l.ip','LIKE',"%$where[ip]%");
         if($where['admin_id'] != '')
             $adminIds = $where['admin_id'];
         else
@@ -95,5 +99,13 @@ class SystemLog extends ModelBasic
         $model->where('l.type','system');
         $model = $model->order('l.id desc');
         return self::page($model,$where);
+    }
+    /**
+     * 删除超过90天的日志
+     */
+    public static function deleteLog(){
+        $model = new self;
+        $model->where('add_time','<',time()-7776000);
+        $model->delete();
     }
 }

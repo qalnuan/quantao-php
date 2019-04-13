@@ -6,18 +6,18 @@ use app\routine\model\routine\RoutineCode;
 use app\routine\model\routine\RoutineFormId;
 use app\routine\model\routine\RoutineTemplate;
 use app\routine\model\store\StoreCombination;
-use behavior\routine\RoutineBehavior;
 use service\JsonService;
 use service\GroupDataService;
+use service\MiniProgramService;
 use service\RoutineBizDataCrypt;
 use service\SystemConfigService;
 use service\UploadService;
 use service\UtilService;
 use think\Request;
-use behavior\wap\StoreProductBehavior;
 use service\WechatTemplateService;
 use service\CacheService;
 use service\HookService;
+use behavior\StoreProductBehavior;
 use think\Url;
 use app\routine\model\store\StoreCouponUser;
 use app\routine\model\store\StoreOrder;
@@ -47,41 +47,31 @@ use app\admin\model\system\SystemConfig;
 use app\routine\model\store\StoreBargain;
 use app\routine\model\store\StoreBargainUser;
 use app\routine\model\store\StoreBargainUserHelp;
-use app\admin\model\wechat\WechatNews;
+use app\routine\model\article\Article as ArticleModel;
+
 /**
  * 小程序接口
  * Class AuthApi
  * @package app\routine\controller
  *
- *
- *
- *
- * https://qipei.9gt.net/routine/auth_api/index  首页
- * https://qipei.9gt.net/routine/auth_api/store  分类页面
- * https://qipei.9gt.net/routine/auth_api/get_pid_cate  一级分类
- * https://qipei.9gt.net/routine/auth_api/get_id_cate  二级分类
- * https://qipei.9gt.net/routine/auth_api/get_product_list  分类页面产品
  */
 class AuthApi extends AuthController{
-    public function test(){
-        $bargain = StoreBargain::getList();
-        $bargain = StoreBargainUser::getUserList($bargain);
-        return JsonService::successful($bargain);
-    }
+
     /**
      * 获取用户信息
      * @return \think\response\Json
      */
-    public function get_user_info(){
-        return JsonService::successful($this->userInfo);
-    }
+//    public function get_user_info(){
+//        return JsonService::successful($this->userInfo);
+//    }
 
     /**
      * 获取退款理由
      */
     public function get_refund_reason(){
-        $reason = SystemConfig::getValue('refund_reason')?:[];//退款理由
-        $reason = explode('=',$reason);
+        $reason = SystemConfig::getValue('stor_reason')?:[];//退款理由
+        $reason = str_replace("\r\n","\n",$reason);//防止不兼容
+        $reason = explode("\n",$reason);
         return JsonService::successful($reason);
     }
 
@@ -90,33 +80,30 @@ class AuthApi extends AuthController{
      */
     public function get_user_extract_bank(){
         $extractBank = SystemConfig::getValue('user_extract_bank')?:[];//提现银行
-        $extractBank = explode('=',$extractBank);
+        $extractBank = str_replace("\r\n","\n",$extractBank);//防止不兼容
+        $extractBank = explode("\n",$extractBank);
         return JsonService::successful($extractBank);
     }
     /**
      * 首页
      */
     public function index(){
-        $banner = GroupDataService::getData('store_home_banner')?:[];//banner图
-        $pinkbanner = SystemConfigService::get('collage_banner')?:'';//banner图
-        $secbanner = SystemConfigService::get('seckill_banner')?:'';//banner图
-        $newbanner = SystemConfigService::get('index_new_banner')?:'';//banner图
+        $banner = GroupDataService::getData('routine_home_banner')?:[];//banner图
+        $menus = GroupDataService::getData('routine_home_menus')?:[];//banner图
         $lovely = GroupDataService::getData('routine_lovely')?:[];//猜你喜欢图
         $best = StoreProduct::getBestProduct('id,image,store_name,cate_id,price,unit_name,sort',8);//精品推荐
-        $new = StoreProduct::getNewProduct('id,image,store_name,cate_id,price,unit_name,sort',10);//今日上新
-        $hot = StoreProduct::getHotProduct('id,image,store_name,cate_id,price,unit_name,sort',6);//猜你喜欢
-        $pink = StoreCombination::getCombinationBest(6);//拼团商品
-        $seckill = StoreSeckill::getHotList(6);//秒杀商品
+        $new = StoreProduct::getNewProduct('id,image,store_name,cate_id,price,unit_name,sort',3);//首发
+        $hot = StoreProduct::getHotProduct('id,image,store_name,cate_id,price,unit_name,sort',8);//热卖
+        $benefit = StoreProduct::getBenefitProduct('id,image,store_name,cate_id,price,ot_price,stock,unit_name,sort',3);//促销
+        $like = StoreProduct::getHotProduct('id,image,store_name,cate_id,price,unit_name,sort',6);//猜你喜欢
         $data['banner'] = $banner;
-        $data['lovely'] = $lovely;
-        $data['pinkbanner'] = $pinkbanner;
-        $data['secbanner'] = $secbanner;
-        $data['newbanner'] = $newbanner;
+        $data['lovely'] = $lovely[0];
+        $data['menus'] = $menus;
         $data['best'] = $best;
         $data['new'] = $new;
         $data['hot'] = $hot;
-        $data['pink'] = $pink;
-        $data['seckill'] = $seckill;
+        $data['benefit'] = $benefit;
+        $data['like'] = $like;
         return JsonService::successful($data);
     }
 
@@ -245,10 +232,11 @@ class AuthApi extends AuthController{
         if($news!=0) $model->where('is_new',1);
         $baseOrder = '';
         if($priceOrder) $baseOrder = $priceOrder == 'desc' ? 'price DESC' : 'price ASC';
-        if($salesOrder) $baseOrder = $salesOrder == 'desc' ? 'sales DESC' : 'sales ASC';
+//        if($salesOrder) $baseOrder = $salesOrder == 'desc' ? 'sales DESC' : 'sales ASC';//真实销量
+        if($salesOrder) $baseOrder = $salesOrder == 'desc' ? 'ficti DESC' : 'ficti ASC';//虚拟销量
         if($baseOrder) $baseOrder .= ', ';
         $model->order($baseOrder.'sort DESC, add_time DESC');
-        $list = $model->limit($first,$limit)->field('id,store_name,cate_id,image,sales,price,stock')->select()->toArray();
+        $list = $model->limit($first,$limit)->field('id,store_name,cate_id,image,sales,ficti,price,stock')->select()->toArray();
         return JsonService::successful($list);
     }
     /**
@@ -263,9 +251,9 @@ class AuthApi extends AuthController{
      * @param Request $request
      */
     public function details(Request $request){
-        $data = UtilService::getMore(['id'],$request);
+        $data = UtilService::postMore(['id'],$request);
         $id = $data['id'];
-        if(!$id || !($storeInfo = StoreProduct::getValidProduct($id))) return JsonService::fail('商品不存在或已下架'. $id);
+        if(!$id || !($storeInfo = StoreProduct::getValidProduct($id))) return JsonService::fail('商品不存在或已下架');
         $storeInfo['userCollect'] = StoreProductRelation::isProductRelation($id,$this->userInfo['uid'],'collect');
         list($productAttr,$productValue) = StoreProductAttr::getProductAttrDetail($id);
         setView($this->userInfo['uid'],$id,$storeInfo['cate_id'],'viwe');
@@ -278,7 +266,7 @@ class AuthApi extends AuthController{
             }
         }
         $data['storeInfo'] = $storeInfo;
-        $data['similarity'] = StoreProduct::cateIdBySimilarityProduct($storeInfo['cate_id'],'id,store_name,image,price,sales',4);
+        $data['similarity'] = StoreProduct::cateIdBySimilarityProduct($storeInfo['cate_id'],'id,store_name,image,price,sales,ficti',4);
         $data['productAttr'] = $productAttr;
         $data['productValue'] = $productValue;
         $data['reply'] = StoreProductReply::getRecProductReply($storeInfo['id']);
@@ -304,6 +292,7 @@ class AuthApi extends AuthController{
      * @return \think\response\Json
      */
     public function confirm_order(Request $request){
+
         $data = UtilService::postMore(['cartId'],$request);
         $cartId = $data['cartId'];
         if(!is_string($cartId) || !$cartId ) return JsonService::fail('请提交购买的商品');
@@ -348,14 +337,10 @@ class AuthApi extends AuthController{
      * @return \think\response\Json
      */
     public function seckill_index(){
-        $lovely = GroupDataService::getData('store_seckill_banner')?:[];//banner图
+        $lovely = GroupDataService::getData('routine_lovely')?:[];//banner图
         $seckill = StoreSeckill::where('is_del',0)->where('status',1)->where('start_time','<',time())->where('stop_time','>',time())->order('sort desc')->select()->toArray();
-        foreach ($seckill as &$value){
-            $value['proportion']=bcmul(bcdiv($value['sales'],bcadd($value['sales'],$value['stock'],0),2),100,2);
-//            $value['title']=StoreSeckill::getSubstrUTf8($value['title'],25);
-        }
         $data['seckill'] = $seckill;
-        $data['lovely'] = $lovely;
+        $data['lovely'] = $lovely[1];
         return JsonService::successful($data);
     }
     /**
@@ -383,28 +368,15 @@ class AuthApi extends AuthController{
      */
     public function my(){
         $this->userInfo['couponCount'] = StoreCouponUser::getUserValidCouponCount($this->userInfo['uid']);
-        $this->userInfo['like'] = StoreProductRelation::getUserIdLike($this->userInfo['uid']);
+        $this->userInfo['like'] = StoreProductRelation::getUserIdCollect($this->userInfo['uid']);;
         $this->userInfo['orderStatusNum'] = StoreOrder::getOrderStatusNum($this->userInfo['uid']);
         $this->userInfo['notice'] = UserNotice::getNotice($this->userInfo['uid']);
-        $this->userInfo['service_phone'] = SystemConfig::getValue('service_phone');
-        $this->userInfo['service_phone_str'] = SystemConfig::getValue('service_phone_str');
+        $this->userInfo['statu'] = (int)SystemConfig::getValue('store_brokerage_statu');
+//        $this->userInfo['service_phone'] = SystemConfig::getValue('service_phone');
+//        $this->userInfo['service_phone_str'] = SystemConfig::getValue('service_phone_str');
         return JsonService::successful($this->userInfo);
     }
 
-
-    /**
-     * 用户签到
-     * @return \think\response\Json
-     */
-    public function user_sign()
-    {
-        $signed = UserSign::checkUserSigned($this->userInfo['uid']);
-        if($signed) return JsonService::fail('已签到');
-        if(false !== $integral = UserSign::sign($this->userInfo))
-            return JsonService::successful('签到获得'.floatval($integral).'积分');
-        else
-            return JsonService::fail('签到失败!');
-    }
     /**
      * 过度查$uniqueId
      * @param string $productId
@@ -682,8 +654,6 @@ class AuthApi extends AuthController{
             }else
                 return JsonService::fail('添加收货地址失败!');
         }
-
-
     }
 
     /**
@@ -698,6 +668,7 @@ class AuthApi extends AuthController{
         }
         return JsonService::successful($addressInfo);
     }
+
 
     /**
      * 获取默认地址
@@ -731,89 +702,6 @@ class AuthApi extends AuthController{
      * @param string $key
      * @return \think\response\Json
      */
-    public function create_order_new()
-    {
-        list($productId,$totalNum,$payPrice,$addressId,$realName,$phoneNo,$couponId,$payType,$useIntegral,$mark,$combinationId,$pinkId,$seckill_id,$formId,$bargainId) = UtilService::getMore([
-            'productId','totalNum','payPrice','addressId','realName','phoneNo','couponId','payType','useIntegral','mark',['combinationId',0],['pinkId',0],['seckill_id',0],['formId',''],['bargainId','']
-        ],Request::instance(),true);
-        
-        $addressInfo['real_name'] = $realName;
-        $addressInfo['phone'] = $phoneNo;
-        $addressInfo['province'] = $this->userInfo['province'];
-        $addressInfo['city'] = $this->userInfo['city'];
-        $addressInfo['district'] = '';
-        $addressInfo['detail'] = '';
-        $addressInfo['is_default'] = 1;
-        $addressInfo['uid'] = $this->userInfo['uid'];
-
-        $payType = strtolower($payType);
-        if ($bargainId) {
-            StoreBargainUser::setBargainUserStatus($bargainId, $this->userInfo['uid']);
-        }
-        //修改砍价状态
-        if ($pinkId) {
-            if (StorePink::getIsPinkUid($pinkId, $this->userInfo['uid'])) {
-                return JsonService::status('ORDER_EXIST', '订单生成失败，你已经在该团内不能再参加了', ['orderId' => StoreOrder::getStoreIdPink($pinkId, $this->userInfo['uid'])]);
-            }
-        }
-
-        if ($pinkId) {
-            if (StoreOrder::getIsOrderPink($pinkId, $this->userInfo['uid'])) {
-                return JsonService::status('ORDER_EXIST', '订单生成失败，你已经参加该团了，请先支付订单', ['orderId' => StoreOrder::getStoreIdPink($pinkId, $this->userInfo['uid'])]);
-            }
-        }
-
-        $order = StoreOrder::cacheKeyCreateOrderNew($this->userInfo['uid'], $productId, $addressId, $addressInfo, $payType, $payPrice, $totalNum, $useIntegral, $couponId, $mark, $combinationId, $pinkId, $seckill_id, $bargainId);
-        $orderId = $order['order_id'];
-        $info = compact('orderId', 'key');
-        if ($orderId) {
-            if ($payType == 'weixin') {
-                $orderInfo = StoreOrder::where('order_id', $orderId)->find();
-                if (!$orderInfo || !isset($orderInfo['paid'])) {
-                    exception('支付订单不存在!');
-                }
-
-                if ($orderInfo['paid']) {
-                    exception('支付已支付!');
-                }
-
-                if ($orderInfo['pay_price'] <= 0) {
-                    if (StoreOrder::jsPayPrice($orderId, $this->userInfo['uid'], $formId)) {
-                        return JsonService::status('success', '微信支付成功', $info);
-                    } else {
-                        return JsonService::status('pay_error', StoreOrder::getErrorInfo());
-                    }
-
-                } else {
-                    try {
-                        $jsConfig = StoreOrder::jsPay($orderId);
-                    } catch (\Exception $e) {
-                        return JsonService::status('pay_error', $e->getMessage(), $info);
-                    }
-                    $info['jsConfig'] = $jsConfig;
-                    return JsonService::status('wechat_pay', '订单创建成功', $info);
-                }
-            } else if ($payType == 'yue') {
-                if (StoreOrder::yuePay($orderId, $this->userInfo['uid'], $formId)) {
-                    return JsonService::status('success', '余额支付成功', $info);
-                } else {
-                    return JsonService::status('pay_error', StoreOrder::getErrorInfo());
-                }
-
-            } else if ($payType == 'offline') {
-                StoreOrder::createOrderTemplate($order);
-                return JsonService::status('success', '订单创建成功', $info);
-            }
-        } else {
-            return JsonService::fail(StoreOrder::getErrorInfo('订单生成失败!'));
-        }
-    }
-
-    /**
-     * 创建订单
-     * @param string $key
-     * @return \think\response\Json
-     */
     public function create_order($key = '')
     {
         if(!$key) return JsonService::fail('参数错误!');
@@ -834,14 +722,16 @@ class AuthApi extends AuthController{
                 $orderInfo = StoreOrder::where('order_id',$orderId)->find();
                 if(!$orderInfo || !isset($orderInfo['paid'])) exception('支付订单不存在!');
                 if($orderInfo['paid']) exception('支付已支付!');
-                if($orderInfo['pay_price'] <= 0){
+                //如果支付金额为0
+                if(bcsub((float)$orderInfo['pay_price'],0,2) <= 0){
+                    //创建订单jspay支付
                     if(StoreOrder::jsPayPrice($orderId,$this->userInfo['uid'],$formId))
                         return JsonService::status('success','微信支付成功',$info);
                     else
                         return JsonService::status('pay_error',StoreOrder::getErrorInfo());
                 }else{
                     try{
-                        $jsConfig = StoreOrder::jsPay($orderId);
+                        $jsConfig = StoreOrder::jsPay($orderId);//创建订单jspay
                     }catch (\Exception $e){
                         return JsonService::status('pay_error',$e->getMessage(),$info);
                     }
@@ -854,7 +744,7 @@ class AuthApi extends AuthController{
                 else
                     return JsonService::status('pay_error',StoreOrder::getErrorInfo());
             }else if($payType == 'offline'){
-                StoreOrder::createOrderTemplate($order);
+//                RoutineTemplate::sendOrderSuccess($formId,$orderId);//发送模板消息
                 return JsonService::status('success','订单创建成功',$info);
             }
         }else{
@@ -879,14 +769,14 @@ class AuthApi extends AuthController{
         }else{
             $list = StoreOrder::getUserOrderList($this->userInfo['uid'],$type,$first,$limit);
         }
-        // foreach ($list as $k=>$order){
-        //     $list[$k] = StoreOrder::tidyOrder($order,true);
-        //     if($list[$k]['_status']['_type'] == 3){
-        //         foreach ($order['cartInfo']?:[] as $key=>$product){
-        //             $list[$k]['cartInfo'][$key]['is_reply'] = StoreProductReply::isReply($product['unique'],'product');
-        //         }
-        //     }
-        // }
+        foreach ($list as $k=>$order){
+            $list[$k] = StoreOrder::tidyOrder($order,true);
+            if($list[$k]['_status']['_type'] == 3){
+                foreach ($order['cartInfo']?:[] as $key=>$product){
+                    $list[$k]['cartInfo'][$key]['is_reply'] = StoreProductReply::isReply($product['unique'],'product');
+                }
+            }
+        }
         return JsonService::successful($list);
     }
 
@@ -898,8 +788,11 @@ class AuthApi extends AuthController{
     public function get_order($uni = ''){
         if($uni == '') return JsonService::fail('参数错误');
         $order = StoreOrder::getUserOrderDetail($this->userInfo['uid'],$uni);
+        $order = $order->toArray();
+        $order['add_time'] = date('Y-m-d H:i:s',$order['add_time']);
+        $order['favourable_price'] = bcadd($order['deduction_price'],$order['coupon_price'],2);
         if(!$order) return JsonService::fail('订单不存在');
-        return JsonService::successful(StoreOrder::tidyOrderNew($order,true));
+        return JsonService::successful(StoreOrder::tidyOrder($order,true));
     }
 
     /**
@@ -926,22 +819,29 @@ class AuthApi extends AuthController{
         else
             return JsonService::fail(StoreOrder::getErrorInfo());
     }
-
+    //TODO 支付订单
     /**
      * 支付订单
      * @param string $uni
      * @return \think\response\Json
      */
-    public function pay_order($uni = '')
+    public function pay_order($uni = '',$paytype='weixin')
     {
         if(!$uni) return JsonService::fail('参数错误!');
-        $order= StoreOrder::getUserOrderDetail($this->userInfo['uid'],$uni);
+        $order = StoreOrder::getUserOrderDetail($this->userInfo['uid'],$uni);
         if(!$order) return JsonService::fail('订单不存在!');
         if($order['paid']) return JsonService::fail('该订单已支付!');
         if($order['pink_id']) if(StorePink::isPinkStatus($order['pink_id'])) return JsonService::fail('该订单已失效!');
+        $cartInfoId = $order['cart_id'];
+        $resCartProductStatus = true;
+        foreach ($cartInfoId as $key=>&$item){
+            $resCartProductStatus = $resCartProductStatus && StoreCart::decideCartProductOverdue($item);
+        }
+        if(!$resCartProductStatus) return JsonService::fail(StoreCart::getErrorInfo('订单产品已失效,请重新下单'));
+        $order['pay_type'] = $paytype;//重新支付选择支付方式
         if($order['pay_type'] == 'weixin'){
             try{
-                $jsConfig = StoreOrder::jsPay($order);
+                $jsConfig = StoreOrder::jsPay($order);//订单列表发起支付
             }catch (\Exception $e){
                 return JsonService::fail($e->getMessage());
             }
@@ -957,6 +857,7 @@ class AuthApi extends AuthController{
         }
     }
 
+
     /**
      * 申请退款
      * @param string $uni
@@ -970,9 +871,7 @@ class AuthApi extends AuthController{
             ['refund_reason_wap_img',''],
             ['refund_reason_wap_explain',''],
         ],$request);
-        if($data['refund_reason_wap_img']){
-            $data['refund_reason_wap_img'] = explode(',',$data['refund_reason_wap_img']);
-        }
+        if($data['refund_reason_wap_img']) $data['refund_reason_wap_img'] = explode(',',$data['refund_reason_wap_img']);
         if(!$uni || $data['text'] == '') return JsonService::fail('参数错误!');
         $res = StoreOrder::orderApplyRefund($uni,$this->userInfo['uid'],$data['text'],$data['refund_reason_wap_explain'],$data['refund_reason_wap_img']);
         if($res)
@@ -1136,9 +1035,9 @@ class AuthApi extends AuthController{
     public function get_spread_list($first = 0,$limit = 20)
     {
         $list = User::where('spread_uid',$this->userInfo['uid'])->field('uid,nickname,avatar,add_time')->limit($first,$limit)->order('add_time DESC')->select()->toArray();
-        foreach ($list as $k=>$user){
-            $list[$k]['add_time'] = date('Y/m/d',$user['add_time']);
-            $list[$k]['price'] = StoreOrder::getUserPrice($user['uid']);
+        foreach ($list as $k=>&$user){
+            $user['add_time'] = date('Y/m/d',$user['add_time']);
+            $user['price'] = StoreOrder::getUserPrice($user['uid']);
         }
         $count = User::where('spread_uid',$this->userInfo['uid'])->field('uid,nickname,avatar,add_time')->count();
         $data['count'] = $count;
@@ -1155,9 +1054,9 @@ class AuthApi extends AuthController{
     public function get_spread_list_two($two_uid=0,$first = 0,$limit = 20)
     {
         $list = User::where('spread_uid',$two_uid)->field('uid,nickname,avatar,add_time')->limit($first,$limit)->order('add_time DESC')->select()->toArray();
-        foreach ($list as $k=>$user){
-            $list[$k]['add_time'] = date('Y/m/d',$user['add_time']);
-            $list[$k]['price'] = StoreOrder::getUserPrice($user['uid']);
+        foreach ($list as $k=>&$user){
+            $user['add_time'] = date('Y/m/d',$user['add_time']);
+            $user['price'] = StoreOrder::getUserPrice($user['uid']);
         }
         $count = User::where('spread_uid',$two_uid)->field('uid,nickname,avatar,add_time')->count();
         $data['count'] = $count;
@@ -1248,114 +1147,6 @@ class AuthApi extends AuthController{
         return JsonService::successful();
     }
 
-    /**
-     * 客服提醒
-     * @param Request $request
-     * @return \think\response\Json
-     */
-    public function refresh_msn(Request $request)
-    {
-        $params = $request->post();
-        $remind_where = "mer_id = ".$params["mer_id"]." AND uid = ".$params["uid"]." AND to_uid = ".$params["to_uid"]." AND type = 0 AND remind = 0";
-        $remind_list = StoreServiceLog::where($remind_where)->order("add_time asc")->select();
-        foreach ($remind_list as $key => $value) {
-            if(time() - $value["add_time"] > 3){
-                StoreServiceLog::edit(array("remind"=>1),$value["id"]);
-                $now_user = StoreService::field("uid,nickname")->where(array("uid"=>$params["uid"]))->find();
-                if(!$now_user)$now_user = User::field("uid,nickname")->where(array("uid"=>$params["uid"]))->find();
-                if($params["to_uid"]) {
-                    $head = '您有新的消息，请注意查收！';
-                    $head .= $params["mer_id"] > 0 ? "\n商户名称：".Merchant::where('id',$params["mer_id"])->value('mer_name') : '';
-                    WechatTemplateService::sendTemplate(WechatUser::uidToOpenid($params["to_uid"]),WechatTemplateService::SERVICE_NOTICE,[
-                        'first'=>$head,
-                        'keyword1'=>$now_user["nickname"],
-                        'keyword2'=>"客服提醒",
-                        'keyword3'=> preg_replace('/<img.*? \/>/','[图片]',$value["msn"]),
-                        'keyword4'=>date('Y-m-d H:i:s',time()),
-                        'remark'=>'点击立即查看消息'
-                    ],Url::build('service/service_ing',['to_uid'=>$now_user["uid"],'mer_id'=>$params["mer_id"]],true,true));
-                }
-            }
-        }
-        $where = "mer_id = ".$params["mer_id"]." AND uid = ".$params["to_uid"]." AND to_uid = ".$params["uid"]." AND type = 0";
-        $list = StoreServiceLog::where($where)->order("add_time asc")->select()->toArray();
-        $ids = [];
-        foreach ($list as $key => $value) {
-            //设置发送人与接收人区别
-            if($value["uid"] == $params["uid"])
-                $list[$key]['my'] = "my";
-            else
-                $list[$key]['my'] = "to";
-
-            array_push($ids,$value["id"]);
-        }
-
-        //设置这些消息为已读
-        StoreServiceLog::where(array("id"=>array("in",$ids)))->update(array("type"=>1,"remind"=>1));
-        return JsonService::successful($list);
-    }
-
-    public function add_msn(Request $request){
-        $params = $request->post();
-        if($params["type"] == "html")
-            $data["msn"] = htmlspecialchars_decode($params["msn"]);
-        else
-            $data["msn"] = $params["msn"];
-        $data["uid"] = $params["uid"];
-        $data["to_uid"] = $params["to_uid"];
-        $data["mer_id"] = $params["mer_id"] > 0 ? $params["mer_id"] : 0;
-        $data["add_time"] = time();
-        StoreServiceLog::set($data);
-        return JsonService::successful();
-    }
-
-    public function get_msn(Request $request){
-        $params = $request->post();
-        $size = 10;
-        $page = $params["page"]>=0 ? $params["page"] : 1;
-        $where = "(mer_id = ".$params["mer_id"]." AND uid = ".$params["uid"]." AND to_uid = ".$params["to_uid"].") OR (mer_id = ".$params["mer_id"]." AND uid = ".$params["to_uid"]." AND to_uid = ".$params["uid"].")";
-        $list = StoreServiceLog::where($where)->limit(($page-1)*$size,$size)->order("add_time desc")->select()->toArray();
-        foreach ($list as $key => $value) {
-            //设置发送人与接收人区别
-            if($value["uid"] == $params["uid"])
-                $list[$key]['my'] = "my";
-            else
-                $list[$key]['my'] = "to";
-
-            //设置这些消息为已读
-            if($value["uid"] == $params["to_uid"] && $value["to_uid"] == $params["uid"])StoreServiceLog::edit(array("type"=>1,"remind"=>1),$value["id"]);
-        }
-        $list=array_reverse($list);
-        return JsonService::successful($list);
-    }
-
-    public function refresh_msn_new(Request $request){
-        $params = $request->post();
-        $now_user = User::getUserInfo($this->userInfo['uid']);
-        if($params["last_time"] > 0)
-            $where = "(uid = ".$now_user["uid"]." OR to_uid = ".$now_user["uid"].") AND add_time>".$params["last_time"];
-        else
-            $where = "uid = ".$now_user["uid"]." OR to_uid = ".$now_user["uid"];
-
-
-        $msn_list = StoreServiceLog::where($where)->order("add_time desc")->select()->toArray();
-        $info_array = $list = [];
-        foreach ($msn_list as $key => $value){
-            $to_uid = $value["uid"] == $now_user["uid"] ? $value["to_uid"] : $value["uid"];
-            if(!in_array(["to_uid"=>$to_uid,"mer_id"=>$value["mer_id"]],$info_array)){
-                $info_array[count($info_array)] = ["to_uid"=>$to_uid,"mer_id"=>$value["mer_id"]];
-
-                $to_user = StoreService::field("uid,nickname,avatar")->where(array("uid"=>$to_uid))->find();
-                if(!$to_user)$to_user = User::field("uid,nickname,avatar")->where(array("uid"=>$to_uid))->find();
-                $to_user["mer_id"] = $value["mer_id"];
-                $to_user["mer_name"] = $value["mer_id"] > 0 ? "[".Merchant::where('id',$value["mer_id"])->value('mer_name')."]" : '';
-                $value["to_info"] = $to_user;
-                $value["count"] = StoreServiceLog::where(array("mer_id"=>$value["mer_id"],"uid"=>$to_uid,"to_uid"=>$now_user["uid"],"type"=>0))->count();
-                $list[count($list)] = $value;
-            }
-        }
-        return JsonService::successful($list);
-    }
 
     public function get_user_brokerage_list($uid, $first = 0,$limit = 8)
     {
@@ -1367,29 +1158,17 @@ class AuthApi extends AuthController{
             ->join('__STORE_ORDER__ B','A.link_id = B.id AND B.uid = '.$uid)->select()->toArray();
         return JsonService::successful($list);
     }
-    /*
-     * 申请提现
-     */
-//    public function user_extract()
-//    {
-//        if(UserExtract::userExtract($this->userInfo,UtilService::postMore([
-//            ['type','','','extract_type'],'real_name','alipay_code','bank_code','bank_address',['price','','','extract_price']
-//        ])))
-//            return JsonService::successful('申请提现成功!');
-//        else
-//            return JsonService::fail(Extract::getErrorInfo());
-//    }
+    
     public function user_extract()
     {   $request = Request::instance();
         $list=$request->param();
         $data=$list['lists'];
-//        dump($data);
-//        dump($this->userInfo);
         if(UserExtract::userExtract($this->userInfo,$data))
             return JsonService::successful('申请提现成功!');
         else
             return JsonService::fail(UserExtract::getErrorInfo());
     }
+
 /*
  * 提现列表
  */
@@ -1409,28 +1188,20 @@ class AuthApi extends AuthController{
      * @param int $first
      * @param int $limit
      */
-    public function subordinateOrderlist($first = 0, $limit = 8)
-    { $request = Request::instance();
+    public function subordinateOrderlist($first = 0, $limit = 8){
+        $request = Request::instance();
         $lists=$request->param();
-        $xuid=$lists['uid'];$status=$lists['status'];
-        if($status==0){
-            $type='';
-        }elseif($status==1){
-            $type=4;
-        }elseif($status==2){
-            $type=3;
-        }else{
-           return false;
-        }
-        $list=[];
-        if($xuid==0){
-            $arr=User::where('spread_uid',$this->userInfo['uid'])->column('uid');
-            foreach($arr as $v){
-                $list = StoreOrder::getUserOrderList($v,$type,$first,$limit);
-            }
-        }else{
-            $list = StoreOrder::getUserOrderList($xuid,$type,$first,$limit);
-        }
+        $xUid = $lists['uid'];
+        $status = $lists['status'];
+        if($status == 0) $type='';
+        elseif($status == 1) $type=4;
+        elseif($status == 2) $type=3;
+        else return false;
+        $list = [];
+        if(!$xUid){
+            $arr = User::where('spread_uid',$this->userInfo['uid'])->column('uid');
+            foreach($arr as $v) $list = StoreOrder::getUserOrderList($v,$type,$first,$limit);
+        }else $list = StoreOrder::getUserOrderList($xUid,$type,$first,$limit);
         foreach ($list as $k=>$order){
             $list[$k] = StoreOrder::tidyOrder($order,true);
             if($list[$k]['_status']['_type'] == 3){
@@ -1448,17 +1219,19 @@ class AuthApi extends AuthController{
      */
     public function subordinateOrderlistmoney()
     {
-        $arr=User::where('spread_uid',$this->userInfo['uid'])->column('uid');
-        $list=[];
-        foreach($arr as $v){
-            $list = StoreOrder::getUserOrderList($v,$type='');
-        }
-
-        foreach ($list as $k=>$v){
-            $arr[]=$v['pay_price'];
-        }
-        $cont=count($list);
-        $sum=array_sum($arr);
+        $request = Request::instance();
+        $lists=$request->param();
+        $status = $lists['status'];
+        $type = '';
+        if($status == 1) $type = 4;
+        elseif($status == 2) $type = 3;
+        $arr = User::where('spread_uid',$this->userInfo['uid'])->column('uid');
+        $list = StoreOrder::getUserOrderCount(implode(',',$arr),$type);
+        $price = [];
+//        if(!empty($list)) foreach ($list as $k=>$v) $price[]=$v['pay_price'];
+        if(!empty($list)) foreach ($list as $k=>$v) $price[]=$v;
+        $cont = count($list);
+        $sum = array_sum($price);
         return JsonService::successful(['cont'=>$cont,'sum'=>$sum]);
     }
     /*
@@ -1540,22 +1313,6 @@ class AuthApi extends AuthController{
         return JsonService::successful('ok',implode(',',$cateId));
 
     }
-
-
-    public function get_template_list(Request $request){
-        $dataFormId = UtilService::postMore([['formId','']],$request);
-//        db('routine_access_token')->insert(['access_token'=>$dataFormId['formId'],'stop_time'=>time()]);
-//        exit();
-        $data['keyword1']['value'] =  '123456';
-        $data['keyword2']['value'] =  '30元';
-        $data['keyword3']['value'] =  date('Y-m-d H:i:s',time());
-        $data['keyword4']['value'] =  '测试';
-        $data['keyword5']['value'] =  date('Y-m-d H:i:s',time());
-        $data['keyword6']['value'] =  '微信支付';
-        $dataFormId['formId'] = '1525675379715';
-        dump(RoutineTemplate::sendTemplate(WechatUser::getOpenId($this->userInfo['uid']),'x5Jw630Rp63T34kv0Q43RQBaoFoelsiHJ5b8NtsZhsw','',$data,$dataFormId['formId']));
-    }
-
     /**
      * 获取分销二维码
      * @return \think\response\Json
@@ -1563,14 +1320,48 @@ class AuthApi extends AuthController{
     public  function get_code(){
         header('content-type:image/jpg');
         if(!$this->userInfo['uid']) return JsonService::fail('授权失败，请重新授权');
-        if(!is_dir('public/uploads/routine/')){
-            \service\FileService::mk_dir('public/uploads/routine/');
+        $path = makePathToUrl('routine/code');
+        if($path == '')
+            return JsonService::fail('生成上传目录失败,请检查权限!');
+        $picname = $path.'/'.$this->userInfo['uid'].'.jpg';
+        $domain = SystemConfigService::get('site_url').'/';
+        $domainTop = substr($domain,0,5);
+        if($domainTop != 'https') $domain = 'https:'.substr($domain,5,strlen($domain));
+        if(file_exists($picname)) return JsonService::successful($domain.$picname);
+        else{
+            $res = RoutineCode::getCode($this->userInfo['uid'],$picname);
+            if($res) file_put_contents($picname,$res);
+            else return JsonService::fail('二维码生成失败');
         }
-        $path = 'public/uploads/routine/'.$this->userInfo['uid'].'.jpg';
-        if(file_exists($path)) return JsonService::successful($path);
-        else file_put_contents($path,RoutineCode::getCode($this->userInfo['uid']));
-        return JsonService::successful($path);
+        return JsonService::successful($domain.$picname);
     }
+
+    /**
+     * TODO 获取分销二维码不存入小程序二维码表中
+     * @return \think\response\Json
+     */
+    public  function get_routine_code(){
+        header('content-type:image/jpg');
+        if(!$this->userInfo['uid']) return JsonService::fail('授权失败，请重新授权');
+        $path = makePathToUrl('routine/code');
+        if($path == '')
+            return JsonService::fail('生成上传目录失败,请检查权限!');
+        $picname = $path.'/'.$this->userInfo['uid'].'.jpg';
+        $domain = SystemConfigService::get('site_url').'/';
+        $domainTop = substr($domain,0,5);
+        if($domainTop != 'https') $domain = 'https:'.substr($domain,5,strlen($domain));
+        if(file_exists($picname)) return JsonService::successful($domain.$picname);
+        else{
+//            $res = RoutineCode::getRoutineCode($this->userInfo['uid']);
+            $res = MiniProgramService::appCodeUnlimitService($this->userInfo['uid'])->__toString();
+            if($res){
+                file_put_contents($picname,$res);
+            }else return JsonService::fail('二维码生成失败');
+        }
+        return JsonService::successful($domain.$picname);
+    }
+
+
 
     /**
      * 绑定推荐人
@@ -1595,45 +1386,17 @@ class AuthApi extends AuthController{
     public function get_bargain_list($limit = 10){
         $bargain = StoreBargain::getList();
         $bargain = StoreBargainUser::getUserList($bargain,$limit);
-        $lovely = GroupDataService::getData('store_seckill_banner')?:[];//banner图
+        $lovely = GroupDataService::getData('routine_lovely')?:[];//banner图
         $banner = GroupDataService::getData('bargain_banner')?:[];//banner图
-        $banner =is_array($banner) && isset($banner[0]) ? $banner[0]:'';
+        $banner = $banner[0];
         $bargainUser = StoreBargainUser::getBargainUserStatusSuccess();
         $data['bargain'] = $bargain;
-        $data['lovely'] = $lovely;
+        $data['lovely'] = $lovely[2];
         $data['banner'] = $banner;
         $data['bargainUser'] = $bargainUser;
         return JsonService::successful($data);
     }
-    public function get_news_list(Request $request)
-    {
-        $page=UtilService::getMore([['offset',0],['limit',0],['id',0]],$request);
-        $info=UtilService::postMore([['id',0]],$request);
-        $model=new WechatNews();
-        $model=$model->where(['A.type'=>0,'status'=>1]);
-        if ($page['offset'] && $page['limit']) {
-            $model=$model->limit($page['offset'],$page['limit']);
-            $data=$model->alias('A')->join('wechat_news_content B','A.id=B.nid')->order('A.add_time DESC')->select();
-            if ($data) {
-                foreach ($data as &$val) {
-                    $val['add_time'] = date('Y-m-d H:i:s', $val['add_time']);
-                }
-            }
-        }elseif($info['id']){
-            $data=$model->alias('A')->join('wechat_news_content B','A.id=B.nid')->where('A.id',$info['id'])->find();
-            if($data) {
-                $data['add_time']=date('Y-m-d H:i:s',$data['add_time']);
-            }
-        }else{
-            $data=$model->alias('A')->join('wechat_news_content B','A.id=B.nid')->order('A.add_time DESC')->select();
-            if ($data) {
-                foreach ($data as &$val) {
-                    $val['add_time'] = date('Y-m-d H:i:s', $val['add_time']);
-                }
-            }
-        }
-        return JsonService::successful($data);
-    }
+
     /**
      * 砍价详情
      * @param int $bargainId
@@ -1642,6 +1405,7 @@ class AuthApi extends AuthController{
     public function get_bargain($bargainId = 0){
         if(!$bargainId) return JsonService::fail('参数错误');
         $bargain = StoreBargain::getBargainTerm($bargainId);
+        if(empty($bargain)) return JsonService::fail('砍价已结束');
         $bargain['time'] = time();
         return JsonService::successful($bargain);
     }
@@ -1652,12 +1416,30 @@ class AuthApi extends AuthController{
      * @return \think\response\Json
      */
     public function get_bargain_count($count = 0){
-        if(!$count) $count = mt_rand(1000,10000);
-        else $count++;
-        $data['lookCount'] = $count;//观看人数
-        $data['shareCount'] = $count;//观看人数
+        $data['lookCount'] = StoreBargain::getBargainLook()['look'];//观看人数
+        $data['shareCount'] = StoreBargain::getBargainShare()['share'];//观看人数
         $data['userCount'] = StoreBargainUser::count();//参与人数
         return JsonService::successful($data);
+    }
+
+    /**
+     * 添加砍价分享次数
+     * @param int $bargainId
+     */
+    public function add_share_bargain($bargainId = 0){
+        if(!$bargainId) return JsonService::successful();
+        StoreBargain::addBargainShare($bargainId);
+        return JsonService::successful();
+    }
+
+    /**
+     * 添加砍价浏览次数
+     * @param int $bargainId
+     */
+    public function add_look_bargain($bargainId = 0){
+        if(!$bargainId) return JsonService::successful();
+        StoreBargain::addBargainLook($bargainId);
+        return JsonService::successful();
     }
 
     /**
@@ -1726,21 +1508,11 @@ class AuthApi extends AuthController{
         if(!$bargainId || !$bargainUserId) return JsonService::fail('参数错误');
         $res = StoreBargainUserHelp::setBargainUserHelp($bargainId,$bargainUserId,$this->userInfo['uid']);
         if($res) {
-            if(!StoreBargainUserHelp::getSurplusPrice($bargainId,$bargainUserId)){
+            if(StoreBargainUserHelp::getSurplusPrice($bargainId,$bargainUserId) <= 0){
                 $bargainUserTableId = StoreBargainUser::getBargainUserTableId($bargainId,$bargainUserId);
                 $bargain = StoreBargain::where('id',$bargainId)->find()->toArray();
                 $bargainUser = StoreBargainUser::where('id',$bargainUserTableId)->find()->toArray();
-                $data['keyword1']['value'] =  $bargain['title'];
-                $data['keyword2']['value'] =  $bargainUser['bargain_price'];
-                $data['keyword3']['value'] =  $bargainUser['bargain_price_min'];
-                $data['keyword4']['value'] =  $bargainUser['price'];
-                $data['keyword5']['value'] =  $bargainUser['bargain_price_min'];
-                $data['keyword6']['value'] =  '恭喜您，已经砍到最低价了';
-                $formId = RoutineFormId::getFormIdOne($bargainUserId);
-                if($formId){
-                    $dataFormId['formId'] = $formId;
-                    RoutineTemplate::sendTemplate(WechatUser::getOpenId($bargainUser['uid']),RoutineTemplate::BARGAIN_SUCCESS,'',$data,$formId);
-                }
+                RoutineTemplate::sendBargainSuccess($bargain,$bargainUser,$bargainUserId);//发送模板消息
             }
             return JsonService::successful('砍价成功',$res);
         }
@@ -1784,7 +1556,7 @@ class AuthApi extends AuthController{
      */
     public function is_bargain_user_help($bargainId = 0,$bargainUserId = 0){
         if(!$bargainId || !$bargainUserId) return JsonService::fail('参数错误');
-        if(StoreBargainUserHelp::isBargainUserHelpCount($bargainId,$bargainUserId,$this->userInfo['uid'])) return JsonService::successful('请稍后在帮助好友砍价');
+        if(StoreBargainUserHelp::isBargainUserHelpCount($bargainId,$bargainUserId,$this->userInfo['uid'])) return JsonService::successful('请稍后再帮助好友砍价');
         else return JsonService::fail('您不能再帮忙砍价了');
     }
 
@@ -1854,7 +1626,7 @@ class AuthApi extends AuthController{
      * @param string $formId
      */
     public function get_form_id($formId = ''){
-        if((int)$formId == '' || $formId == 'the formId is a mock one') return JsonService::fail('no');
+        if(!strlen(trim($formId))  || $formId == 'the formId is a mock one') return JsonService::fail('no');
         $data['form_id'] = $formId;
         $data['uid'] = $this->userInfo['uid'];
         $data['status'] = 1;
@@ -1870,9 +1642,18 @@ class AuthApi extends AuthController{
      */
     public function get_combination_list($offset=0,$limit=20){
         $store_combination = StoreCombination::getAll($offset,$limit);
-        $store_combination = StoreCombination::getAll($offset,$limit);
-        $banner=GroupDataService::getData('store_pink_banner');
-        return JsonService::successful(['store_combination'=>$store_combination,'banner'=>$banner]);
+        return JsonService::successful($store_combination);
+    }
+
+    /**
+     * 获取拼团列表顶部图
+     * @param int $offset
+     * @param int $limit
+     */
+    public function get_combination_list_banner(){
+        $lovely = GroupDataService::getData('routine_lovely')?:[];//banner图
+        $pic = isset($lovely[3])?$lovely[3]:'';
+        return JsonService::successful($pic);
     }
 
     /**
@@ -1952,8 +1733,10 @@ class AuthApi extends AuthController{
         $uidAll[] = $pinkT['uid'];
         if($pinkT['status'] == 2){
             $pinkBool = 1;
+            $is_ok = 1;
         }else{
             if(!$count){//组团完成
+                $is_ok = 1;
                 $idAll = implode(',',$idAll);
                 $orderPinkStatus = StorePink::setPinkStatus($idAll);
                 if($orderPinkStatus){
@@ -2006,17 +1789,285 @@ class AuthApi extends AuthController{
         $data['pinkAll'] = $pinkAll;
         $data['count'] = $count;
         $data['store_combination_host'] = $store_combination_host;
-        $data['current_pink_order'] = StorePink::getCurrentPink($id,$this->userInfo['uid']);
+        $data['current_pink_order'] = StorePink::getCurrentPink($id);
         return JsonService::successful($data);
     }
-    public function get_message()
+
+    /**
+     * 购物车库存修改
+     * @param int $cartId
+     * @param int $cartNum
+     */
+    public function set_buy_cart_num($cartId = 0,$cartNum = 0){
+        if(!$cartId) return JsonService::fail('参数错误');
+        $res = StoreCart::edit(['cart_num'=>$cartNum],$cartId);
+        if($res) return JsonService::successful();
+        else return JsonService::fail('修改失败');
+    }
+
+    /**
+     * 获取后台联系方式
+     */
+    public function get_site_phone(){
+        $data =  SystemConfig::getValue('site_service_phone');
+        return JsonService::successful($data);
+    }
+
+    /**
+     * 获取产品链接的二维码
+     * @param string $path
+     * @param int $width
+     */
+//    public function get_pages($path = '',$productId = 0,$width = 430){
+//        if($path == '' || !$productId) return JsonService::fail('参数错误'); header('content-type:image/jpg');
+//        if(!$this->userInfo['uid']) return JsonService::fail('授权失败，请重新授权');
+//        $path = 'public/uploads/routinepage/'.$productId.'.jpg';
+//        if(file_exists($path)) return JsonService::successful($path);
+//        else file_put_contents($path,RoutineCode::getCode($this->userInfo['uid']));
+//        return JsonService::successful($path);
+//    }
+
+    /**
+     * 文章列表
+     * @param int $cid
+     * @param int $first
+     * @param int $limit
+     */
+    public function get_cid_article($cid = 0,$first = 0,$limit = 8){
+        $list = ArticleModel::cidByArticleList($cid,$first,$limit,'id,title,image_input,visit,add_time,synopsis,url')?:[];
+        foreach ($list as &$article){
+            $article['add_time'] = date('Y-m-d H:i',$article['add_time']);
+        }
+        $data['list'] = $list;
+        return JsonService::successful($list);
+    }
+
+    /**
+     * 获取热门文章
+     */
+    public function get_article_hot(){
+        $hot = ArticleModel::getArticleListHot('id,title');
+        return JsonService::successful($hot);
+    }
+
+    /**
+     * 获取热门banner文章
+     */
+    public function get_article_banner(){
+        $banner = ArticleModel::getArticleListBanner('id,title,image_input');
+        return JsonService::successful($banner);
+    }
+
+    /**
+     * 获取文章详情
+     * @param int $id
+     */
+    public function visit($id = 0)
     {
-        $model=new WechatNews();
-        $model=$model->where(['A.type'=>1,'status'=>1]);
-        $data=$model->alias('A')->join('wechat_news_content B','A.id=B.nid')->find();
-        if($data) $data['add_time']=date('Y-m-d H:i:s',$data['add_time']);
-        return JsonService::successful($data);
+        $content = ArticleModel::getArticleOne($id);
+        if(!$content || !$content["status"]) return JsonService::fail('此文章已经不存在!');
+        $content["visit"] = $content["visit"] + 1;
+        $content['add_time'] = date('Y-m-d H:i:s',$content['add_time']);
+        ArticleModel::edit(['visit'=>$content["visit"]],$id);//增加浏览次数
+        return JsonService::successful($content);
     }
+
+    /**
+     * 产品海报二维码
+     * @param int $id
+     */
+    public function product_promotion_code($id = 0){
+        if(!$id) return JsonService::fail('参数错误');
+        $count = StoreProduct::validWhere()->count();
+        if(!$count) return JsonService::fail('参数错误');
+        $path = UPLOAD_PATH.'/codepath/product/';
+        $codePath = $path.$id.'_'.$this->userInfo['uid'].'.jpg';
+        $domain = SystemConfigService::get('site_url').'/';
+        if(!file_exists($codePath)){
+            if(!is_dir($path)) mkdir($path,0777,true);
+            $res = RoutineCode::getCode($this->userInfo['uid'],$codePath,[],'/pages/product-con/index?id='.$id,'product_spread');
+            if($res) file_put_contents($codePath,$res);
+            else return JsonService::fail('二维码生成失败');
+        }
+        return JsonService::successful($domain.$codePath);
+    }
+
+
+    /**
+     * TODO 产品海报二维码 不存入小程序二维码表中
+     * @param int $id
+     */
+    public function product_promotion_routine_code($id = 0){
+        if(!$id) return JsonService::fail('参数错误');
+        $count = StoreProduct::validWhere()->count();
+        if(!$count) return JsonService::fail('参数错误');
+        $path = UPLOAD_PATH.'/codepath/product/';
+        $codePath = $path.$id.'_'.$this->userInfo['uid'].'.jpg';
+        $domain = SystemConfigService::get('site_url').'/';
+        if(!file_exists($codePath)){
+            if(!is_dir($path)) mkdir($path,0777,true);
+            $res = RoutineCode::getRoutineCode($this->userInfo['uid'],'pages/product-con/index',$id);
+            if($res){
+                $resStatus = json_decode($res,true);
+                if(is_array($resStatus)) return JsonService::fail('错误码：'.$resStatus['errcode']);
+                else file_put_contents($codePath,$res);
+            }else return JsonService::fail('二维码生成失败');
+        }
+        return JsonService::successful($domain.$codePath);
+    }
+
+
+//    public function poster($id = 0){
+//        if(!$id) return JsonService::fail('参数错误');
+//        $productInfo = StoreProduct::getValidProduct($id,'store_name,id,price,image,code_path');
+//        if(empty($productInfo)) return JsonService::fail('参数错误');
+//        if(strlen($productInfo['code_path'])< 10) {
+//            $path = 'public'.DS.'uploads'.DS.'codepath'.DS.'product';
+//            $codePath = $path.DS.$productInfo['id'].'.jpg';
+//            if(!file_exists($codePath)){
+//                if(!is_dir($path)) mkdir($path,0777,true);
+////                $res = file_put_contents($codePath,RoutineCode::getPages('pages/product-con/index?id='.$productInfo['id']));
+//            }
+//            $res = StoreProduct::edit(['code_path'=>$codePath],$id);
+//            if($res) $productInfo['code_path'] = $codePath;
+//            else return JsonService::fail('没有查看权限');
+//        }
+//        $posterPath = createPoster($productInfo);
+//        return JsonService::successful($posterPath);
+//
+//    }
+    /**
+     * TODO 获取用户信息
+     * @return \think\response\Json
+     */
+    public function get_user_info($is_sign = '',$discount = ''){
+        if(is_object($this->userInfo)) $this->userInfo = $this->userInfo->toArray();
+        if($is_sign){
+            $this->userInfo['is_sign'] = UserSign::checkUserSigned($this->userInfo['uid']) ? true : false;
+            $this->userInfo['sign_count'] = UserSign::userSignedCount($this->userInfo['uid']);
+//            if(!User::where(['uid'=>$this->userInfo['uid'],'status'=>1])->whereTime('sign_time','yesterday')->count() && $this->userInfo['is_sign']==false){
+//                User::update(['sign_num'=>0],['uid'=>$this->userInfo['uid']]);
+//                $this->userInfo['sign_num']=0;
+//            }
+        }
+        if($discount){
+            list($grade_name,$discount_num,$sign_grade,$pic)=UserSign::getdiscount($this->get_sign_list(true,'sign_deploy'),$this->userInfo['integral']);
+            $this->userInfo['grade_name']=$grade_name;
+            $this->userInfo['pic']=$pic;
+            $rank=User::where(['status'=>1])->where('uid','<>',$this->userInfo['uid'])->where('integral',$this->userInfo['integral'])->count();
+            $this->userInfo['ranking']=User::where(['status'=>1])->where('integral','>',$this->userInfo['integral'])->count() +$rank +1;
+            $count=User::where(['status'=>1])->count();
+            $ranking=bcsub($count,$this->userInfo['ranking']);
+            $this->userInfo['ratio']=bcdiv($ranking,$count,2) * 100;
+            if($this->userInfo['ranking'] == 1)
+                $this->userInfo['differ']=0;
+            else{
+                $integral=User::where(['status'=>1])->order('integral asc')->where('integral','>',$this->userInfo['integral'])->value('integral');
+                $this->userInfo['differ']=$integral-$this->userInfo['integral'];
+            }
+            $this->userInfo['notice'] = UserNotice::getNotice($this->userInfo['uid']);
+        }
+        return JsonService::successful($this->userInfo);
+    }
+
+
+    /**
+     * TODO 用户签到
+     * @return \think\response\Json
+     */
+    public function user_sign()
+    {
+        $signed = UserSign::checkUserSigned($this->userInfo['uid']);
+        if($signed) return JsonService::fail('已签到');
+        if(false !== $integral = UserSign::sign($this->userInfo))
+            return JsonService::successful('签到获得'.floatval($integral).'积分');
+//        if(false !== $integral = UserSign::signFoodie($this->userInfo['uid'],$this->get_sign_list(true)))
+//            return JsonService::successful('签到获得'.floatval($integral).'积分');
+        else
+            return JsonService::fail('签到失败!');
+    }
+
+    /**
+     * TODO 判断用户是否签到
+     */
+    public function user_sign_status()
+    {
+        $signed = UserSign::checkUserSigned($this->userInfo['uid']);
+        if($signed) return JsonService::successful('ok');
+        else return JsonService::fail('no');
+    }
+
+    /*
+     * TODO 获取系统配置签到列表
+     * */
+    public function get_sign_list($isarray = false,$data_key = 'sign_day_num'){
+        $sign_day_num = GroupDataService::getData($data_key) ? :[];
+        if($isarray === true) return $sign_day_num;
+        return JsonService::successful($sign_day_num);
+    }
+
+    /**
+     * TODO 获取签到记录
+     */
+    public function get_sign_log(){
+        $where = UtilService::getMore([
+            ['page',1],
+            ['limit',20],
+            ['uid',$this->userInfo['uid']],
+            ['group',''],
+        ]);
+        if($where['group'])
+            return JsonService::successful(UserSign::getSignLog($where,true));
+        else
+            return JsonService::successful(UserSign::getSignLog($where));
+    }
+
+    /* 2.5.36  修改问题 */
+    public function again_order($uni = ''){
+        if(!$uni) return JsonService::fail('参数错误!');
+        $order = StoreOrder::getUserOrderDetail($this->userInfo['uid'],$uni);
+        if(!$order) return JsonService::fail('订单不存在!');
+        $order = StoreOrder::tidyOrder($order,true);
+        $res = array();
+        foreach ($order['cartInfo'] as $v) {
+            if($v['combination_id']) return JsonService::fail('拼团产品不能再来一单，请在拼团产品内自行下单!');
+            else if($v['bargain_id']) return JsonService::fail('砍价产品不能再来一单，请在砍价产品内自行下单!');
+            else $res[] = StoreCart::setCart($this->userInfo['uid'], $v['product_id'], $v['cart_num'], isset($v['productInfo']['attrInfo']['unique']) ? $v['productInfo']['attrInfo']['unique'] : '', 'product', 0, 0);
+        }
+        $cateId = [];
+        foreach ($res as $v){
+            if(!$v) return JsonService::fail('再来一单失败，请重新下单!');
+            $cateId[] = $v['id'];
+        }
+        return JsonService::successful('ok',implode(',',$cateId));
+    }
+    /**
+     * 获取用户手机号码
+     * @param Request $request
+     * @return \think\response\Json
+     */
+    public function bind_mobile(Request $request){
+        $data = UtilService::postMore([['info',[]]],$request);
+        $data = $data['info'];
+        unset($data['info']);
+        //解密获取用户信息
+        $data['iv']  = urldecode(urlencode($data['iv']));
+        try{
+            $userInfo = MiniProgramService::encryptor($data['session_key'], $data['iv'], $data['encryptedData']);
+            if(!empty($userInfo['purePhoneNumber'])){
+                if(User::edit(['phone'=>$userInfo['purePhoneNumber']],$this->userInfo['uid']))
+                    return JsonService::success('绑定成功');
+                else
+                    return JsonService::fail('绑定失败');
+            }else
+                return JsonService::fail('获取手机号失败');
+
+        }catch (\Exception $e){
+            return JsonService::fail('error',$e->getMessage());
+        }
+
+    }
+
 
 
     /**

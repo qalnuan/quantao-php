@@ -46,9 +46,11 @@ class StoreCouponIssue extends ModelBasic
         if(StoreCouponIssueUser::be(['uid'=>$uid,'issue_coupon_id'=>$id]))
             return self::setErrorInfo('已领取过该优惠劵!');
         self::beginTrans();
+        if($issueCouponInfo['is_permanent']==0 && $issueCouponInfo['total_count'] ==0)
+            return self::setErrorInfo('该优惠劵已领完');
         $res1 = false != StoreCouponUser::addUserCoupon($uid,$issueCouponInfo['cid']);
         $res2 = false != StoreCouponIssueUser::addUserIssue($uid,$id);
-        $res3 = true;
+        $res3 = false;
         if($issueCouponInfo['total_count'] > 0){
             $issueCouponInfo['remain_count'] -= 1;
             $res3 = false !== $issueCouponInfo->save();

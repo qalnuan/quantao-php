@@ -7,9 +7,8 @@
 
 namespace app\routine\model\user;
 
-use app\routine\model\user\WechatUser;
 use basic\ModelBasic;
-use service\WechatService;
+use service\MiniProgramService;
 use traits\ModelTrait;
 
 class UserRecharge extends ModelBasic
@@ -23,21 +22,23 @@ class UserRecharge extends ModelBasic
         return time();
     }
 
-    public static function addRecharge($uid,$price,$recharge_type = 'weixin',$paid = 0)
+    public static function addRecharge($uid,$price,$recharge_type = 'routine',$paid = 0)
     {
-        $order_id = self::getNewOrderId();
+        $order_id = self::getNewOrderId($uid);
         return self::set(compact('order_id','uid','price','recharge_type','paid'));
     }
 
-    public static function getNewOrderId()
+    public static function getNewOrderId($uid = 0)
     {
+        if(!$uid) return false;
         $count = (int) self::where('add_time',['>=',strtotime(date("Y-m-d"))],['<',strtotime(date("Y-m-d",strtotime('+1 day')))])->count();
-        return 'wx1'.date('YmdHis',time()).(10000+$count+1);
+        return 'wx1'.date('YmdHis',time()).(10000+$count+$uid);
     }
 
     public static function jsPay($orderInfo)
     {
-        return WechatService::jsPay(WechatUser::uidToOpenid($orderInfo['uid']),$orderInfo['order_id'],$orderInfo['price'],'user_recharge','用户充值');
+        return MiniProgramService::jsPay(WechatUser::uidToOpenid($orderInfo['uid']),$orderInfo['order_id'],$orderInfo['price'],'user_recharge','用户充值');//2.5.36
+//        return RoutineService::payRoutine(WechatUser::uidToOpenid($orderInfo['uid']),$orderInfo['order_id'],$orderInfo['price'],'user_recharge','用户充值');
     }
 
     /**
@@ -51,7 +52,7 @@ class UserRecharge extends ModelBasic
         $user = User::getUserInfo($order['uid']);
         self::beginTrans();
         $res1 = self::where('order_id',$order['order_id'])->update(['paid'=>1,'pay_time'=>time()]);
-        $res2 = UserBill::income('用户余额充值',$order['uid'],'now_money','recharge',$order['price'],$order['id'],$user['now_money'],'成功充值余额'.floatval($order['price']).'元');
+        $res2 = UserBill::income('用户余额充值',$order['uid'],'now_money','recharge',$order['price'],$order['id'],bcadd($user['now_money'],$order['price'],2),'成功充值余额'.floatval($order['price']).'元');
         $res3 = User::edit(['now_money'=>bcadd($user['now_money'],$order['price'],2)],$order['uid'],'uid');
         $res = $res1 && $res2 && $res3;
         self::checkTrans($res);

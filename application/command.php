@@ -9,4 +9,7 @@
 // | Author: yunwuxin <448901948@qq.com>
 // +----------------------------------------------------------------------
 
-return [];
+return [
+    'service\\crontab\\Run',//系统计划任务中添加
+    'service\\crontab\\Schedule',//常驻进程
+];

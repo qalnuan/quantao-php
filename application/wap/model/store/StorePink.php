@@ -7,7 +7,7 @@
 
 namespace app\wap\model\store;
 
-use app\admin\model\store\StoreCombination;
+use app\wap\model\store\StoreCombination;
 use app\wap\model\user\User;
 use app\wap\model\user\WechatUser;
 use basic\ModelBasic;
@@ -191,6 +191,7 @@ class StorePink extends ModelBasic
         return StoreOrder::where('id',$pink['order_id_key'])->value('order_id');
     }
 
+
     public static function systemPage($where){
         $model = new self;
         $model = $model->alias('p');
@@ -206,7 +207,7 @@ class StorePink extends ModelBasic
         $model = $model->join('StoreCombination c','c.id=p.cid');
         return self::page($model,function($item)use($where){
             $item['count_people'] = bcadd(self::where('k_id',$item['id'])->count(),1,0);
-        },$where);
+            $item['nickName'] = User::getUserInfo($item['uid'])['nickname'];},$where);
     }
 
     public static function isPinkBe($data,$id){

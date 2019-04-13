@@ -8,7 +8,8 @@
 namespace service;
 
 use app\wap\model\user\WechatUser;
-use think\Db;
+use app\admin\model\wechat\WechatTemplate as WechatTemplateModel;
+use app\admin\model\wechat\StoreService as ServiceModel;
 
 class WechatTemplateService
 {
@@ -18,53 +19,65 @@ class WechatTemplateService
      */
 
     //订单生成通知
-    const ORDER_CREATE = 'YaskX30OA83KwZczKmp4srSrVvr5cKOKZ5u-C98Back';
+    const ORDER_CREATE = 'OPENTM205213550';
 
     //订单支付成功
-    const ORDER_PAY_SUCCESS = 'on6N5LoKwgQ1y7Z0KsUyrq3DZt4gxBerml3tM5jrp_E';
+    const ORDER_PAY_SUCCESS = 'OPENTM207791277';
 
     //订单发货提醒(快递)
-    const ORDER_POSTAGE_SUCCESS = 'CTzsKBHnyaMYL7zCqjuXFsUmrO5jB-Rp_-awryxLalQ';
+    const ORDER_POSTAGE_SUCCESS = 'OPENTM200565259';
 
     //订单发货提醒(送货)
-    const ORDER_DELIVER_SUCCESS = 'hC9PFuxOKq6u5kNZyl6VdHGgAuA6h5I3ztpuDk1ioAk';
+    const ORDER_DELIVER_SUCCESS = 'OPENTM207707249';
 
     //订单收货通知
-    const ORDER_TAKE_SUCCESS = 'booE7nSZ-7zOGpYAJj6RdgSODZ7ZvUPaAYuk6JFtCyw';
+    const ORDER_TAKE_SUCCESS = 'OPENTM413386489';
 
     //退款进度通知
-    const ORDER_REFUND_STATUS = 'QWc2PYbZZAd4JNloOfjdXyPl9d1EIefH5GOtJXUKL64';
+    const ORDER_REFUND_STATUS = 'OPENTM410119152';
 
     //帐户资金变动提醒
-    const USER_BALANCE_CHANGE = 'LiZWDICBbmllH1SND-fxrkwvFhzgyVPZi62I8fXmi-U';
+    const USER_BALANCE_CHANGE = 'OPENTM405847076';
 
     //客服通知提醒
-    const SERVICE_NOTICE = 'asQ_qAjpfMoKaTuXOua-pHEpzasOcSytIRrk7thQDHM';
+    const SERVICE_NOTICE = 'OPENTM204431262';
 
     //服务进度提醒
-    const ADMIN_NOTICE = 'WZgIZrj4Fkakozt4x2fvvYnF26UAaFQOAFHBVJDSqeQ';
+    const ADMIN_NOTICE = 'OPENTM408237350';
 
     //拼团成功通知
-    const ORDER_USER_GROUPS_SUCCESS = 'SE9gjavWbF-MZ93wq7LmxW8uiZ20-tuhjmEjJMTiO24';
+    const ORDER_USER_GROUPS_SUCCESS = 'OPENTM407456411';
 
     //拼团失败通知
-    const ORDER_USER_GROUPS_LOSE   = 'Z3QVa8l_4y18HQY56ELY7QwpTz-yLAeL_VKtgS4mvcE';
+    const ORDER_USER_GROUPS_LOSE   = 'OPENTM401113750';
 
     public static function sendTemplate($openid,$templateId,array $data,$url = null,$defaultColor = '')
     {
-        $isSend = Db::name('WechatTemplate')->where('tempid',$templateId)->where('status',1)->count();
-        if(!$isSend) return false;
+        $tempid = WechatTemplateModel::where('tempkey',$templateId)->where('status',1)->value('tempid');
+        if(!$tempid) return false;
         try{
-            return WechatService::sendTemplate($openid,$templateId,$data,$url,$defaultColor);
+            return WechatService::sendTemplate($openid,$tempid,$data,$url,$defaultColor);
         }catch (\Exception $e){
             return false;
         }
     }
 
+    /**服务进度通知
+     * @param array $data
+     * @param null $url
+     * @param string $defaultColor
+     * @return bool
+     */
     public static function sendAdminNoticeTemplate(array $data,$url = null,$defaultColor = '')
     {
-        $adminIds = SystemConfigService::get('site_store_admin_uids');
-        if(!$adminIds || !($adminList = array_unique(array_filter(explode(',',trim($adminIds)))))) return false;
+        $adminIds = explode(',',trim(SystemConfigService::get('site_store_admin_uids')));
+        $kefuIds = ServiceModel::where('notify',1)->column('uid');
+        if(empty($adminIds[0])){
+            $adminList = array_unique($kefuIds);
+        }else{
+            $adminList = array_unique(array_merge($adminIds,$kefuIds));
+        }
+        if(!is_array($adminList) || empty($adminList)) return false;
         foreach ($adminList as $uid){
             try{
                 $openid = WechatUser::uidToOpenid($uid);

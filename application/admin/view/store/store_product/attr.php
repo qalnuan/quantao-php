@@ -41,6 +41,9 @@
             margin: 0 2px;
         }
     </style>
+    <script>
+        window.test=1;
+    </script>
 </head>
 <body>
 <div id="store-attr" class="mp-form" v-cloak="">
@@ -74,7 +77,7 @@
                 :key="index"
                 :label="''+item.value+':'" >
             <Row>
-                <i-Col span="4"
+                <i-Col span="3"
                        v-for="(attr,k) in item.detail"
                        :key="attr"
                        :name="attr">
@@ -101,24 +104,28 @@
                 <Form-Item>
                     <Row>
                         <template v-for="(item,index) in attr.detail">
-                            <i-Col span="3" style="margin-right: 3px">
+                            <i-Col span="3" style="margin-right: 2px">
                                 {{index}}:{{item}}
                             </i-Col>
                         </template>
-                        <i-Col span="5" style="margin-right: 3px">
-                            <span :class="attr.check ? 'check':''">金额:</span>&nbsp;&nbsp;<i-Input placeholder="请输入金额" v-model="attr.price" style="width: 68%"
+                        <i-Col span="4">
+                            <span :class="attr.check ? 'check':''">金额:</span>&nbsp;&nbsp;<i-Input placeholder="金额" v-model="attr.price" style="width: 60%"
                                      :number="true"></i-Input>
                         </i-Col>
-                        <i-Col span="5" style="margin-right: 3px">
-                            <span :class="attr.check ? 'check':''">库存:</span>&nbsp;&nbsp;<i-Input placeholder="请输入库存" v-model="attr.sales" style="width: 68%"
-                                     :number="true"></i-Input>
+                        <i-Col span="4">
+                            <span :class="attr.check ? 'check':''">库存:</span>&nbsp;&nbsp;<i-Input placeholder="库存" v-model="attr.sales" style="width: 60%"
+                                                                                                  :number="true"></i-Input>
                         </i-Col>
-                        <i-Col span="2" offset="1" style="margin-right: 3px">
+                        <i-Col span="4">
+                            <span :class="attr.check ? 'check':''">成本价:</span>&nbsp;&nbsp;<i-Input placeholder="成本价" v-model="attr.cost" style="width: 60%"
+                                                                                                   :number="true"></i-Input>
+                        </i-Col>
+                        <i-Col span="2" offset="1" style="margin-right: 2px">
                             <div class="demo-upload">
                                 <img :src="attr.pic">
                                 <div class="demo-upload-cover">
                                     <Icon type="ios-eye-outline" @click.native="openPic(attr.pic)" ></Icon>
-                                    <Upload
+                              <!--      <Upload
                                             :show-upload-list="false"
                                             :on-success="uploadSuccess(attr)"
                                             :on-error="uploadError"
@@ -130,8 +137,9 @@
                                             style="display: inline-block"
                                             :goods="attr"
                                     >
-                                        <Icon type="ios-cloud-upload-outline"></Icon>
-                                    </Upload>
+                                    </Upload>-->
+                                    <Icon type="ios-cloud-upload-outline"  @click.native="getAttrPic(index)"></Icon>
+
 
                                 </div>
                             </div>
@@ -188,6 +196,29 @@
                 }
             },
             methods: {
+                getAttrPic(index){
+                    this.createFrame('选择图片','{:Url('widget.images/index')}?fodder='+index);
+                },
+                createFrame:function(title,src,opt){
+                    opt === undefined && (opt = {});
+                    return layer.open({
+                        type: 2,
+                        title:title,
+                        area: [(opt.w || 700)+'px', (opt.h || 650)+'px'],
+                        fixed: false, //不固定
+                        maxmin: true,
+                        moveOut:false,//true  可以拖出窗外  false 只能在窗内拖
+                        anim:5,//出场动画 isOutAnim bool 关闭动画
+                        offset:'auto',//['100px','100px'],//'auto',//初始位置  ['100px','100px'] t[ 上 左]
+                        shade:0,//遮罩
+                        resize:true,//是否允许拉伸
+                        content: src,//内容
+                        move:'.layui-layer-title'
+                    });
+                },
+                setAttrPic(index,pic){
+                    this.$set(this.attrs[index],'pic',pic);
+                },
                 attrHiddenBool(item){
                     if(item.value == ''){
                         $eb.message('error','请填写规则名称');
@@ -348,15 +379,12 @@
             },
             mounted (){
                 _vm = this;
-                if(_vm.items.length > 0){
-                    for (var i in _vm.items){
-                        if(_vm.items[i].detail.length > 0 ){
-                            _vm.items[i].attrHidden = true;
-                        }
-                    }
-                }
                 var resultAdmin = <?php echo $result && isset($result['attr']) && !empty($result['attr']) ? json_encode($result['attr']) : 'false'; ?>;
                 if(resultAdmin) this.hidden = true;
+
+                window.changeIMG = (index,pic)=>{
+                    _vm.setAttrPic(index,pic);
+                };
             }
         }).$mount(document.getElementById('store-attr'));
     });

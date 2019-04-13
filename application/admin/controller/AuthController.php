@@ -5,8 +5,7 @@ namespace app\admin\controller;
 use app\admin\model\system\SystemAdmin;
 use app\admin\model\system\SystemMenus;
 use app\admin\model\system\SystemRole;
-use basic\SystemBasic;
-use behavior\system\SystemBehavior;
+use behavior\admin\SystemBehavior;
 use service\HookService;
 use think\Url;
 
@@ -41,11 +40,11 @@ class AuthController extends SystemBasic
     {
         parent::_initialize();
         if(!SystemAdmin::hasActiveAdmin()) return $this->redirect('Login/index');
-            try{
-                $adminInfo = SystemAdmin::activeAdminInfoOrFail();
-            }catch (\Exception $e){
-                return $this->failed(SystemAdmin::getErrorInfo($e->getMessage()),Url::build('Login/index'));
-            }
+        try{
+            $adminInfo = SystemAdmin::activeAdminInfoOrFail();
+        }catch (\Exception $e){
+            return $this->failed(SystemAdmin::getErrorInfo($e->getMessage()),Url::build('Login/index'));
+        }
         $this->adminInfo = $adminInfo;
         $this->adminId = $adminInfo['id'];
         $this->getActiveAdminInfo();

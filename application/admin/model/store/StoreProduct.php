@@ -7,12 +7,13 @@
 
 namespace app\admin\model\store;
 
-use app\admin\model\wechat\WechatUser;
-use app\admin\model\system\Merchant;
 use service\PHPExcelService;
+use think\Db;
 use traits\ModelTrait;
 use basic\ModelBasic;
 use app\admin\model\store\StoreCategory as CategoryModel;
+use app\admin\model\order\StoreOrder;
+use app\admin\model\system\SystemConfig;
 
 /**
  * 产品管理 model
@@ -23,331 +24,570 @@ class StoreProduct extends ModelBasic
 {
     use ModelTrait;
 
+    /**删除产品
+     * @param $id
+     */
+    public static function proDelete($id){
+//        //删除产品
+//        //删除属性
+//        //删除秒杀
+//        //删除拼团
+//        //删除砍价
+//        //删除拼团
+//        $model=new self();
+//        self::beginTrans();
+//        $res0 = $model::del($id);
+//        $res1 = StoreSeckillModel::where(['product_id'=>$id])->delete();
+//        $res2 = StoreCombinationModel::where(['product_id'=>$id])->delete();
+//        $res3 = StoreBargainModel::where(['product_id'=>$id])->delete();
+//        //。。。。
+//        $res = $res0 && $res1 && $res2 && $res3;
+//        self::checkTrans($res);
+//        return $res;
+    }
     /**
-     * @param $where
+     * 获取连表查询条件
+     * @param $type
      * @return array
      */
-    public static function systemPage($where,$userId){
-        $model = new self;
-        if($where['is_hot'] != '')  $model = $model->where('is_hot',$where['is_hot']);
-        if($where['is_show'] != '')  $model = $model->where('is_show',$where['is_show']);
-        if($where['is_benefit'] != '')  $model = $model->where('is_benefit',$where['is_benefit']);
-        if($where['is_best'] != '')  $model = $model->where('is_best',$where['is_best']);
-        if($where['is_new'] != '')  $model = $model->where('is_new',$where['is_new']);
-        if($where['store_name'] != '')  {
-            $model = $model->where('store_name','LIKE',"%$where[store_name]%")->whereOr('keyword','LIKE',"%$where[store_name]%");
-            if((int)$where['store_name']) $model = $model->whereOr('id',$where['store_name']);
+    public static function setData($type){
+        switch ((int)$type){
+            case 1:
+                $data = ['p.is_show'=>1,'p.is_del'=>0];
+                break;
+            case 2:
+                $data = ['p.is_show'=>0,'p.is_del'=>0];
+                break;
+            case 3:
+                $data = ['p.is_del'=>0];
+                break;
+            case 4:
+                $data = ['p.is_show'=>1,'p.is_del'=>0,'pav.stock|p.stock'=>0];
+                break;
+            case 5:
+                $min = SystemConfig::getValue('store_stock');
+                $data = ['p.is_show'=>1,'p.is_del'=>0,'pav.stock|p.stock'=>['elt',$min]];
+                break;
+            case 6:
+                $data = ['p.is_del'=>1];
+                break;
+        };
+        return isset($data) ? $data: [];
+    }
+    /**
+     * 获取连表MOdel
+     * @param $model
+     * @return object
+     */
+    public static function getModelObject($where=[]){
+        $model=new self();
+        $model=$model->alias('p')->join('StoreProductAttrValue pav','p.id=pav.product_id','LEFT');
+        if(!empty($where)){
+            $model=$model->group('p.id');
+            if(isset($where['type']) && $where['type']!='' && ($data=self::setData($where['type']))){
+                $model = $model->where($data);
+            }
+            if(isset($where['store_name']) && $where['store_name']!=''){
+                $model = $model->where('p.store_name|p.keyword|p.id','LIKE',"%$where[store_name]%");
+            }
+            if(isset($where['cate_id']) && trim($where['cate_id'])!=''){
+                $catid1 = $where['cate_id'].',';//匹配最前面的cateid
+                $catid2 = ','.$where['cate_id'].',';//匹配中间的cateid
+                $catid3 = ','.$where['cate_id'];//匹配后面的cateid
+                $catid4 = $where['cate_id'];//匹配全等的cateid
+//                $model = $model->whereOr('p.cate_id','LIKE',["%$catid%",$catidab]);
+                $sql = " LIKE '$catid1%' OR `cate_id` LIKE '%$catid2%' OR `cate_id` LIKE '%$catid3' OR `cate_id`=$catid4";
+                $model->where(self::getPidSql($where['cate_id']));
+            }
+            if(isset($where['order']) && $where['order']!=''){
+                $model = $model->order(self::setOrder($where['order']));
+            }
         }
-        if($where['data'] != '') $model = $model->whereTime('add_time', 'between', explode('-',$where['data']));
-        $model = $model->order('id desc');
-        $model = $model->where('is_del',0);
-        $model = $model->where('mer_id',0);
-        if($where['export'] == 1){
-            $list = $model->select()->toArray();
+        return $model;
+    }
+
+    /**根据cateid查询产品 拼sql语句
+     * @param $cateid
+     * @return string
+     */
+    protected static function getCateSql($cateid){
+        $lcateid = $cateid.',%';//匹配最前面的cateid
+        $ccatid = '%,'.$cateid.',%';//匹配中间的cateid
+        $ratidid = '%,'.$cateid;//匹配后面的cateid
+        return  " `cate_id` LIKE '$lcateid' OR `cate_id` LIKE '$ccatid' OR `cate_id` LIKE '$ratidid' OR `cate_id`=$cateid";
+    }
+
+    /** 如果有子分类查询子分类获取拼接查询sql
+     * @param $cateid
+     * @return string
+     */
+    protected static function getPidSql($cateid){
+
+        $sql = self::getCateSql($cateid);
+        $ids = CategoryModel::where('pid', $cateid)->column('id');
+        //查询如果有子分类获取子分类查询sql语句
+        if($ids) foreach ($ids as $v) $sql .= " OR ".self::getcatesql($v);
+        return $sql;
+    }
+    /*
+     * 获取产品列表
+     * @param $where array
+     * @return array
+     *
+     */
+    public static function ProductList($where){
+        $model=self::getModelObject($where)->field(['p.*','sum(pav.stock) as vstock']);
+        if($where['excel']==0) $model=$model->page((int)$where['page'],(int)$where['limit']);
+        $data=($data=$model->select()) && count($data) ? $data->toArray():[];
+        foreach ($data as &$item){
+            $cateName = CategoryModel::where('id', 'IN', $item['cate_id'])->column('cate_name', 'id');
+            $item['cate_name']=is_array($cateName) ? implode(',',$cateName) : '';
+            $item['collect'] = StoreProductRelation::where('product_id',$item['id'])->where('type','collect')->count();//收藏
+            $item['like'] = StoreProductRelation::where('product_id',$item['id'])->where('type','like')->count();//点赞
+            $item['stock'] = self::getStock($item['id'])>0?self::getStock($item['id']):$item['stock'];//库存
+            $item['stock_attr'] = self::getStock($item['id'])>0 ? true : false;//库存
+            $item['sales_attr'] = self::getSales($item['id']);//属性销量
+            $item['visitor'] = Db::name('store_visit')->where('product_id',$item['id'])->where('product_type','product')->count();
+        }
+        if($where['excel']==1){
             $export = [];
-            foreach ($list as $index=>$item){
+            foreach ($data as $index=>$item){
                 $export[] = [
                     $item['store_name'],
                     $item['store_info'],
-                    CategoryModel::where('id',$item['cate_id'])->value('cate_name'),
+                    $item['cate_name'],
                     '￥'.$item['price'],
                     $item['stock'],
                     $item['sales'],
-                    StoreProductRelation::where('product_id',$item['id'])->where('type','like')->count(),
-                    StoreProductRelation::where('product_id',$item['id'])->where('type','collect')->count()
+                    $item['like'],
+                    $item['collect']
                 ];
-                $list[$index] = $item;
             }
-            $user=WechatUser::where(['uid'=>$userId])->value('nickname');
-
             PHPExcelService::setExcelHeader(['产品名称','产品简介','产品分类','价格','库存','销量','点赞人数','收藏人数'])
-                ->setExcelTile('产品导出','产品信息'.time(),'操作人昵称：'.$user.' 生成时间：'.date('Y-m-d H:i:s',time()))
+                ->setExcelTile('产品导出','产品信息'.time(),' 生成时间：'.date('Y-m-d H:i:s',time()))
                 ->setExcelContent($export)
                 ->ExcelSave();
         }
-        return self::page($model,function($item){
-            $item['cate_name'] = CategoryModel::where('id',$item['cate_id'])->value('cate_name');
-            $item['collect'] = StoreProductRelation::where('product_id',$item['id'])->where('type','collect')->count();//收藏
-            $item['like'] = StoreProductRelation::where('product_id',$item['id'])->where('type','like')->count();//点赞
-        },$where);
+        $count=self::getModelObject($where)->count();
+        return compact('count','data');
     }
 
-    /**
-     * @param $where
-     * @return array
-     */
-    public static function systemPageMerchant($where){
-        $model = new self;
-        if($where['is_hot'] != '')  $model = $model->where('is_hot',$where['is_hot']);
-        if($where['is_del'] != -1 && $where['is_del'] != '')  $model = $model->where('is_del',$where['is_del']);
-        else  $model = $model->where('is_del','IN','0,2');
-        if($where['is_show'] != '')  $model = $model->where('is_show',$where['is_show']);
-        if($where['is_benefit'] != '')  $model = $model->where('is_benefit',$where['is_benefit']);
-        if($where['is_best'] != '')  $model = $model->where('is_best',$where['is_best']);
-        if($where['is_new'] != '')  $model = $model->where('is_new',$where['is_new']);
-        if($where['store_name'] != '')  {
-            $model = $model->where('store_name','LIKE',"%$where[store_name]%")->whereOr('keyword','LIKE',"%$where[store_name]%");
+    public static function getChatrdata($type,$data){
+        $legdata=['销量','数量','点赞','收藏'];
+        $model=self::setWhereType(self::order('id desc'),$type);
+        $list=self::getModelTime(compact('data'),$model)
+            ->field('FROM_UNIXTIME(add_time,"%Y-%c-%d") as un_time,count(id) as count,sum(sales) as sales')
+            ->group('un_time')
+            ->distinct(true)
+            ->select()
+            ->each(function($item) use($data){
+                $item['collect']=self::getModelTime(compact('data'),new StoreProductRelation)->where(['type'=>'collect'])->count();
+                $item['like']=self::getModelTime(compact('data'),new StoreProductRelation)->where(['type'=>'like'])->count();
+            })->toArray();
+        $chatrList=[];
+        $datetime=[];
+        $data_item=[];
+        $itemList=[0=>[],1=>[],2=>[],3=>[]];
+        foreach ($list as $item){
+            $itemList[0][]=$item['sales'];
+            $itemList[1][]=$item['count'];
+            $itemList[2][]=$item['like'];
+            $itemList[3][]=$item['collect'];
+            array_push($datetime,$item['un_time']);
         }
-        $model = $model->order('id desc');
-        $model = $model->where('mer_id','NEQ',0);
-        return self::page($model,function($item){
-            $item['cate_name'] = CategoryModel::where('id',$item['cate_id'])->value('cate_name');
-            $item['mer_name'] = Merchant::where('id',$item['mer_id'])->value('mer_name');
-        },$where);
-    }
+        foreach ($legdata as $key=>$leg){
+            $data_item['name']=$leg;
+            $data_item['type']='line';
+            $data_item['data']=$itemList[$key];
+            $chatrList[]=$data_item;
+            unset($data_item);
+        }
+        unset($leg);
+        $badge=self::getbadge(compact('data'),$type);
+        $count=self::setWhereType(self::getModelTime(compact('data'),new self()),$type)->count();
+        return compact('datetime','chatrList','legdata','badge','count');
 
+    }
+    //获取 badge 内容
+    public static function getbadge($where,$type){
+        $StoreOrderModel=new StoreOrder;
+        $replenishment_num = SystemConfig::getValue('replenishment_num');
+        $replenishment_num = $replenishment_num > 0 ? $replenishment_num : 20;
+        $stock1=self::getModelTime($where,new self())->where('stock','<',$replenishment_num)->column('stock');
+        $sum_stock=self::where('stock','<',$replenishment_num)->column('stock');
+        $stk=[];
+        foreach ($stock1 as $item){
+            $stk[]=$replenishment_num-$item;
+        }
+        $lack=array_sum($stk);
+        $sum=[];
+        foreach ($sum_stock as $val){
+            $sum[]=$replenishment_num-$val;
+        }
+        return [
+            [
+                'name'=>'商品数量',
+                'field'=>'件',
+                'count'=>self::setWhereType(new self(),$type)->where('add_time','<',mktime(0,0,0,date('m'),date('d'),date('Y')))->sum('stock'),
+                'content'=>'商品数量总数',
+                'background_color'=>'layui-bg-blue',
+                'sum'=>self::sum('stock'),
+                'class'=>'fa fa fa-ioxhost',
+            ],
+            [
+                'name'=>'新增商品',
+                'field'=>'件',
+                'count'=>self::setWhereType(self::getModelTime($where,new self),$type)->where('is_new',1)->sum('stock'),
+                'content'=>'新增商品总数',
+                'background_color'=>'layui-bg-cyan',
+                'sum'=>self::where('is_new',1)->sum('stock'),
+                'class'=>'fa fa-line-chart',
+            ],
+            [
+                'name'=>'活动商品',
+                'field'=>'件',
+                'count'=>self::getModelTime($where,$StoreOrderModel)->sum('total_num'),
+                'content'=>'活动商品总数',
+                'background_color'=>'layui-bg-green',
+                'sum'=>$StoreOrderModel->sum('total_num'),
+                'class'=>'fa fa-bar-chart',
+            ],
+            [
+                'name'=>'缺货商品',
+                'field'=>'件',
+                'count'=>$lack,
+                'content'=>'总商品数量',
+                'background_color'=>'layui-bg-orange',
+                'sum'=>array_sum($sum),
+                'class'=>'fa fa-cube',
+            ],
+        ];
+    }
+    public static function setWhereType($model,$type){
+        switch ($type){
+            case 1:
+                $data = ['is_show'=>1,'is_del'=>0];
+                break;
+            case 2:
+                $data = ['is_show'=>0,'is_del'=>0];
+                break;
+            case 3:
+                $data = ['is_del'=>0];
+                break;
+            case 4:
+                $data = ['is_show'=>1,'is_del'=>0,'stock'=>0];
+                break;
+            case 5:
+                $data = ['is_show'=>1,'is_del'=>0,'stock'=>['elt',1]];
+                break;
+            case 6:
+                $data = ['is_del'=>1];
+                break;
+        }
+        if(isset($data)) $model = $model->where($data);
+        return $model;
+    }
+    /*
+     * layui-bg-red 红 layui-bg-orange 黄 layui-bg-green 绿 layui-bg-blue 蓝 layui-bg-cyan 黑
+     * 销量排行 top 10
+     */
+    public static function getMaxList($where){
+        $classs=['layui-bg-red','layui-bg-orange','layui-bg-green','layui-bg-blue','layui-bg-cyan'];
+        $model=StoreOrder::alias('a')->join('StoreOrderCartInfo c','a.id=c.oid')->join('__STORE_PRODUCT__ b','b.id=c.product_id');
+        $list=self::getModelTime($where,$model,'a.add_time')->group('c.product_id')->order('p_count desc')->limit(10)
+            ->field(['count(c.product_id) as p_count','b.store_name','sum(b.price) as sum_price'])->select();
+        if(count($list)) $list=$list->toArray();
+        $maxList=[];
+        $sum_count=0;
+        $sum_price=0;
+        foreach ($list as $item){
+            $sum_count+=$item['p_count'];
+            $sum_price=bcadd($sum_price,$item['sum_price'],2);
+        }
+        unset($item);
+        foreach ($list as $key=>&$item){
+            $item['w']=bcdiv($item['p_count'],$sum_count,2)*100;
+            $item['class']=isset($classs[$key]) ?$classs[$key]:( isset($classs[$key-count($classs)]) ? $classs[$key-count($classs)]:'');
+            $item['store_name']=self::getSubstrUTf8($item['store_name']);
+        }
+        $maxList['sum_count']=$sum_count;
+        $maxList['sum_price']=$sum_price;
+        $maxList['list']=$list;
+        return $maxList;
+    }
+    //获取利润
+    public static function ProfityTop10($where){
+        $classs=['layui-bg-red','layui-bg-orange','layui-bg-green','layui-bg-blue','layui-bg-cyan'];
+        $model=StoreOrder::alias('a')->join('StoreOrderCartInfo c','a.id=c.oid')->join('__STORE_PRODUCT__ b','b.id=c.product_id');
+        $list=self::getModelTime($where,$model,'a.add_time')->group('c.product_id')->order('profity desc')->limit(10)
+            ->field(['count(c.product_id) as p_count','b.store_name','sum(b.price) as sum_price','(b.price-b.cost) as profity'])
+            ->select();
+        if(count($list)) $list=$list->toArray();
+        $maxList=[];
+        $sum_count=0;
+        $sum_price=0;
+        foreach ($list as $item){
+            $sum_count+=$item['p_count'];
+            $sum_price=bcadd($sum_price,$item['sum_price'],2);
+        }
+        foreach ($list as $key=>&$item){
+            $item['w']=bcdiv($item['sum_price'],$sum_price,2)*100;
+            $item['class']=isset($classs[$key]) ?$classs[$key]:( isset($classs[$key-count($classs)]) ? $classs[$key-count($classs)]:'');
+            $item['store_name']=self::getSubstrUTf8($item['store_name'],30);
+        }
+        $maxList['sum_count']=$sum_count;
+        $maxList['sum_price']=$sum_price;
+        $maxList['list']=$list;
+        return $maxList;
+    }
+    //获取缺货
+    public static function getLackList($where){
+        $replenishment_num = SystemConfig::getValue('replenishment_num');
+        $replenishment_num = $replenishment_num > 0 ? $replenishment_num : 20;
+        $list=self::where('stock','<',$replenishment_num)->field(['id','store_name','stock','price'])->page((int)$where['page'],(int)$where['limit'])->order('stock asc')->select();
+        if(count($list)) $list=$list->toArray();
+        $count=self::where('stock','<',$replenishment_num)->count();
+        return ['count'=>$count,'data'=>$list];
+    }
+    //获取差评
+    public static function getnegativelist($where){
+        $list=self::alias('s')->join('StoreProductReply r','s.id=r.product_id')
+            ->field('s.id,s.store_name,s.price,count(r.product_id) as count')
+            ->page((int)$where['page'],(int)$where['limit'])
+            ->where('r.product_score',1)
+            ->order('count desc')
+            ->group('r.product_id')
+            ->select();
+        if(count($list)) $list=$list->toArray();
+        $count=self::alias('s')->join('StoreProductReply r','s.id=r.product_id')->group('r.product_id')->where('r.product_score',1)->count();
+        return ['count'=>$count,'data'=>$list];
+    }
+    public static function TuiProductList(){
+        $perd=StoreOrder::alias('s')->join('StoreOrderCartInfo c','s.id=c.oid')
+            ->field('count(c.product_id) as count,c.product_id as id')
+            ->group('c.product_id')
+            ->where('s.status',-1)
+            ->order('count desc')
+            ->limit(10)
+            ->select();
+        if(count($perd)) $perd=$perd->toArray();
+        foreach ($perd as &$item){
+            $item['store_name']=self::where(['id'=>$item['id']])->value('store_name');
+            $item['price']=self::where(['id'=>$item['id']])->value('price');
+        }
+        return $perd;
+    }
+    //编辑库存
     public static function changeStock($stock,$productId)
     {
         return self::edit(compact('stock'),$productId);
     }
-
-
-    /**
-     * @param $where
-     * @return array
-     */
-    public static function systemPageMer($where){
-        $model = new self;
-        if($where['is_hot'] != '')  $model = $model->where('is_hot',$where['is_hot']);
-        if($where['is_show'] != '')  $model = $model->where('is_show',$where['is_show']);
-        if($where['is_benefit'] != '')  $model = $model->where('is_benefit',$where['is_benefit']);
-        if($where['is_best'] != '')  $model = $model->where('is_best',$where['is_best']);
-        if($where['is_new'] != '')  $model = $model->where('is_new',$where['is_new']);
-        if($where['store_name'] != '')  $model = $model->where('store_name','LIKE',"%$where[store_name]%")->whereOr('keyword','LIKE',"%$where[store_name]%");
-        $model = $model->order('id desc');
-        $model = $model->where('mer_id',$where['mer_id']);
-        return self::page($model,function($item){
-            $item['cate_name'] = CategoryModel::where('id',$item['cate_id'])->value('cate_name');
-        },$where);
+    //获取库存数量
+    public static function getStock($productId)
+    {
+        return StoreProductAttrValue::where(['product_id'=>$productId])->sum('stock');
     }
-
+    //获取总销量
+    public static function getSales($productId)
+    {
+        return StoreProductAttrValue::where(['product_id'=>$productId])->sum('sales');
+    }
 
     public static function getTierList($model = null)
     {
         if($model === null) $model = new self();
         return $model->field('id,store_name')->where('is_del',0)->select()->toArray();
     }
-
     /**
-     * 销量折线图
-     * @param $orderPrice
+     * 设置查询条件
+     * @param array $where
      * @return array
      */
-    public static function brokenLine($orderPrice){
-        $orderCategory=[];$orderDays1 = [];$sum=[];
-        foreach ($orderPrice as $price){
-            $orderDays1[] = date('Y-m-d', $price['add_time']);
-            $orderCategory[]=$price['total_num'];
+    public static function setWhere($where){
+        $time['data']='';
+        if(isset($where['start_time']) && $where['start_time']!='' && isset($where['end_time']) && $where['end_time']!=''){
+            $time['data']=$where['start_time'].' - '.$where['end_time'];
+        }else{
+            $time['data']=isset($where['data'])? $where['data']:'';
         }
-        $orderDays =array_unique($orderDays1);
-        sort($orderDays);
-        for($i=0;$i<count($orderDays);$i++){
-            $t=$orderDays[$i];$t2=strtotime($t);
-            $t1=date('Y-m-d',strtotime("+1day",$t2));
-            $order = StoreOrder::whereTime('add_time', 'between', [$t,$t1])->sum('total_num');
-            $sum[]=$order;
+        $model=self::getModelTime($time, Db::name('store_cart')->alias('a')->join('__STORE_PRODUCT__ b','a.product_id=b.id'),'a.add_time');
+        if(isset($where['title']) && $where['title']!=''){
+            $model=$model->where('b.store_name|b.id','like',"%$where[title]%");
         }
-        if(isset($orderDays)&&isset($sum)){return ['c1'=>$orderDays,'c2'=>$sum];}
+        return $model;
     }
-
-
     /**
-     * 销量前十图表
-     * @param $where
-     * @param $color
-     * @param string $dat
+     * 获取真实销量排行
+     * @param array $where
      * @return array
      */
-    public static function salesVolume($where,$color,$dat=''){
-        if($dat){
-            if($where['sex']!='') {
-                if($where['sex']==1) {
-                    $user = StoreOrder::alias('s')->join('eb_wechat_user w', 's.uid=w.uid')->join('eb_store_order_cart_info c', 's.id=c.oid')->where('w.sex', 1)->whereTime('s.add_time', 'between', $dat)->select();
-                }else if($where['sex']==0){
-                    $user = StoreOrder::alias('s')->join('eb_wechat_user w', 's.uid=w.uid')->join('eb_store_order_cart_info c', 's.id=c.oid')->where('w.sex', 2)->whereTime('s.add_time', 'between', $dat)->select();
-                }else if($where['sex']==2){
-                    $user=StoreOrder::alias('s')->join('eb_store_order_cart_info c','s.id=c.oid')->whereTime('s.add_time', 'between', $dat)->select();
-                }
-            }else{
-                $user=StoreOrder::alias('s')->join('eb_store_order_cart_info c','s.id=c.oid')->whereTime('s.add_time', 'between', $dat)->select();
-            }
-        }else{
-            if($where['sex']!='') {
-                if($where['sex']==1) {
-                    $user = StoreOrder::alias('s')->join('eb_wechat_user w', 's.uid=w.uid')->join('eb_store_order_cart_info c', 's.id=c.oid')->where('w.sex', 1)->select();
-                }else if($where['sex']==0){
-                    $user = StoreOrder::alias('s')->join('eb_wechat_user w', 's.uid=w.uid')->join('eb_store_order_cart_info c', 's.id=c.oid')->where('w.sex', 2)->select();
-                }else if($where['sex']==2){
-                    $user=StoreOrder::alias('s')->join('eb_store_order_cart_info c','s.id=c.oid')->select();
-                }
-            }else{
-                $user=StoreOrder::alias('s')->join('eb_store_order_cart_info c','s.id=c.oid')->select();
-            }
+    public static function getSaleslists($where){
+        $data=self::setWhere($where)->where('a.is_pay',1)
+            ->group('a.product_id')
+            ->field(['sum(a.cart_num) as num_product','b.store_name','b.image','b.price','b.id'])
+            ->order('num_product desc')
+            ->page((int)$where['page'],(int)$where['limit'])
+            ->select();
+        $count=self::setWhere($where)->where('a.is_pay',1)->group('a.product_id')->count();
+        foreach ($data as &$item){
+            $item['sum_price']=bcmul($item['num_product'],$item['price'],2);
         }
-        $stoer=[];$storeSum=[];
-        foreach($user as $v){
-            $stoer[]=$v['product_id'];
-            $storeSum[]=$v['total_num'];
-        }
-        $storeSum1=array_sum($storeSum);$c=array_count_values($stoer);arsort($c);//对数组单元进行由高到低排序并保持索引关系
-        $str=array_slice($c,0,10,true );
-        $puid=[];$pname=[];$price=[];
-        foreach($str as $k=>$v){
-            $pname[]=self::where('id',$k)->value('store_name');
-            $price[]=self::where('id',$k)->value('price');
-            $puid[]=$v;
-        }
-        $total=array_sum($puid);
-        $cunt=count($str);
-        $sump=[];
-        if($cunt>0){
-            for($i=0;$i<$cunt;$i++){
-                $sump[]=$price[$i]*$puid[$i];
-            }
-            $pric=array_sum($sump);
-        }else{
-            $pric=0;
-        }
-        foreach($pname as $key=>$val){
-            $stores[$key]['name']=$pname[$key];
-            $stores[$key]['sum']=$puid[$key];
-            $stores[$key]['price']=$price[$key];
-            $stores[$key]['color']=$color[$key];
-        }
-        if(isset($stores)&&isset($storeSum1)){return ['c1'=>$stores,'c2'=>$storeSum1,'c3'=>$total,'c4'=>$pric];}
-
+        return compact('data','count');
     }
-    //利润前十图表
-    public static function profit($where,$color,$dat=''){
-        if($dat){
-            if($where['sex1']!=''){
-                if($where['sex1']==1) {
-                    $user1=StoreOrder::alias('s')->join('eb_wechat_user w','s.uid=w.uid')->join('eb_store_order_cart_info c','s.id=c.oid')->where('w.sex',1)->whereTime('s.add_time', 'between', $dat)->select();
-                }else if($where['sex1']==0){
-                    $user1 = StoreOrder::alias('s')->join('eb_wechat_user w', 's.uid=w.uid')->join('eb_store_order_cart_info c', 's.id=c.oid')->where('w.sex', 2)->whereTime('s.add_time', 'between', $dat)->select();
-                }else if($where['sex1']==2){
-                    $user1=StoreOrder::alias('s')->join('eb_store_order_cart_info c','s.id=c.oid')->whereTime('s.add_time', 'between', $dat)->select();
-                }
-            }else{
-                $user1=StoreOrder::alias('s')->join('eb_store_order_cart_info c','s.id=c.oid')->whereTime('s.add_time', 'between', $dat)->select();
-            }
-        }else{
-            if($where['sex1']!='') {
-                if($where['sex1']==1) {
-                    $user1=StoreOrder::alias('s')->join('eb_wechat_user w','s.uid=w.uid')->join('eb_store_order_cart_info c','s.id=c.oid')->where('w.sex',1)->select();
-                }else if($where['sex1']==0){
-                    $user1 = StoreOrder::alias('s')->join('eb_wechat_user w', 's.uid=w.uid')->join('eb_store_order_cart_info c', 's.id=c.oid')->where('w.sex', 2)->select();
-                }else if($where['sex1']==2){
-                    $user1=StoreOrder::alias('s')->join('eb_store_order_cart_info c','s.id=c.oid')->select();
-                }
-            }else{
-                $user1=StoreOrder::alias('s')->join('eb_store_order_cart_info c','s.id=c.oid')->select();
-            }
+    public static function SaveProductExport($where){
+        $list=self::setWhere($where)
+            ->where('a.is_pay',1)
+            ->field(['sum(a.cart_num) as num_product','b.store_name','b.image','b.price','b.id'])
+            ->order('num_product desc')
+            ->group('a.product_id')
+            ->select();
+        $export=[];
+        foreach ($list as $item){
+            $export[]=[
+                $item['id'],
+                $item['store_name'],
+                $item['price'],
+                bcmul($item['num_product'],$item['price'],2),
+                $item['num_product'],
+            ];
         }
-        $stoer=[];//商品ID
-        $storeSum=[];//总价
-        $price=[];//商品单价
-        $piece=[];//商总件数
-        foreach($user1 as $v){
-            $stoer[]=$v['product_id'];
-            $storeSum[]=$v['total_price'];
-        }
-        $priceSum=array_sum($storeSum);
-        $c=array_count_values($stoer);
-        arsort($c);//对数组单元进行由高到低排序并保持索引关系
-        $str=array_slice($c,0,10,true );
-        $pname=[];
-        foreach($str as $k=>$v){
-            $pname[]=self::where('id',$k)->value('store_name');
-            $price[]=self::where('id',$k)->value('price');
-            $piece[]=$v;
-        }
-        $cunt=count($str);
-        $total1=array_sum($piece);
-        $suml=[];
-        if($cunt>0) {
-            for ($i = 0; $i < $cunt; $i++) {
-                $suml[] = $piece[$i] * $price[$i];
-            }
-            $pric = array_sum($suml);
-        }else{
-            $pric=0;
-        }
-        foreach($pname as $key=>$val){
-            $stor[$key]['name']=$pname[$key];
-            $stor[$key]['price']=$price[$key];
-            $stor[$key]['piece']=$piece[$key];
-            $stor[$key]['color']=$color[$key];
-        }
-        if(isset($stor)&&isset($priceSum)){return ['c1'=>$stor,'c2'=>$priceSum,'c3'=>$total1,'c4'=>$pric];}
-
+        PHPExcelService::setExcelHeader(['商品编号','商品名称','商品售价','销售额','销量'])
+            ->setExcelTile('产品销量排行','产品销量排行',' 生成时间：'.date('Y-m-d H:i:s',time()))
+            ->setExcelContent($export)
+            ->ExcelSave();
     }
-//差评图表
-    public static function ncomment($dat=''){
-        if($dat){
-            $store0=self::alias('s')->join('eb_store_product_reply r','s.id=r.product_id')->field('product_id,store_name,price')->whereTime('r.add_time', 'between', $dat)->where('product_score',1)->select();
-        }else{
-            $store0=self::alias('s')->join('eb_store_product_reply r','s.id=r.product_id')->field('product_id,store_name,price')->where('product_score',1)->select();
-        }
-        $produ=array();$frequency=[];
-        foreach($store0 as $v){
-            $produ[]=$v['product_id'];
-        }
-        $uid=array_unique($produ);
-        foreach($uid as $v){
-            $n=0;
-            foreach($store0 as $t){
-                if($v==$t['product_id'])
-                    $n++;
-            }
-            $frequency[]=$n;
-        }
-        $comment= array_combine($uid,$frequency);
-        arsort($comment);//对数组单元进行由高到低排序并保持索引关系
-        $str=array_slice($comment,0,10,true );
-        $name=[];$pric=[];$sun=[];$uid=[];$stor1=[];
-        foreach($str as $k=>$v){
-            $uid[]=$k;
-            $name[]= self::where('id',$k)->value('store_name');
-            $pric[]=self::where('id',$k)->value('price');
-            $sun[]=$v;
-        }
-        foreach($name as $key=>$val){
-            $stor1[$key]['name']=$name[$key];
-            $stor1[$key]['price']=$pric[$key];
-            $stor1[$key]['sun']=$sun[$key];
-            $stor1[$key]['uid']=$uid[$key];
-        }
-        return $stor1;
-    }
-
-    /**
-     * 退款图表
-     * @param string $dat
-     * @return array
+    /*
+     *  单个商品详情的头部查询
+     *  $id 商品id
+     *  $where 条件
      */
-    public static function refund($dat=''){
-        if($dat){
-            $perd=StoreOrder::alias('s')->join('eb_store_order_cart_info c','s.id=c.oid')->where('status',-1)->whereTime('s.add_time', 'between', $dat)->column('product_id');
-        }else{
-            $perd=StoreOrder::alias('s')->join('eb_store_order_cart_info c','s.id=c.oid')->where('status',-1)->column('product_id');
+    public static function getProductBadgeList($id,$where){
+        $data['data']=$where;
+        $list=self::setWhere($data)
+            ->field(['sum(a.cart_num) as num_product','b.id','b.price'])
+            ->where('a.is_pay',1)
+            ->group('a.product_id')
+            ->order('num_product desc')
+            ->select();
+        //排名
+        $ranking=0;
+        //销量
+        $xiaoliang=0;
+        //销售额 数组
+        $list_price=[];
+        foreach ($list as $key=>$item){
+            if($item['id']==$id){
+                $ranking=$key+1;
+                $xiaoliang=$item['num_product'];
+            }
+            $value['sum_price']=$item['price']*$item['num_product'];
+            $value['id']=$item['id'];
+            $list_price[]=$value;
         }
-        $c=array_count_values($perd);
-        arsort($c);//对数组单元进行由高到低排序并保持索引关系
-        $str=array_slice($c,0,10,true );
-        $sname=[];$price=[];$sun=[];$sid=[];$refund=[];
-        foreach($str as $k=>$v){
-            $sid[]=$k;
-            $sname[]=self::where('id',$k)->value('store_name');
-            $price[]=self::where('id',$k)->value('price');
-            $sun[]=$v;
+        //排序
+        $list_price=self::my_sort($list_price,'sum_price',SORT_DESC);
+        //销售额排名
+        $rank_price=0;
+        //当前销售额
+        $num_price=0;
+        if($list_price!==false && is_array($list_price)){
+            foreach ($list_price as $key=>$item){
+                if($item['id']==$id){
+                    $num_price=$item['sum_price'];
+                    $rank_price=$key+1;
+                    continue;
+                }
+            }
         }
-        foreach($sname as $key=>$val){
-            $refund[$key]['name']=$sname[$key];
-            $refund[$key]['price']=$price[$key];
-            $refund[$key]['sid']=$sid[$key];
-            $refund[$key]['sun']=$sun[$key];
+        return [
+            [
+                'name'=>'销售额排名',
+                'field'=>'名',
+                'count'=>$rank_price,
+                'background_color'=>'layui-bg-blue',
+            ],
+            [
+                'name'=>'销量排名',
+                'field'=>'名',
+                'count'=>$ranking,
+                'background_color'=>'layui-bg-blue',
+            ],
+            [
+                'name'=>'商品销量',
+                'field'=>'名',
+                'count'=>$xiaoliang,
+                'background_color'=>'layui-bg-blue',
+            ],
+            [
+                'name'=>'点赞次数',
+                'field'=>'个',
+                'count'=>Db::name('store_product_relation')->where('product_id',$id)->where('type','like')->count(),
+                'background_color'=>'layui-bg-blue',
+            ],
+            [
+                'name'=>'销售总额',
+                'field'=>'元',
+                'count'=>$num_price,
+                'background_color'=>'layui-bg-blue',
+                'col'=>12,
+            ],
+        ];
+    }
+    /*
+     * 处理二维数组排序
+     * $arrays 需要处理的数组
+     * $sort_key 需要处理的key名
+     * $sort_order 排序方式
+     * $sort_type 类型 可不填写
+     */
+    public static function my_sort($arrays,$sort_key,$sort_order=SORT_ASC,$sort_type=SORT_NUMERIC ){
+        if(is_array($arrays)){
+            foreach ($arrays as $array){
+                if(is_array($array)){
+                    $key_arrays[] = $array[$sort_key];
+                }else{
+                    return false;
+                }
+            }
         }
-        return $refund;
+        if(isset($key_arrays)){
+            array_multisort($key_arrays,$sort_order,$sort_type,$arrays);
+            return $arrays;
+        }
+        return false;
+    }
+    /*
+     * 查询单个商品的销量曲线图
+     *
+     */
+    public static function getProductCurve($where){
+        $list=self::setWhere($where)
+            ->where('a.product_id',$where['id'])
+            ->where('a.is_pay',1)
+            ->field(['FROM_UNIXTIME(a.add_time,"%Y-%m-%d") as _add_time','sum(a.cart_num) as num'])
+            ->group('_add_time')
+            ->order('_add_time asc')
+            ->select();
+        $seriesdata=[];
+        $date=[];
+        $zoom='';
+        foreach ($list as $item){
+            $date[]=$item['_add_time'];
+            $seriesdata[]=$item['num'];
+        }
+        if(count($date)>$where['limit']) $zoom=$date[$where['limit']-5];
+        return compact('seriesdata','date','zoom');
+    }
+    /*
+     * 查询单个商品的销售列表
+     *
+     */
+    public static function getSalelList($where){
+        return self::setWhere($where)
+            ->where(['a.product_id'=>$where['id'],'a.is_pay'=>1])
+            ->join('user c','c.uid=a.uid')
+            ->field(['FROM_UNIXTIME(a.add_time,"%Y-%m-%d") as _add_time','c.nickname','b.price','a.id','a.cart_num as num'])
+            ->page((int)$where['page'],(int)$where['limit'])
+            ->select();
     }
 }

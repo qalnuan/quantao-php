@@ -48,7 +48,7 @@ class StoreBargain extends ModelBasic
      * @param string $field
      * @return array
      */
-    public static function getBargainTerm($bargainId = 0,$field = 'id,product_id,bargain_num,num,rule,unit_name,image,title,price,min_price,image,description,start_time,stop_time'){
+    public static function getBargainTerm($bargainId = 0,$field = 'id,product_id,bargain_num,num,unit_name,image,title,price,min_price,image,description,start_time,stop_time,rule'){
         if(!$bargainId) return [];
         $model = self::validWhere();
         $bargain = $model->field($field)->where('id',$bargainId)->find();
@@ -109,15 +109,62 @@ class StoreBargain extends ModelBasic
     public static function getBargainStock($bargainId = 0){
         return self::where('id',$bargainId)->value('stock');
     }
-
     /**
-     * 修改库存和销量
-     * @param int $bargainId
-     * @param int $num
+     * 修改销量和库存
+     * @param $num
+     * @param $CombinationId
      * @return bool
      */
-    public static function decBargainStock($num = 0,$bargainId = 0){
+    public static function decBargainStock($num,$bargainId)
+    {
         $res = false !== self::where('id',$bargainId)->dec('stock',$num)->inc('sales',$num)->update();
         return $res;
+    }
+
+    /**
+     * 获取所有砍价产品的浏览量
+     * @return array|false|\PDOStatement|string|\think\Model
+     */
+    public static function getBargainLook(){
+        return self::field('sum(look) as look')->find();
+    }
+
+    /**
+     * 获取所有砍价产品的分享量
+     * @return array|false|\PDOStatement|string|\think\Model
+     */
+    public static function getBargainShare(){
+        return self::field('sum(share) as share')->find();
+    }
+
+    /**
+     * 添加砍价产品分享次数
+     * @param int $id
+     * @return bool
+     */
+    public static function addBargainShare($id = 0){
+        if(!$id) return false;
+        return self::where('id',$id)->inc('share',1)->update();
+    }
+
+    /**
+     * 添加砍价产品浏览次数
+     * @param int $id
+     * @return bool
+     */
+    public static function addBargainLook($id = 0){
+        if(!$id) return false;
+        return self::where('id',$id)->inc('look',1)->update();
+    }
+
+    /**
+     * TODO  判断是否可以出售
+     * @param $id
+     * @param int $cartNum
+     * @return int|string
+     * @throws \think\Exception
+     */
+    public static function isValidCartBargain($id,$cartNum = 1){
+       return self::validWhere()->where('id',$id)->where('stock','>',$cartNum)->count();
     }
 }

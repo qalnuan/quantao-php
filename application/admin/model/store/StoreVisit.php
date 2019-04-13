@@ -12,7 +12,7 @@ use traits\ModelTrait;
 use basic\ModelBasic;
 use app\admin\model\user\User;
 /**
- *
+ * 商品浏览分析
  * Class StoreOrder
  * @package app\admin\model\store
  */

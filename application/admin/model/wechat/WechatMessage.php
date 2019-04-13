@@ -33,9 +33,11 @@ class WechatMessage extends ModelBasic
         'event_subscribe'=>'关注微信号',
         'event_unsubscribe'=>'取消关注微信号',
         'event_scan'=>'扫码',
+        'event_templatesendjobfinish'=>'进入小程序',
         'event_location'=>'获取位置',
         'event_click'=>'点击微信菜单关键字',
         'event_view'=>'点击微信菜单链接',
+        'event_view_miniprogram'=>'点击微信菜单进入小程序',
         'text'=>'收到文本消息',
         'image'=>'收到图片消息',
         'video'=>'收到视频消息',
@@ -178,7 +180,7 @@ class WechatMessage extends ModelBasic
             $model = $model->where('m.add_time','>',strtotime($startTime));
             $model = $model->where('m.add_time','<',strtotime($endTime));
         }
-        $model = $model->field('u.nickname,m.*')->join('eb_wechat_user u','u.openid=m.openid')->order('m.id desc');
+        $model = $model->field('u.nickname,m.*')->join('WechatUser u','u.openid=m.openid')->order('m.id desc');
         return self::page($model,function ($item){
          switch ($item['type']){
             case 'text': $item['result_arr'] = self::tidyText(json_decode($item['result'],true));break;

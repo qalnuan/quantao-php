@@ -1,7 +1,8 @@
 CRMEB 基于thinkphp5的电商管理系统 [官网](http://www.crmeb.com)
 ===============
-
-> ThinkPHP5的运行环境要求PHP5.4以上。
+常见问题：http://blog.9gt.net/?p=136
+> ThinkPHP5的运行环境要求PHP5.5.5以上。
+QQ群：116279623
 
 ## 目录结构
 
@@ -13,25 +14,33 @@ www  WEB部署目录（或者子目录）
 │  ├─common             公共模块目录（可以更改）
 │  ├─admin               后台目录
 │  │  ├─controller      控制器目录
-│  │  │  ├─system      后台目录
-│  │  │  ├─wechat      微信目录
+│  │  │  ├─agent        代理商
+│  │  │  ├─article      文章内容管理
+│  │  │  ├─distributor  分销
+│  │  │  ├─finance      财务管理
+│  │  │  ├─order       订单管理
+│  │  │  ├─record      数据统计
+│  │  │  ├─routine     小程序后台管理
+│  │  │  ├─server      程序升级服务端管理
+│  │  │  ├─setting     系统设置
 │  │  │  ├─store       商城目录
+│  │  │  ├─system      系统维护
+│  │  │  ├─ump         营销管理
 │  │  │  ├─user        用户目录
+│  │  │  ├─wechat      微信管理目录
+│  │  │  ├─widget      公共调用
+│  │  │  ├─merchant    商户目录
+│  │  │  ├─AuthController.php        后台基类
+│  │  │  ├─Common.php                后台公共方法类
+│  │  │  ├─Login.php                 登录
+│  │  │  ├─Index.php                 后台首页
 │  │  │  └─AuthController.php        后台基类
 │  │  ├─model           模型目录
-│  │  │  ├─system      后台目录
-│  │  │  ├─wechat      微信目录
-│  │  │  ├─store       商城目录
-│  │  │  └─user        用户目录
 │  │  ├─view            视图目录
 │  │  │  ├─index       首页目录
 │  │  │  ├─login       登录目录
-│  │  │  ├─public      公共目录
-│  │  │  ├─store       商城目录
-│  │  │  ├─system      后台目录
-│  │  │  ├─wechat      微信目录
-│  │  │  ├─user        用户目录
-│  │  │  └─widget      图标目录
+│  │  │  └─public      公共目录
+│  │  ├─common.php      后台公共函数
 │  │  └─config.php      模块配置文件
 │  │
 │  ├─wap                 手机端目录
@@ -41,7 +50,7 @@ www  WEB部署目录（或者子目录）
 │  │  │  ├─merchant    后台目录
 │  │  │  ├─store       商城目录
 │  │  │  └─user        用户目录
-│  │  ├─view            视图目录
+│  │  ├─view           视图目录
 │  │  │  ├─index       首页目录
 │  │  │  ├─login       登录目录
 │  │  │  ├─public      公共目录
@@ -50,23 +59,41 @@ www  WEB部署目录（或者子目录）
 │  │  │  ├─article     文章目录
 │  │  │  ├─my          用户目录
 │  │  │  └─service     客服目录
+│  │  ├─common.php      wap公共函数
 │  │  └─config.php      模块配置文件
-│  │
-│  ├─wechat              微信服务目录
-│  │  └─controller      控制器目录
 │  │
 │  ├─command.php        命令行工具配置文件
 │  ├─common.php         公共函数文件
 │  ├─config.php         公共配置文件
 │  ├─route.php          路由配置文件
 │  ├─tags.php           应用行为扩展定义文件
+│  ├─version.php        版本文件
 │  └─database.php       数据库配置文件
 │
 ├─public                公共目录
-│  ├─static               全局静态文件目录
-│  ├─system               后台静态文件目录
+│  ├─static              全局静态文件目录
+│  │    ├─plug           第三方插件前后台公用
+│  │    ├─css            css前后台公用
+│  │    └─js             js前后台公用
+│  ├─system              后台静态文件目录
+│  │    ├─plug           第三方插件后台
+│  │    ├─js             后台
+│  │    ├─css            后台
+│  │    ├─images         后台
+│  │    ├─frame          后台框架
+│  │    ├─module         后台功能模块
+│  │    ├─plug           后台第三方插件
+│  │    └─util           后台自定义常用工具
 │  ├─wap                  前台静态文件目录
-│  └─uploads              上传文件目录
+│  │   ├──first           模版1
+│  ├─install              程序安装文件目录
+│  ├─uploads              上传文件目录
+│  ├─router.php           路由文件
+│  ├─index.php            程序入口文件
+│  ├─mysql.php            数据字典工具
+│  ├─.htaccess            apache 环境伪静态文件
+│  ├─nginx.conf           nginx 环境伪静态文件
+│  └─web.config           iis 环境伪静态文件
 │
 ├─thinkphp              框架系统目录
 │  ├─lang               语言文件目录
@@ -93,6 +120,13 @@ www  WEB部署目录（或者子目录）
 │  ├─service           全局服务目录
 │  └─traits            公共特性目录
 │
+├─vendor               composer扩展类库目录
+│  ├─xaboy             后台快速创建表单类
+│  ├─tp5er             数据库备份类
+│  ├─phpoffice         表格操作类
+│  ├─overtrue          微信接口类
+│  └─traits            公共特性目录
+│
 ├─runtime               应用的运行时目录（可写，可定制）
 ├─vendor                第三方类库目录（Composer依赖库）
 ├─index.php             入口文件
@@ -115,7 +149,7 @@ www  WEB部署目录（或者子目录）
 ## 微信配置
 
 + 授权接口 : 
-  + `/wechat/index/serve`
+  + `/wap/wechat/serve`
 + 支付api接口 : 
   + `/wap/my/`
   + `/wap/my/order/uni/`
@@ -661,7 +695,7 @@ www  WEB部署目录（或者子目录）
     // 去除左右空格
     trim:function(test)
 ```
-### public/wap/crmeb/module/store.js api请求
+### public/wap/first/crmeb/module/store.js api请求
 
 ```
     /**

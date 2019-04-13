@@ -9,6 +9,7 @@ namespace app\admin\model\article;
 use traits\ModelTrait;
 use app\admin\model\article\Article as ArticleModel;
 use basic\ModelBasic;
+use service\UtilService as Util;
 
 /**
  * 文章分类model
@@ -52,6 +53,16 @@ class ArticleCategory extends ModelBasic
      */
     public  static function getField($field){
           return self::where('is_del','eq',0)->where('status','eq',1)->where('hidden','eq',0)->column($field);
+    }
+    /**
+     * 分级排序列表
+     * @param null $model
+     * @return array
+     */
+    public static function getTierList($model = null)
+    {
+        if($model === null) $model = new self();
+        return Util::sortListTier($model->select()->toArray());
     }
 
     /**

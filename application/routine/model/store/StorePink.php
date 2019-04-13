@@ -9,8 +9,10 @@ namespace app\routine\model\store;
 
 use app\routine\model\store\StoreCombination;
 use app\routine\model\user\User;
+use app\routine\model\user\UserBill;
 use app\routine\model\user\WechatUser;
 use basic\ModelBasic;
+use service\SystemConfigService;
 use service\WechatTemplateService;
 use think\Url;
 use traits\ModelTrait;
@@ -148,16 +150,22 @@ class StorePink extends ModelBasic
      * @param $pid
      */
     public static function orderPinkAfter($uidAll,$pid){
-         foreach ($uidAll as $v){
-             $openid = WechatUser::uidToOpenid($v);
-             WechatTemplateService::sendTemplate($openid,WechatTemplateService::ORDER_USER_GROUPS_SUCCESS,[
-                 'first'=>'亲，您的拼团已经完成了',
-                 'keyword1'=> self::where('id',$pid)->whereOr('k_id',$pid)->where('uid',$v)->value('order_id'),
-                 'keyword2'=> self::alias('p')->where('p.id',$pid)->whereOr('p.k_id',$pid)->where('p.uid',$v)->join('__STORE_COMBINATION__ c','c.id=p.cid')->value('c.title'),
-                 'remark'=>'点击查看订单详情'
-             ],Url::build('My/order_pink_after',['id'=>$pid],true,true));
-         }
-         self::where('uid','IN',implode(',',$uidAll))->where('id',$pid)->whereOr('k_id',$pid)->update(['is_tpl'=>1]);
+//         foreach ($uidAll as $v){
+//             $openid = WechatUser::uidToOpenid($v);
+//             WechatTemplateService::sendTemplate($openid,WechatTemplateService::ORDER_USER_GROUPS_SUCCESS,[
+//                 'first'=>'亲，您的拼团已经完成了',
+//                 'keyword1'=> self::where('id',$pid)->whereOr('k_id',$pid)->where('uid',$v)->value('order_id'),
+//                 'keyword2'=> self::alias('p')->where('p.id',$pid)->whereOr('p.k_id',$pid)->where('p.uid',$v)->join('__STORE_COMBINATION__ c','c.id=p.cid')->value('c.title'),
+//                 'remark'=>'点击查看订单详情'
+//             ],Url::build('My/order_pink_after',['id'=>$pid],true,true));
+//         }
+         self::beginTrans();
+         $res1 = self::where('uid','IN',implode(',',$uidAll))->where('id',$pid)->whereOr('k_id',$pid)->update(['is_tpl'=>1]);
+         $res2 = true;
+//         if(SystemConfigService::get('colonel_status')) $res2 = self::setRakeBackColonel($pid);
+//         else $res2 = true;
+         $res = $res1 && $res2;
+         self::checkTrans($res);
     }
 
     /**
@@ -183,8 +191,8 @@ class StorePink extends ModelBasic
      * @param $id
      * @return array|false|\PDOStatement|string|\think\Model
      */
-    public static function getCurrentPink($id,$uid=false){
-        $uid = $uid==false?User::getActiveUid():$uid;//获取当前登录人的uid
+    public static function getCurrentPink($id){
+        $uid = User::getActiveUid();//获取当前登录人的uid
         $pink = self::where('id',$id)->where('uid',$uid)->find();
         if(!$pink) $pink = self::where('k_id',$id)->where('uid',$uid)->find();
         return StoreOrder::where('id',$pink['order_id_key'])->value('order_id');
@@ -297,7 +305,6 @@ class StorePink extends ModelBasic
         if($order['pink_id']){//拼团存在
             $res = false;
             $pink['uid'] = $order['uid'];//用户id
-            db('cache')->insert(['key'=>'test'.rand(1,20),'result'=>json_encode($order),'add_time'=>time()]);
             if(self::isPinkBe($pink,$order['pink_id'])) return false;
             $pink['order_id'] = $order['order_id'];//订单id  生成
             $pink['order_id_key'] = $order['id'];//订单id  数据库id
@@ -323,7 +330,6 @@ class StorePink extends ModelBasic
             $pink['total_num'] = $order['total_num'];//购买个数
             $pink['total_price'] = $order['pay_price'];//总金额
             $pink['k_id'] = 0;//拼团id
-            db('cache')->insert(['key'=>'test'.rand(1,20),'result'=>json_encode($pink),'add_time'=>time()]);
             foreach ($order['cartInfo'] as $v){
                 $pink['cid'] = $v['combination_id'];//拼团产品id
                 $pink['pid'] = $v['product_id'];//产品id
@@ -341,4 +347,27 @@ class StorePink extends ModelBasic
             else return false;
         }
     }
+
+    /**
+     * 拼团成功后给团长返佣金
+     * @param int $id
+     * @return bool
+     */
+//    public static function setRakeBackColonel($id = 0){
+//        if(!$id) return false;
+//        $pinkRakeBack = self::where('id',$id)->field('people,price,uid,id')->find()->toArray();
+//        $countPrice = bcmul($pinkRakeBack['people'],$pinkRakeBack['price'],2);
+//        if(bcsub((float)$countPrice,0,2) <= 0) return true;
+//        $rakeBack = (SystemConfigService::get('rake_back_colonel') ?: 0)/100;
+//        if($rakeBack <= 0) return true;
+//        $rakeBackPrice = bcmul($countPrice,$rakeBack,2);
+//        if($rakeBackPrice <= 0) return true;
+//        $mark = '拼团成功,奖励佣金'.floatval($rakeBackPrice);
+//        self::beginTrans();
+//        $res1 = UserBill::income('获得拼团佣金',$pinkRakeBack['uid'],'now_money','colonel',$rakeBackPrice,$id,0,$mark);
+//        $res2 = User::bcInc($pinkRakeBack['uid'],'now_money',$rakeBackPrice,'uid');
+//        $res = $res1 && $res2;
+//        self::checkTrans($res);
+//        return $res;
+//    }
 }

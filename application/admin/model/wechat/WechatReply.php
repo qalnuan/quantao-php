@@ -26,6 +26,15 @@ class WechatReply extends ModelBasic
 
     public static $reply_type = ['text','image','news','voice'];
 
+    /**根据关键字查询一条
+     * @param $key
+     */
+    public static function getDataByKey($key){
+        $resdata = ['data'=>''];
+        $resdata = self::where('key',$key)->find();
+        $resdata['data'] = json_decode($resdata['data'],true);
+        return $resdata;
+    }
     public function getUrlAttr($value,$data)
     {
         return $value == '' ? \think\Url::build('index/index/news',['id'=>$data['id']]) : $value;
@@ -150,7 +159,7 @@ class WechatReply extends ModelBasic
         $siteUrl = SystemConfig::getValue('site_url');
         foreach ($data as $k=>$v){
             if(empty($v['url'])) $data[$k]['url'] = $siteUrl.Url::build('wap/article/visit',['id'=>$v['id']]);
-            if($v['image']) $data[$k]['image'] = $siteUrl.$v['image'];
+            if($v['image']) $data[$k]['image'] = $v['image'];
         }
         return $data;
     }
@@ -192,6 +201,7 @@ class WechatReply extends ModelBasic
             return WechatService::voiceMessage($res['data']['media_id']);
         }
     }
+
 
 
 }

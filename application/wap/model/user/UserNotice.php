@@ -20,7 +20,7 @@ class UserNotice extends ModelBasic
 {
     use ModelTrait;
     public static function getNotice($uid){
-        $count_notice = self::where('uid','like',"%,$uid,%")->where("is_send",1)->whereOr("uid","")->count();
+        $count_notice = self::where('uid','like',"%,$uid,%")->where("is_send",1)->count();
         $see_notice = UserNoticeSee::where("uid",$uid)->count();
         return $count_notice-$see_notice;
     }
@@ -29,10 +29,11 @@ class UserNotice extends ModelBasic
      */
     public static function getNoticeList($uid,$page,$limit = 8){
         //定义分页信息
-        $count = self::where('uid','like',"%,$uid,%")->whereOr("uid","")->count();
+        $count = self::where('uid','like',"%,$uid,%")->count();
         $data["lastpage"] = ceil($count/$limit) <= ($page+1) ? 1 : 0;
 
-        $where['uid'] = array(array("like","%,$uid,%"),array("eq",""), 'or');
+        $where['uid'] = array("like","%,$uid,%");
+//        $where['uid'] = array(array("like","%,$uid,%"),array("eq",""), 'or');
         $where['is_send'] = 1;
         $list = self::where($where)->field('id,user,title,content,add_time')->order("add_time desc")->limit($page*$limit,$limit)->select()->toArray();
         foreach ($list as $key => $value) {

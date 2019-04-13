@@ -7,7 +7,6 @@
 
 namespace service;
 
-
 use app\admin\model\wechat\WechatMessage;
 use behavior\wechat\MessageBehavior;
 use behavior\wechat\PaymentBehavior;
@@ -23,6 +22,7 @@ use EasyWeChat\Payment\Order;
 use EasyWeChat\Server\Guard;
 use EasyWeChat\Support\XML;
 use think\Url;
+use think\Request;
 
 class WechatService
 {
@@ -30,7 +30,7 @@ class WechatService
 
     public static function options()
     {
-        $wechat = SystemConfigService::more(['wechat_appid','wechat_appsecret','wechat_token']);
+        $wechat = SystemConfigService::more(['wechat_appid','wechat_appsecret','wechat_token','wechat_encodingaeskey','wechat_encode']);
         $payment = SystemConfigService::more(['pay_weixin_mchid','pay_weixin_client_cert','pay_weixin_client_key','pay_weixin_key','pay_weixin_open']);
         $config = [
             'app_id'=>isset($wechat['wechat_appid']) ? $wechat['wechat_appid']:'',
@@ -40,13 +40,16 @@ class WechatService
                 'timeout' => 10.0, // 超时时间（秒）
             ],
         ];
+        if((int)$wechat['wechat_encode']>0 && isset($wechat['wechat_encodingaeskey']) && !empty($wechat['wechat_encodingaeskey']))
+            $config['aes_key'] =  $wechat['wechat_encodingaeskey'];
         if(isset($payment['pay_weixin_open']) && $payment['pay_weixin_open'] == 1){
             $config['payment'] = [
                 'merchant_id'=>$payment['pay_weixin_mchid'],
                 'key'=>$payment['pay_weixin_key'],
                 'cert_path'=>realpath('.'.$payment['pay_weixin_client_cert']),
                 'key_path'=>realpath('.'.$payment['pay_weixin_client_key']),
-                'notify_url'=>SystemConfigService::get('site_url').Url::build('wechat/Index/notify')
+                //'notify_url'=>SystemConfigService::get('site_url').Url::build('wap/Wechat/notify')
+                'notify_url'=>Request::instance()->domain().Url::build('wap/Wechat/notify')
             ];
         }
         return $config;
@@ -128,6 +131,7 @@ class WechatService
                     $response = HookService::resultListen('wechat_message_other',$message,null,true,$behavior);
                     break;
             }
+            
             return $response;
         });
     }
@@ -374,6 +378,9 @@ class WechatService
         $refundNo = isset($opt['refund_id']) ? $opt['refund_id'] : $orderNo;
         $opUserId = isset($opt['op_user_id']) ? $opt['op_user_id'] : null;
         $type = isset($opt['type']) ? $opt['type'] : 'out_trade_no';
+        /*仅针对老资金流商户使用
+        REFUND_SOURCE_UNSETTLED_FUNDS---未结算资金退款（默认使用未结算资金退款）
+        REFUND_SOURCE_RECHARGE_FUNDS---可用余额退款*/
         $refundAccount = isset($opt['refund_account']) ? $opt['refund_account'] : 'REFUND_SOURCE_UNSETTLED_FUNDS';
         try{
             $res = (self::refund($orderNo,$refundNo,$totalFee,$refundFee,$opUserId,$refundReason,$type,$refundAccount));
@@ -544,26 +551,6 @@ class WechatService
         $userService = self::userService();
         $userInfo = is_array($openid) ? $userService->batchGet($openid) : $userService->get($openid);
         return $userInfo;
-    }
-
-    /**
-     * 群发图文消息
-     * @return mixed
-     */
-    public static function sendNewsMessage($message){
-        return self::application()->broadcast->sendNews($message);
-    }
-
-    /**
-     * 上传图文
-     * @param $news
-     */
-    public static function uploadNews($news){
-        return self::application()->material->uploadArticle($news);
-    }
-
-    public static function pushCustomerService(){
-//        self::application()->
     }
 
 
