@@ -606,7 +606,7 @@ scene.run();
 
 // const pointer = new Pointer(canvas);
 
-var phrase = '  CRMEB ';
+var phrase = '  TYZ ';
 
 var r = new Rope({
     x: scene.canvas.width * 0.15,

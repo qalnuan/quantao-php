@@ -53,7 +53,7 @@
           <tr>
             <td class="tar">数据库表前缀：</td>
             <td><input type="text" name="dbprefix" id="dbprefix" disabled="disabled" value="eb_" class="input" disabled></td>
-            <td><div id="J_install_tip_dbprefix"><span class="gray">建议使用默认，同一数据库安装多个CrmEb时需修改</span></div></td>
+            <td><div id="J_install_tip_dbprefix"><span class="gray">建议使用默认，同一数据库安装多个系统时需修改</span></div></td>
           </tr>
         </table>
 		<table width="100%">
@@ -64,7 +64,7 @@
           </tr>
           <tr>
             <td class="tar">网站名称：</td>
-            <td><input type="text" name="sitename" value="CrmEb内容管理框架" class="input"></td>
+            <td><input type="text" name="sitename" value="淘易赚内容管理框架" class="input"></td>
             <td><div id="J_install_tip_sitename"></div></td>
           </tr>
           <tr>
@@ -74,12 +74,12 @@
           </tr>
           <tr>
             <td class="tar">关键词：</td>
-            <td><input type="text" name="sitekeywords" value="CrmEb" class="input" autoComplete="off"></td>
+            <td><input type="text" name="sitekeywords" value="淘易赚" class="input" autoComplete="off"></td>
             <td><div id="J_install_tip_sitekeywords"></div></td>
           </tr>
           <tr>
             <td class="tar">描述：</td>
-            <td><input type="text" name="siteinfo" class="input" value="CrmEb是一款基于PHP+MySql开发的Crm客户管理+Eb电商系统，其中免费版是完全开源的版本，采用MVC设计模式实现业务逻辑与表现层的适当分离，使网页设计师能够轻松设计出理想的模板，可面向中小型站点提供重量级微信公众号商城建设和微信小程序建设。对于那些想要进行开发，但技术不足的站长们是一个难得的系统。微信商城微信小程序建站，就选CRMEB！CRMEB的开发旨在帮助创业者搭建企业电商平台，实现创业梦想。"></td>
+            <td><input type="text" name="siteinfo" class="input" value="TYZ是一款基于PHP+MySql开发的客户管理+电商系统，其中免费版是完全开源的版本，采用MVC设计模式实现业务逻辑与表现层的适当分离，使网页设计师能够轻松设计出理想的模板，可面向中小型站点提供重量级微信公众号商城建设和微信小程序建设。对于那些想要进行开发，但技术不足的站长们是一个难得的系统。"></td>
             <td><div id="J_install_tip_siteinfo"></div></td>
           </tr>
         </table>
