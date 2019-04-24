@@ -49,27 +49,27 @@
                 </li>
                 <!--  菜单  -->
                 {volist name="menuList" id="menu"}
-                <?php if(isset($menu['child']) && count($menu['child']) > 0){ ?>
+                <?php if (isset($menu['child']) && count($menu['child']) > 0) {?>
                     <li>
                         <a href="#"><i class="fa fa-{$menu.icon}"></i> <span class="nav-label">{$menu.menu_name}</span><span class="fa arrow"></span></a>
                         <ul class="nav nav-second-level">
                             {volist name="menu.child" id="child"}
                             <li>
-                                <?php if(isset($child['child']) && count($child['child']) > 0){ ?>
+                                <?php if (isset($child['child']) && count($child['child']) > 0) {?>
                                     <a href="#"><i class="fa fa-{$child.icon}"></i>{$child.menu_name}<span class="fa arrow"></span></a>
                                     <ul class="nav nav-third-level">
                                         {volist name="child.child" id="song"}
                                         <li><a class="J_menuItem" href="{$song.url}"><i class="fa fa-{$song.icon}"></i> {$song.menu_name}</a></li>
                                         {/volist}
                                     </ul>
-                                <?php }else{ ?>
+                                <?php } else {?>
                                     <a class="J_menuItem" href="{$child.url}"><i class="fa fa-{$child.icon}"></i>{$child.menu_name}</a>
-                                <?php } ?>
+                                <?php }?>
                             </li>
                             {/volist}
                         </ul>
                     </li>
-                <?php } ?>
+                <?php }?>
                 {/volist}
             </ul>
         </div>
@@ -147,6 +147,9 @@
         </div>
         <!--底部版权-->
         <div class="footer"  @touchmove.prevent>
+            <div class="pull-left">
+              <a href="http://www.miitbeian.gov.cn">闽ICP备18029023号</a>
+            </div>
             <div class="pull-right">© 2014-2018 <a href="http://www.taoyizuan.com/" target="_blank">淘易赚</a>
             </div>
         </div>
@@ -166,7 +169,7 @@
                         <i class="fa fa-gear"></i> 设置
                     </a>
                 </li>
-                
+
             </ul>
             <div class="tab-content">
                 <div id="tab-1" class="tab-pane active">

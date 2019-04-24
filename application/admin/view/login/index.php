@@ -54,6 +54,9 @@
     </div>
 </div>
 <div class="footer" style=" position: fixed;bottom: 0;width: 100%;left: 0;margin: 0;opacity: 0.8;">
+    <div class="pull-left">
+      <a href="http://www.miitbeian.gov.cn">闽ICP备18029023号</a>
+    </div>
     <div class="pull-right">© 2017-2019 <a href="http://www.taoyizuan.com/" target="_blank">淘易赚</a>
     </div>
 </div>
