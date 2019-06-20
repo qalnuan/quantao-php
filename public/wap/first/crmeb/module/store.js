@@ -226,6 +226,13 @@
                 p:p
             }),successCallback,errorCallback)
         },
+        getNinePointNineList: function (p, successCallback, errorCallback) {
+          this.baseGet($h.U({
+            c: 'public_api',
+            a: 'get_ninepointnint_product',
+            p: p
+          }), successCallback, errorCallback)
+        },
         getVideoList:function(p,successCallback,errorCallback){
             this.baseGet($h.U({
                 c:'public_api',

@@ -14,6 +14,7 @@ use app\admin\model\system\SystemGroupData;
 use app\wap\model\store\StoreCategory;
 use app\wap\model\store\StoreCouponIssue;
 use app\wap\model\store\StoreProduct;
+use app\wap\model\store\StoreTaoBaoKeProduct;
 use app\wap\model\wap\ArticleCategory;
 use service\JsonService;
 use service\UtilService;
@@ -21,6 +22,13 @@ use think\Cache;
 
 class PublicApi
 {
+    public function get_ninepointnint_product($pageno = 1,$pagesize = 8)
+    {
+        $list = StoreTaoBaoKeProduct::getNinePointNineProduct($pageno, $pagesize)?:[];
+
+        return JsonService::successful('ok',$list);
+    }
+
     public function get_cid_article($cid = 0,$first = 0,$limit = 8)
     {
         $list = ArticleCategory::cidByArticleList($cid,$first,$limit,'id,title,image_input,visit,add_time,synopsis,url')?:[];

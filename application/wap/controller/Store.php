@@ -25,6 +25,7 @@ use app\wap\model\store\StoreOrder;
 use app\wap\model\store\StoreProduct;
 use app\wap\model\store\StoreProductAttr;
 use app\wap\model\store\StoreProductRelation;
+use app\wap\model\store\StoreTaoBaoKeProduct;
 use app\wap\model\user\User;
 use app\wap\model\user\WechatUser;
 use app\wap\model\store\StoreCombination;
@@ -325,6 +326,7 @@ class Store extends AuthController
         ]);
         return $this->fetch();
     }
+
     public function cut_con($id = 0,$bargainUid = 0){
        if(!$id) return $this->failed('参数错误');
         //砍价产品
@@ -385,5 +387,15 @@ class Store extends AuthController
             'bargainUid'=>$bargainUid,
         ]);
        return $this->fetch();
+    }
+
+    public function ninepointnine_list($pageno = 1){
+        
+        $title = '9.9专栏列表';
+        $this->assign([
+            'title'=>$title,
+            'pageno'=>$pageno,
+        ]);
+        return $this->fetch();
     }
 }
