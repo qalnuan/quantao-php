@@ -15,18 +15,33 @@
   <a href="https://packagist.org/packages/xaboy/form-builder">
     <img src="https://img.shields.io/packagist/php-v/xaboy/form-builder.svg" alt="php version" />
   </a>
+  <a href="#backers" alt="sponsors on Open Collective"><img src="https://opencollective.com/form-builder/backers/badge.svg" />
+  </a> 
+  <a href="#sponsors" alt="Sponsors on Open Collective"><img src="https://opencollective.com/form-builder/sponsors/badge.svg" />
+  </a> 
 </p>
 
 <p align="center">
 PHP表单生成器，快速生成现代化的form表单。包含复选框、单选框、输入框、下拉选择框等元素以及省市区三级联动、时间选择、日期选择、颜色选择、树型、文件/图片上传等功能。
 </p>
 
+
 > 1.2.4 版本支持字段验证 
 
-#### 如果对您有帮助，您可以点右上角 "Star" 支持一下 谢谢！
- 
-#### 本项目还在不断开发完善中,如有建议或问题请[在这里提出](https://github.com/xaboy/form-builder/issues/new)
+> 计划对该项目重构和升级,期待的话就点个 star 吧
 
+>如果对您有帮助，您可以点右上角 "Star" 支持一下 谢谢！
+>本项目还在不断开发完善中,如有建议或问题请[在这里提出](https://github.com/xaboy/form-builder/issues/new)
+
+
+## 演示项目
+[开源的高品质微信商城](http://github.crmeb.net/u/xaboy)
+
+演示地址: [http://demo25.crmeb.net](http://demo25.crmeb.net) 账号：demo 密码：crmeb.com
+
+## 使用建议
+1. 建议将静态资源加载方式从 CDN 加载修改为自己本地资源或自己信任的 CDN [静态资源链接](https://github.com/xaboy/form-builder/blob/master/src/Form.php#L89)
+2. 建议根据自己的业务逻辑重写默认的表单生成页 [默认表单生成页](https://github.com/xaboy/form-builder/tree/master/src/view)
 
 ## 更新说明
 
@@ -42,10 +57,6 @@ PHP表单生成器，快速生成现代化的form表单。包含复选框、单�
 ## 示例
 
 ![https://raw.githubusercontent.com/xaboy/form-create/master/images/sample110.jpg](https://raw.githubusercontent.com/xaboy/form-create/master/images/sample110.jpg)
-
-## 演示地址
-演示站后台:[ crmeb_v2.5 ]
-http://demo25.crmeb.net 账号：demo 密码：crmeb.com
 
 ### 例子 (TP框架)
 
@@ -555,3 +566,33 @@ echo $html;
 
 * **ui框架:** [iview2.x](http://v2.iviewui.com/docs/guide/install)
 * **js表单生成器生成:** [form-create](https://github.com/xaboy/form-create)
+
+## Contributors
+
+This project exists thanks to all the people who contribute. 
+<a href="https://github.com/xaboy/form-builder/graphs/contributors"><img src="https://opencollective.com/form-builder/contributors.svg?width=890&button=false" /></a>
+
+
+## Backers
+
+Thank you to all our backers! 🙏 [[Become a backer](https://opencollective.com/form-builder#backer)]
+
+<a href="https://opencollective.com/form-builder#backers" target="_blank"><img src="https://opencollective.com/form-builder/backers.svg?width=890"></a>
+
+
+## Sponsors
+
+Support this project by becoming a sponsor. Your logo will show up here with a link to your website. [[Become a sponsor](https://opencollective.com/form-builder#sponsor)]
+
+<a href="https://opencollective.com/form-builder/sponsor/0/website" target="_blank"><img src="https://opencollective.com/form-builder/sponsor/0/avatar.svg"></a>
+<a href="https://opencollective.com/form-builder/sponsor/1/website" target="_blank"><img src="https://opencollective.com/form-builder/sponsor/1/avatar.svg"></a>
+<a href="https://opencollective.com/form-builder/sponsor/2/website" target="_blank"><img src="https://opencollective.com/form-builder/sponsor/2/avatar.svg"></a>
+<a href="https://opencollective.com/form-builder/sponsor/3/website" target="_blank"><img src="https://opencollective.com/form-builder/sponsor/3/avatar.svg"></a>
+<a href="https://opencollective.com/form-builder/sponsor/4/website" target="_blank"><img src="https://opencollective.com/form-builder/sponsor/4/avatar.svg"></a>
+<a href="https://opencollective.com/form-builder/sponsor/5/website" target="_blank"><img src="https://opencollective.com/form-builder/sponsor/5/avatar.svg"></a>
+<a href="https://opencollective.com/form-builder/sponsor/6/website" target="_blank"><img src="https://opencollective.com/form-builder/sponsor/6/avatar.svg"></a>
+<a href="https://opencollective.com/form-builder/sponsor/7/website" target="_blank"><img src="https://opencollective.com/form-builder/sponsor/7/avatar.svg"></a>
+<a href="https://opencollective.com/form-builder/sponsor/8/website" target="_blank"><img src="https://opencollective.com/form-builder/sponsor/8/avatar.svg"></a>
+<a href="https://opencollective.com/form-builder/sponsor/9/website" target="_blank"><img src="https://opencollective.com/form-builder/sponsor/9/avatar.svg"></a>
+
+

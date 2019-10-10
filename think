@@ -12,7 +12,8 @@
 
 namespace think;
 
-define('APP_PATH', __DIR__ . '/application/');
+// 加载基础文件
+require __DIR__ . '/vendor/autoload.php';
 
-// 加载框架引导文件
-require __DIR__.'/thinkphp/console.php';
+// 应用初始化
+(new App())->console->run();

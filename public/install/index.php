@@ -18,29 +18,29 @@ if (file_exists('./install.lock')) {
 }
 @set_time_limit(1000);
 
-if ('5.5.9' > phpversion()){
+if (PHP_EDITION > phpversion()){
 	header("Content-type:text/html;charset=utf-8");
-	exit('您的php版本过低，不能安装本软件，请升级到5.5.9或更高版本再安装，谢谢！');
+	exit('您的php版本过低，不能安装本软件，请升级到'.PHP_EDITION.'或更高版本再安装，谢谢！');
 }
 
 define("CRMEB_VERSION", '20180601');
 date_default_timezone_set('PRC');
 error_reporting(E_ALL & ~E_NOTICE);
 header('Content-Type: text/html; charset=UTF-8');
-define('SITEDIR', _dir_path(substr(dirname(__FILE__), 0, -8)));//入口文件目录
-define('CRMEBDIR', _dir_path(substr(dirname(__FILE__), 0, -15)));//项目目录
+define('SITE_DIR', _dir_path(substr(dirname(__FILE__), 0, -8)));//入口文件目录
+define('APP_DIR', _dir_path(substr(dirname(__FILE__), 0, -15)));//项目目录
 //define('SITEDIR2', substr(SITEDIR,0,-7));
 //echo SITEDIR;
-//exit;SITEDIR
+//exit;SITE_DIR
 //数据库
 $sqlFile = 'crmeb.sql';
-$configFile = 'config.php';
-if (!file_exists(SITEDIR . 'install/' . $sqlFile) || !file_exists(SITEDIR . 'install/' . $configFile)) {
+$configFile = '.env';
+if (!file_exists(SITE_DIR . 'install/' . $sqlFile) || !file_exists(SITE_DIR . 'install/' . $configFile)) {
     echo '缺少必要的安装文件!';
     exit;
 }
-$Title = "淘易赚安装向导";
-$Powered = "Powered by TYZ";
+$Title = "CRMEB安装向导";
+$Powered = "Powered by CRMEB";
 $steps = array(
     '1' => '安装许可协议',
     '2' => '运行环境检测',
@@ -67,8 +67,8 @@ switch ($step) {
 
     case '2':
 
-        if (phpversion() < 5.6) {
-            die('本系统需要PHP5+MYSQL >=5.5.9环境，当前PHP版本为：' . phpversion());
+        if (phpversion() <= PHP_EDITION) {
+            die('本系统需要PHP版本 >= '.PHP_EDITION.'环境，当前PHP版本为：' . phpversion());
         }
 
         $phpv = @ phpversion();
@@ -113,16 +113,23 @@ switch ($step) {
         	$curl = '<font color=red>[×]不支持</font>';
         	$err++;
         }
-        if(function_exists('file_put_contents')){
-        	$file_put_contents = '<font color=green>[√]支持</font> ';
-        }else{
-        	$file_put_contents = '<font color=red>[×]不支持</font>';
-        	$err++;
-        }
+
         if(function_exists('bcadd')){
-            $BC = '<font color=green>[√]支持</font> ';
+            $bcmath = '<font color=green>[√]支持</font> ';
         }else{
-            $BC = '<font color=red>[×]不支持</font>';
+            $bcmath = '<font color=red>[×]不支持</font>';
+            $err++;
+        }
+        if(function_exists('openssl_encrypt')){
+            $openssl = '<font color=green>[√]支持</font> ';
+        }else{
+            $openssl = '<font color=red>[×]不支持</font>';
+            $err++;
+        }
+        if(function_exists('finfo_open')){
+            $finfo_open = '<font color=green>[√]支持</font> ';
+        }else{
+            $finfo_open = '<font color=red>[×]不支持</font>';
             $err++;
         }
 
@@ -131,13 +138,22 @@ switch ($step) {
             'public/install',
             'public/uploads',
             'runtime',
-            'runtime/cache',
-	    	'runtime/temp',
-	    	'runtime/log',
-	    	'runtime/schema',
-            'application/database.php',
-            'application/config.php',
+            '.env',
         );
+        //必须开启函数
+        if(function_exists('file_put_contents')){
+            $file_put_contents = '<font color=green>[√]开启</font> ';
+        }else{
+            $file_put_contents = '<font color=red>[×]关闭</font>';
+            $err++;
+        }
+        if(function_exists('imagettftext')){
+            $imagettftext = '<font color=green>[√]开启</font> ';
+        }else{
+            $imagettftext = '<font color=red>[×]关闭</font>';
+            $err++;
+        }
+
         include_once ("./templates/step2.php");
         exit();
 
@@ -224,7 +240,7 @@ switch ($step) {
             }
 
             //读取数据文件
-            $sqldata = file_get_contents(SITEDIR . 'install/' . $sqlFile);
+            $sqldata = file_get_contents(SITE_DIR . 'install/' . $sqlFile);
             $sqlFormat = sql_split($sqldata, $dbPrefix);
             //创建写入sql数据库文件到库中 结束
 
@@ -235,14 +251,14 @@ switch ($step) {
             for ($i = $n; $i < $counts; $i++) {
                 $sql = trim($sqlFormat[$i]);
                 if (strstr($sql, 'CREATE TABLE')) {
-                    preg_match('/CREATE TABLE `eb_([^ ]*)`/is', $sql, $matches);
-                    mysqli_query($conn,"DROP TABLE IF EXISTS `$matches[1]");
+                    preg_match('/CREATE TABLE (IF NOT EXISTS)? `eb_([^ ]*)`/is', $sql, $matches);
+                    mysqli_query($conn,"DROP TABLE IF EXISTS `$matches[2]");
                     $sql = str_replace('`eb_','`'.$dbPrefix,$sql);//替换表前缀
                     $ret = mysqli_query($conn,$sql);
                     if ($ret) {
-                        $message = '<li><span class="correct_span">&radic;</span>创建数据表['.$dbPrefix.$matches[1] . ']完成!<span style="float: right;">'.date('Y-m-d H:i:s').'</span></li> ';
+                        $message = '<li><span class="correct_span">&radic;</span>创建数据表['.$dbPrefix.$matches[2] . ']完成!<span style="float: right;">'.date('Y-m-d H:i:s').'</span></li> ';
                     } else {
-                        $message = '<li><span class="correct_span error_span">&radic;</span>创建数据表['.$dbPrefix.$matches[1] . ']失败!<span style="float: right;">'.date('Y-m-d H:i:s').'</span></li>';
+                        $message = '<li><span class="correct_span error_span">&radic;</span>创建数据表['.$dbPrefix.$matches[2] . ']失败!<span style="float: right;">'.date('Y-m-d H:i:s').'</span></li>';
                     }
                     $i++;
                     $arr = array('n' => $i, 'msg' => $message);
@@ -288,10 +304,10 @@ switch ($step) {
 						mysqli_query($conn,"truncate table ".$val[0]);
 					}		
 				}   	
-				delFile(CRMEBDIR.'/public/uploads'); // 清空测试图片
+				delFile(APP_DIR.'/uploads'); // 清空测试图片
 			}
             //读取配置文件，并替换真实配置数据1
-            $strConfig = file_get_contents(SITEDIR . 'install/' . $configFile);
+            $strConfig = file_get_contents(SITE_DIR . 'install/' . $configFile);
             $strConfig = str_replace('#DB_HOST#', $dbHost, $strConfig);
             $strConfig = str_replace('#DB_NAME#', $dbName, $strConfig);
             $strConfig = str_replace('#DB_USER#', $dbUser, $strConfig);
@@ -300,14 +316,14 @@ switch ($step) {
             $strConfig = str_replace('#DB_PREFIX#', $dbPrefix, $strConfig);
             $strConfig = str_replace('#DB_CHARSET#', 'utf8', $strConfig);
             // $strConfig = str_replace('#DB_DEBUG#', false, $strConfig);
-            @chmod(CRMEBDIR . '/application/database.php',0777); //数据库配置文件的地址
-            @file_put_contents(CRMEBDIR . '/application/database.php', $strConfig); //数据库配置文件的地址
+            @chmod(APP_DIR . '/.env',0777); //数据库配置文件的地址
+            @file_put_contents(APP_DIR . '/.env', $strConfig); //数据库配置文件的地址
             
             //读取配置文件，并替换换配置
-//            $strConfig = file_get_contents(SITEDIR . '/application/config.php');
-//            $strConfig = str_replace('CrmEb_cache_prefix', $uniqid_str, $strConfig);
-//            @chmod(SITEDIR . '/application/config.php',0777); //配置文件的地址
-//            @file_put_contents(SITEDIR . '/application/config.php', $strConfig); //配置文件的地址
+//            $strConfig = file_get_contents(SITE_DIR . '/application/config.php');
+//            $strConfig = str_replace('CRMEB_cache_prefix', $uniqid_str, $strConfig);
+//            @chmod(SITE_DIR . '/application/config.php',0777); //配置文件的地址
+//            @file_put_contents(SITE_DIR . '/application/config.php', $strConfig); //配置文件的地址
 
             //更新网站配置信息2
 
@@ -336,16 +352,29 @@ switch ($step) {
     case '5':
     	$ip = get_client_ip();
     	$host = $_SERVER['HTTP_HOST'];
-        $curent_version = file_get_contents(CRMEBDIR .'/application/version.php');
-        $time = time();
-        $mt_rand_str = $create_date.sp_random_string(6);
-        $str_constant = "<?php".PHP_EOL."define('INSTALL_DATE',".$time.");".PHP_EOL."define('SERIALNUMBER','".$mt_rand_str."');";
-        @file_put_contents(SITEDIR . '/application/constant.php', $str_constant);
+        $curent_version = getversion();
+        installlog();
         include_once ("./templates/step5.php");
         @touch('./install.lock');
         exit();
 }
-
+//读取版本号
+function getversion(){
+    $version_arr = [];
+    $curent_version = @file(APP_DIR .'.version');
+    foreach ($curent_version as $val){
+        list($k,$v)=explode('=',$val);
+        $version_arr[$k]=$v;
+    }
+    return $version_arr;
+}
+//写入安装信息
+function installlog(){
+    $mt_rand_str = sp_random_string(6);
+    $str_constant = "<?php".PHP_EOL."define('INSTALL_DATE',".time().");".PHP_EOL."define('SERIALNUMBER','".$mt_rand_str."');";
+    @file_put_contents(APP_DIR . '.constant', $str_constant);
+}
+//判断权限
 function testwrite($d) {
     if(is_file($d)){
         if(is_writeable($d)){
@@ -369,19 +398,6 @@ function testwrite($d) {
 
 }
 
-function sql_execute($sql, $tablepre) {
-    $sqls = sql_split($sql, $tablepre);
-    if (is_array($sqls)) {
-        foreach ($sqls as $sql) {
-            if (trim($sql) != '') {
-                mysqli_query($sql);
-            }
-        }
-    } else {
-        mysqli_query($sqls);
-    }
-    return true;
-}
 
 function sql_split($sql, $tablepre) {
 

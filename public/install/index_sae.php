@@ -12,10 +12,10 @@ if (file_exists('./install.lock')) {
     exit;
 }
 @set_time_limit(1000);
-if (phpversion() <= '5.4.0')
+if (phpversion() <= PHP_EDITION)
     set_magic_quotes_runtime(0);
-if ('5.4.0' > phpversion())
-    exit('您的php版本过低，不能安装本软件，请升级到5.4.0或更高版本再安装，谢谢！');
+if (PHP_EDITION > phpversion())
+    exit('您的php版本过低，不能安装本软件，请升级到'.PHP_EDITION.'或更高版本再安装，谢谢！');
 
 date_default_timezone_set('PRC');
 error_reporting(E_ALL & ~E_NOTICE);
@@ -25,12 +25,12 @@ define("TUZI_CMS_VERSION", '20150811');
 
 //数据库
 $configFile = 'config.php';
-if (!file_exists(SITEDIR . 'install/CrmEb.sql' ) || !file_exists(SITEDIR . 'install/' . $configFile)) {
+if (!file_exists(SITEDIR . 'install/CRMEB.sql' ) || !file_exists(SITEDIR . 'install/' . $configFile)) {
     echo '缺少必要的安装文件!';
     exit;
 }
-$Title = "淘易赚安装向导";
-$Powered = "Powered by TYZ";
+$Title = "CRMEB安装向导";
+$Powered = "Powered by CRMEB";
 $steps = array(
     '1' => '安装许可协议',
     '2' => '运行环境检测',
@@ -67,8 +67,8 @@ switch ($step) {
 
     case '2':
 
-        if (phpversion() < 5) {
-            die('本系统需要PHP5+MYSQL >=5.5.9环境，当前PHP版本为：' . phpversion());
+        if (phpversion() < PHP_EDITION) {
+            die('本系统需要PHP版本 >='.PHP_EDITION.'环境，当前PHP版本为：' . phpversion());
         }
 
         $phpv = @ phpversion();
@@ -167,14 +167,14 @@ switch ($step) {
             for ($i = $n; $i < $counts; $i++) {
                 $sql = trim($sqlFormat[$i]);
                 if (strstr($sql, 'CREATE TABLE')) {
-                    preg_match('/CREATE TABLE `eb_([^ ]*)`/is', $sql, $matches);
-                    mysqli_query($conn,"DROP TABLE IF EXISTS `$matches[1]");
+                    preg_match('/CREATE TABLE (IF NOT EXISTS)? `eb_([^ ]*)`/is', $sql, $matches);
+                    mysqli_query($conn,"DROP TABLE IF EXISTS `$matches[2]");
                     $sql = str_replace('`eb_','`'.$dbPrefix,$sql);//替换表前缀
                     $ret = mysqli_query($conn,$sql);
                     if ($ret) {
-                        $message = '<li><span class="correct_span">&radic;</span>创建数据表['.$dbPrefix.$matches[1] . ']完成!<span style="float: right;">'.date('Y-m-d H:i:s').'</span></li> ';
+                        $message = '<li><span class="correct_span">&radic;</span>创建数据表['.$dbPrefix.$matches[2] . ']完成!<span style="float: right;">'.date('Y-m-d H:i:s').'</span></li> ';
                     } else {
-                        $message = '<li><span class="correct_span error_span">&radic;</span>创建数据表['.$dbPrefix.$matches[1] . ']失败!<span style="float: right;">'.date('Y-m-d H:i:s').'</span></li>';
+                        $message = '<li><span class="correct_span error_span">&radic;</span>创建数据表['.$dbPrefix.$matches[2] . ']失败!<span style="float: right;">'.date('Y-m-d H:i:s').'</span></li>';
                     }
                     $i++;
                     $arr = array('n' => $i, 'msg' => $message);

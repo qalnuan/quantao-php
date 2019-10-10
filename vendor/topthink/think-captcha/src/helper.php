@@ -9,67 +9,44 @@
 // | Author: yunwuxin <448901948@qq.com>
 // +----------------------------------------------------------------------
 
-\think\Route::get('captcha/[:id]', "\\think\\captcha\\CaptchaController@index");
-
-\think\Validate::extend('captcha', function ($value, $id = '') {
-    return captcha_check($value, $id);
-});
-
-\think\Validate::setTypeMsg('captcha', ':attribute错误!');
-
+use think\captcha\facade\Captcha;
+use think\facade\Route;
+use think\Response;
 
 /**
- * @param string $id
- * @param array  $config
+ * @param string $config
  * @return \think\Response
  */
-function captcha($id = '', $config = [])
+function captcha($config = null): Response
 {
-    $captcha = new \think\captcha\Captcha($config);
-    return $captcha->entry($id);
+    return Captcha::create($config);
 }
 
+/**
+ * @param $config
+ * @return string
+ */
+function captcha_src($config = null): string
+{
+    return Route::buildUrl('/captcha' . ($config ? "/{$config}" : ''));
+}
 
 /**
  * @param $id
  * @return string
  */
-function captcha_src($id = '')
+function captcha_img($id = ''): string
 {
-    return \think\Url::build('/captcha' . ($id ? "/{$id}" : ''));
+    $src = captcha_src($id);
+
+    return "<img src='{$src}' alt='captcha' onclick='this.src=\"{$src}?s=\"+Math.random();' />";
 }
 
-
 /**
- * @param $id
- * @return mixed
- */
-function captcha_img($id = '')
-{
-    return '<img src="' . captcha_src($id) . '" alt="captcha" />';
-}
-
-
-/**
- * @param string $id
- * @param string $element 验证码HTML元素ID
- * @return string
- */
-function captcha_img_with_replacement($id = '', $element = 'think-captcha')
-{
-    return '<img src="' . captcha_src($id) . '" alt="captcha" id="' . $element . '" onclick="document.getElementById("'
-        . $element . '").src="' . captcha_src($id) . '"+Math.random()' . '/>';
-}
-
-
-/**
- * @param        $value
- * @param string $id
- * @param array  $config
+ * @param string $value
  * @return bool
  */
-function captcha_check($value, $id = '')
+function captcha_check($value)
 {
-    $captcha = new \think\captcha\Captcha((array)\think\Config::get('captcha'));
-    return $captcha->check($value, $id);
+    return Captcha::check($value);
 }

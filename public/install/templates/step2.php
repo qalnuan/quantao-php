@@ -38,9 +38,9 @@
         </tr>
         <tr>
           <td>PHP版本</td>
-          <td>>5.5.x</td>
+          <td>><?php echo PHP_EDITION; ?></td>
           <td><span class="correct_span">&radic;</span> <?php echo $phpv; ?></td>
-          <td>5.5.9以上</td>
+          <td><?php echo PHP_EDITION; ?>以上</td>
         </tr>
         <tr>
           <td>附件上传</td>
@@ -71,7 +71,31 @@
           <td>必须开启</td>
           <td><?php echo $mysql; ?></td>
           <td>启用</td>
-        </tr>        
+        </tr>
+          <tr>
+              <td>curl_init</td>
+              <td>必须扩展</td>
+              <td><?php echo $curl; ?></td>
+              <td>启用</td>
+          </tr>
+          <tr>
+              <td>bcmath</td>
+              <td>必须扩展</td>
+              <td><?php echo $bcmath; ?></td>
+              <td>启用</td>
+          </tr>
+          <tr>
+              <td>openssl</td>
+              <td>必须扩展</td>
+              <td><?php echo $openssl; ?></td>
+              <td>启用</td>
+          </tr>
+          <tr>
+              <td>fileinfo</td>
+              <td>必须扩展</td>
+              <td><?php echo $finfo_open; ?></td>
+              <td>启用</td>
+          </tr>
       </table>
       <table width="100%">
         <tr>
@@ -82,7 +106,7 @@
         </tr>
 		<?php
 		foreach($folder as $dir){
-		     $Testdir = CRMEBDIR.$dir;
+		     $Testdir = APP_DIR.$dir;
 //			 echo $Testdir."<br/>";
             if(!is_file($Testdir)){
                 if(!is_dir($Testdir)){
@@ -117,27 +141,16 @@
       </table>
       <table width="100%">
         <tr>
-          <td class="td1">函数检测</td>
-          <td class="td1" width="25%">推荐配置</td>
-          <td class="td1" width="25%">当前状态</td>
-          <td class="td1" width="25%">最低要求</td>
-        </tr>
-        <tr>
-          <td>curl_init</td>
-          <td>必须扩展</td>
-          <td><?php echo $curl; ?></td>
-          <td>--</td>
+          <td class="td1" width="70%">函数检测必须开启</td>
+          <td class="td1" width="30%">当前状态</td>
         </tr>
         <tr>
           <td>file_put_contents</td>
-          <td>建议开启</td>
           <td><?php echo $file_put_contents; ?></td>
-          <td>--</td>
-        </tr> <tr>
-          <td>BC</td>
-          <td>必须扩展</td>
-          <td><?php echo $BC; ?></td>
-          <td>--</td>
+        </tr>
+        <tr>
+          <td>imagettftext</td>
+          <td><?php echo $imagettftext; ?></td>
         </tr>
       </table>
     </div>
