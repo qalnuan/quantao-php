@@ -390,7 +390,21 @@ class Store extends AuthController
     }
 
     public function ninepointnine_list($pageno = 1){
-        
+        $title = '9.9专栏列表';
+        $this->assign([
+            'title'=>$title,
+            'pageno'=>$pageno,
+        ]);
+        return $this->fetch();
+    }
+
+    
+    public function tbkdetail($num_iid){
+      
+       if(!$num_iid) return $this->failed('参数错误');
+        //砍价产品
+        $productInfo = StoreTaoBaoKeProduct::getTbkItemInfoGetRequest($num_iid);
+        var_dump($productInfo);
         $title = '9.9专栏列表';
         $this->assign([
             'title'=>$title,

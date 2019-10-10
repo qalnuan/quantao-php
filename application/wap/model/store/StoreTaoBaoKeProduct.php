@@ -31,5 +31,20 @@ class StoreTaoBaoKeProduct extends ModelBasic
         $product_list = $results->n_tbk_item;
         return $product_list;
     }
+    public static function getTbkItemInfoGetRequest($num_iid = 0)
+    {
+        vendor("taobaoke.TopSdk");
+        $c = new \TopClient;
+        $c->appkey = "27585457";
+        $c->secretKey = "ed9b8b265edba406760e0958d8f3094a";
+        $c->format = "json";
+        $req = new \TbkItemInfoGetRequest;
+        $req->setNumIids($num_iid);
+        $req->setPlatform('2');
+        $resp = $c->execute($req);
+        var_dump($resp);
+        $results = $resp->results;
+        return $results;
+    }
 
 }

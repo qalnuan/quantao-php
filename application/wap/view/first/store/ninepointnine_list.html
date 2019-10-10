@@ -8,7 +8,7 @@
         <div v-show="article.list.length > 0" v-cloak="" ref="bsDom">
           <ul class="cut-ul">
             <li class="cut-item" v-for="item in article.list">
-              <a :href="item.item_url" rel="external nofollow">
+              <a :href="'/wap/store/tbkdetail/num_iid/'+item.num_iid" rel="external nofollow">
                 <div class="picture"><img :src="item.pict_url"></div>
                 <div class="acea-row row-wrap-all cut-text">
                   <div class="cut-con">
