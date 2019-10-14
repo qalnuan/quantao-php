@@ -20,6 +20,12 @@
     <script src="{__WAP_PATH}bargain/js/media.js"></script>
     <script src="{__WAP_PATH}bargain/js/jquery-2.1.4.min.js"></script>
     <script src="{__WAP_PATH}bargain/js/swiper.min.js"></script>
+    <script type="text/javascript" src="{__PLUG_PATH}wxApi.js"></script>
+    <script>
+      $jssdk = function () {
+        return <?=\service\WechatService::jsSdk()?>;
+      }
+    </script>
     <title>砍价列表</title>
 </head>
 <body>
@@ -61,6 +67,15 @@
         spaceBetween:10,
         autoplay:2000
     });
+</script>
+<script>
+    var wxApi = mapleWx($jssdk(), function () {
+          this.onMenuShareAll({
+              title: "砍价列表",
+              desc: '快来砍价',
+              imgUrl: location.origin + "{$shareMenuImg}"
+          });
+      });
 </script>
 </body>
 </html>

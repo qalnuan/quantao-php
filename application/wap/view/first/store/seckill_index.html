@@ -50,6 +50,13 @@
 <script type="text/javascript">
 
     $(document).ready(function() {
+      var wxApi = mapleWx($jssdk(), function () {
+        this.onMenuShareAll({
+            title: "秒杀列表",
+            desc: '快来秒杀',
+            imgUrl: location.origin + wechat_share_img,
+          });
+        });
         $('.countdown').each(function() {
             var _this = $(this);
             var count =  _this.attr('data-time');

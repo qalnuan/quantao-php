@@ -47,6 +47,13 @@
 <script type="text/javascript">
     var product_list =<?php echo json_encode($list);?>;
     requirejs(['vue', 'store', 'helper'], function (Vue, storeApi, $h) {
+        var wxApi = mapleWx($jssdk(), function () {
+          this.onMenuShareAll({
+          title: "拼团列表",
+          desc: '快来拼团',
+          imgUrl:location.origin + wechat_share_img
+          });
+        });
         new Vue({
             el: "#product-list",
             data: {

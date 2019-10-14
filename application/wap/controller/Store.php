@@ -39,7 +39,6 @@ use service\JsonService;
 
 class Store extends AuthController
 {
-
     public function index($keyword = '',$cid = '',$sid = '')
     {
         if($keyword != '') $keyword = base64_decode($keyword);
@@ -323,6 +322,7 @@ class Store extends AuthController
         $this->assign([
             'bargain'=>$bargain,
             'bargainUser'=>$bargainUser,
+            'shareMenuImg'=>SystemConfig::getValue('wechat_share_img')
         ]);
         return $this->fetch();
     }
