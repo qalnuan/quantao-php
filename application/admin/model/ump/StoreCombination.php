@@ -36,6 +36,10 @@ class StoreCombination extends ModelBasic
         $model = $model->alias('c');
         $model = $model->field('c.*,p.store_name,p.price as ot_price');
         $model = $model->join('StoreProduct p','p.id=c.product_id','LEFT');
+        
+        if(isset($where['mer_id']) && $where['mer_id']!=''){
+            $model = $model->where('c.mer_id',$where['mer_id']);
+        }
         if(isset($where['is_show']) && $where['is_show'] != '')  $model = $model->where('c.is_show',$where['is_show']);
         if(isset($where['is_host']) && $where['is_host'] != '')  $model = $model->where('c.is_host',$where['is_host']);
         if(isset($where['store_name']) && $where['store_name'] != '') $model = $model->where('p.store_name|p.id|c.id|c.title','LIKE',"%$where[store_name]%");
@@ -47,9 +51,9 @@ class StoreCombination extends ModelBasic
      */
     public static function systemPage($where){
         $model = self::setWhere($where)->limit(bcmul($where['page'],$where['limit'],0),$where['limit']);
-        return self::page($model,function ($item){
-            $item['count_people_all'] = StorePink::getCountPeopleAll($item['id']);//参与人数
-            $item['count_people_pink'] = StorePink::getCountPeoplePink($item['id']);//成团人数
+        return self::page($model,function ($item, $where){
+            $item['count_people_all'] = StorePink::getCountPeopleAll($item['id'],$where);//参与人数
+            $item['count_people_pink'] = StorePink::getCountPeoplePink($item['id'],$where);//成团人数
             $item['count_people_browse'] = self::getVisitPeople($item['id']);//访问人数
         },$where,$where['limit']);
     }
@@ -62,8 +66,8 @@ class StoreCombination extends ModelBasic
         count($list) && $list=$list->toArray();
         $excel=[];
         foreach ($list as $item){
-            $item['count_people_all'] = StorePink::getCountPeopleAll($item['id']);//参与人数
-            $item['count_people_pink'] = StorePink::getCountPeoplePink($item['id']);//成团人数
+            $item['count_people_all'] = StorePink::getCountPeopleAll($item['id'],$where);//参与人数
+            $item['count_people_pink'] = StorePink::getCountPeoplePink($item['id'],$where);//成团人数
             $item['count_people_browse'] = self::getVisitPeople($item['id']);//访问人数
             $item['_stop_time'] = date('Y/m/d H:i:s',$item['stop_time']);
             $excel[]=[
@@ -105,13 +109,18 @@ class StoreCombination extends ModelBasic
      * 获取查看拼团统计
      * @return mixed
      */
-    public static function getStatistics(){
+    public static function getStatistics($where=[]){
         $statistics = array();
-        $statistics['browseCount'] = self::field('sum(browse) as browse')->find()->toArray()['browse'];//总展现量
+        $model=new self();
+        $model=$model->field('sum(browse) as browse');
+        if(isset($where['mer_id']) && $where['mer_id']!=''){
+            $model = $model->where('mer_id',$where['mer_id']);
+        }
+        $statistics['browseCount'] = $model->find()->toArray()['browse'];//总展现量
         $statistics['browseCount'] = $statistics['browseCount'] ? $statistics['browseCount'] : 0;
         $statistics['visitCount'] = Db::name('store_visit')->where('product_type','combination')->count();//访客人数
-        $statistics['partakeCount'] = StorePink::getCountPeopleAll();//参与人数
-        $statistics['pinkCount'] = StorePink::getCountPeoplePink();//成团数量
+        $statistics['partakeCount'] = StorePink::getCountPeopleAll(0, $where);//参与人数
+        $statistics['pinkCount'] = StorePink::getCountPeoplePink(0, $where);//成团数量
         return compact('statistics');
     }
 
@@ -119,16 +128,26 @@ class StoreCombination extends ModelBasic
      * 获取拼团总数
      * @return int|string
      */
-    public static function getCombinationCount(){
-        return self::where('is_del',0)->count();
+    public static function getCombinationCount($where=[]){
+        $model=new self();
+        $model=$model->where('is_del',0);
+        if(isset($where['mer_id']) && $where['mer_id']!=''){
+            $model = $model->where('mer_id',$where['mer_id']);
+        }
+        return $model->count();
     }
 
     /**
      * 获取拼团产品ID
      * @return array
      */
-    public static function getCombinationIdAll(){
-        return self::where('is_del',0)->column('id','id');
+    public static function getCombinationIdAll($where=[]){
+        $model=new self();
+        $model=$model->where('is_del',0);
+        if(isset($where['mer_id']) && $where['mer_id']!=''){
+            $model = $model->where('mer_id',$where['mer_id']);
+        }
+        return $model->column('id','id');
     }
 
     /**

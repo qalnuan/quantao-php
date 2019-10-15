@@ -259,6 +259,9 @@ class StoreSeckill extends ModelBasic
         $model = new self;
         $model = $model->alias('s');
 //        $model = $model->join('StoreProduct p','p.id=s.product_id');
+        if(isset($where['mer_id']) && $where['mer_id']!=''){
+            $model = $model->where('s.mer_id',$where['mer_id']);
+        }
         if($where['status'] != '')  $model = $model->where('s.status',$where['status']);
         if($where['store_name'] != '') $model = $model->where('s.title|s.id','LIKE',"%$where[store_name]%");
         $model = $model->page(bcmul($where['page'],$where['limit'],0),$where['limit']);
@@ -279,6 +282,9 @@ class StoreSeckill extends ModelBasic
     }
     public static function SaveExcel($where){
         $model = new self;
+        if(isset($where['mer_id']) && $where['mer_id']!=''){
+            $model = $model->where('mer_id',$where['mer_id']);
+        }
         if($where['status'] != '')  $model = $model->where('status',$where['status']);
         if($where['store_name'] != '') $model = $model->where('title|id','LIKE',"%$where[store_name]%");
         $list = $model->order('id desc')->where('is_del',0)->select();
@@ -317,15 +323,25 @@ class StoreSeckill extends ModelBasic
      * 获取秒杀产品id
      * @return array
      */
-    public static function getSeckillIdAll(){
-        return self::where('is_del',0)->column('id','id');
+    public static function getSeckillIdAll($where=[]){
+        $model=new self();
+        $model=$model->where('is_del',0);
+        if(isset($where['mer_id']) && $where['mer_id']!=''){
+            $model = $model->where('mer_id',$where['mer_id']);
+        }
+        return $model->column('id','id');
     }
 
     /**
      * 获取秒杀的所有产品
      * @return int|string
      */
-    public static function getSeckillCount(){
-        return self::where('is_del',0)->count();
+    public static function getSeckillCount($where=[]){
+        $model=new self();
+        $model=$model->where('is_del',0);
+        if(isset($where['mer_id']) && $where['mer_id']!=''){
+            $model = $model->where('mer_id',$where['mer_id']);
+        }
+        return $model->count();
     }
 }

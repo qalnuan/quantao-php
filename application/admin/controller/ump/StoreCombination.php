@@ -34,15 +34,19 @@ class StoreCombination extends AuthController
      */
     public function index()
     {
-        $this->assign('countCombination',StoreCombinationModel::getCombinationCount());
-        $this->assign(StoreCombinationModel::getStatistics());
-        $this->assign('combinationId',StoreCombinationModel::getCombinationIdAll());
+        $where = Util::getMore([
+            ['mer_id', $this->adminId],
+        ]);
+        $this->assign('countCombination',StoreCombinationModel::getCombinationCount($where));
+        $this->assign(StoreCombinationModel::getStatistics($where));
+        $this->assign('combinationId',StoreCombinationModel::getCombinationIdAll($where));
         return $this->fetch();
     }
     public function save_excel(){
         $where = Util::getMore([
             ['is_show',''],
             ['store_name',''],
+            ['mer_id', $this->adminId],
         ]);
         StoreCombinationModel::SaveExcel($where);
     }
@@ -56,6 +60,7 @@ class StoreCombination extends AuthController
             ['export',0],
             ['is_show',''],
             ['is_host',''],
+            ['mer_id', $this->adminId],
             ['store_name','']
         ],$request);
         $combinationList = StoreCombinationModel::systemPage($where);
@@ -174,6 +179,7 @@ class StoreCombination extends AuthController
         $data['stop_time'] = strtotime($data['section_time'][1]);
         $data['description'] = '';
         unset($data['section_time']);
+        $data['mer_id'] = $this->adminId;
         if($id){
             $product = StoreCombinationModel::get($id);
             if(!$product) return Json::fail('数据不存在!');
@@ -364,6 +370,7 @@ class StoreCombination extends AuthController
         $where = Util::getMore([
             ['status',''],
             ['data',''],
+            ['mer_id', $this->adminId],
         ],$this->request);
         $this->assign('where',$where);
         $this->assign(StorePink::systemPage($where));

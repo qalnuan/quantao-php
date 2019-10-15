@@ -17,15 +17,20 @@ class StorePink extends ModelBasic{
     public static function systemPage($where){
         $model = new self;
         $model = $model->alias('p');
-        $model = $model->field('p.*,c.title,u.nickname,u.avatar');
+        $model = $model->field('p.*,c.title,c.mer_id,u.nickname,u.avatar');
         if($where['data'] !== ''){
             list($startTime,$endTime) = explode(' - ',$where['data']);
             $model = $model->where('p.add_time','>',strtotime($startTime));
             $model = $model->where('p.add_time','<',strtotime($endTime));
         }
+        
+        if(isset($where['mer_id']) && $where['mer_id']!=''){
+            $model = $model->where('c.mer_id',$where['mer_id']);
+        }
         if($where['status']) $model = $model->where('p.status',$where['status']);
         $model = $model->where('p.k_id',0);
         $model = $model->order('p.id desc');
+        
         $model = $model->join('__STORE_COMBINATION__ c','c.id=p.cid');
         $model = $model->join('__USER__ u','u.uid = p.uid');
         return self::page($model,function($item)use($where){
@@ -37,9 +42,17 @@ class StorePink extends ModelBasic{
      * @param int $combinationId
      * @return int|string
      */
-    public static function getCountPeopleAll($combinationId = 0){
-        if(!$combinationId) return self::count();
-        return self::where('cid',$combinationId)->count();
+    public static function getCountPeopleAll($combinationId = 0, $where=[]){
+        $model = new self;
+        $model = $model->alias('p');
+        $model = $model->field('p.*,c.mer_id');
+        
+        if(isset($where['mer_id']) && $where['mer_id']!=''){
+            $model = $model->where('c.mer_id',$where['mer_id']);
+        }
+        if($combinationId) $model->where('p.cid',$combinationId);
+        $model = $model->join('__STORE_COMBINATION__ c','c.id=p.cid');
+        return $model->count();
     }
 
     /**
@@ -47,9 +60,18 @@ class StorePink extends ModelBasic{
      * @param int $combinationId
      * @return int|string
      */
-    public static function getCountPeoplePink($combinationId = 0){
-        if(!$combinationId) return self::where('k_id',0)->count();
-        return self::where('cid',$combinationId)->where('k_id',0)->count();
+    public static function getCountPeoplePink($combinationId = 0, $where=[]){
+      
+        $model = new self;
+        $model = $model->alias('p');
+        $model = $model->field('p.*,c.mer_id');
+        
+        if(isset($where['mer_id']) && $where['mer_id']!=''){
+            $model = $model->where('c.mer_id',$where['mer_id']);
+        }
+        if($combinationId) $model->where('p.k_id',$combinationId);
+        $model = $model->join('__STORE_COMBINATION__ c','c.id=p.cid');
+        return $model->count();
     }
     /**
      * 获取一条拼团数据

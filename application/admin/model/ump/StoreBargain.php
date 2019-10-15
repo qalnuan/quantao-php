@@ -31,8 +31,13 @@ class StoreBargain extends ModelBasic
      * 获取砍价的总数
      * @return int|string
      */
-    public static function getCountBargain(){
-        return self::where('is_del',0)->count();
+    public static function getCountBargain($where=[]){
+        $model=new self();
+        $model=$model->where('is_del',0);
+        if(isset($where['mer_id']) && $where['mer_id']!=''){
+            $model = $model->where('mer_id',$where['mer_id']);
+        }
+        return $model->count();
     }    /**
      * 砍价产品过滤条件
      * @param $model
@@ -269,6 +274,11 @@ class StoreBargain extends ModelBasic
         $model = self::isWhere($where,$model);
         $model = $model->order('id desc');
         $model = $model->where('is_del',0);
+        
+        if(isset($where['mer_id']) && $where['mer_id']!=''){
+            $model = $model->where('mer_id',$where['mer_id']);
+        }
+
         if($where['export'] == 1){
             $list = $model->select()->toArray();
             $export = [];
@@ -329,6 +339,9 @@ class StoreBargain extends ModelBasic
     }
 
     public static function isWhere($where = array(),$model = self::class){
+        if(isset($where['mer_id']) && $where['mer_id']!=''){
+            $model = $model->where('mer_id',$where['mer_id']);
+        }
         if($where['status'] != '')  $model = $model->where('status',$where['status']);
         if($where['store_name'] != '') $model = $model->where('id|title','LIKE',"%$where[store_name]%");
         if($where['data'] != '') $model = $model->whereTime('add_time', 'between', explode('-',$where['data']));

@@ -35,13 +35,17 @@ class StoreSeckill extends AuthController
      */
     public function index()
     {
-        $this->assign('countSeckill',StoreSeckillModel::getSeckillCount());
+        $where=Util::getMore([
+            ['mer_id', $this->adminId]
+        ]);
+        $this->assign('countSeckill',StoreSeckillModel::getSeckillCount($where));
         $this->assign('seckillId',StoreSeckillModel::getSeckillIdAll());
         return $this->fetch();
     }
     public function save_excel(){
         $where=Util::getMore([
             ['status',''],
+            ['mer_id', $this->adminId],
             ['store_name','']
         ]);
         StoreSeckillModel::SaveExcel($where);
@@ -54,6 +58,7 @@ class StoreSeckill extends AuthController
             ['page',1],
             ['limit',20],
             ['status',''],
+            ['mer_id', $this->adminId],
             ['store_name','']
         ]);
         $seckillList = StoreSeckillModel::systemPage($where);
@@ -66,7 +71,10 @@ class StoreSeckill extends AuthController
     }
 
     public function get_seckill_id(){
-        return Json::successlayui(StoreSeckillModel::getSeckillIdAll());
+        $where=Util::getMore([
+            ['mer_id', $this->adminId]
+        ]);
+        return Json::successlayui(StoreSeckillModel::getSeckillIdAll($where));
     }
     /**
      * 添加秒杀产品
@@ -142,6 +150,7 @@ class StoreSeckill extends AuthController
         if($data['cost'] == '' || $data['cost'] < 0) return Json::fail('请输入产品成本价');
         if($data['stock'] == '' || $data['stock'] < 0) return Json::fail('请输入库存');
         $data['add_time'] = time();
+        $data['mer_id'] = $this->adminId;
         if($data['num']<1) return Json::fail('请输入单次秒杀个数');
         if($id){
             $product = StoreSeckillModel::get($id);
