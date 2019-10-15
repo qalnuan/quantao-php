@@ -45,17 +45,17 @@ class StoreProduct extends AuthController
         //获取分类
         $this->assign('cate',CategoryModel::getTierList());
         //出售中产品
-        $onsale =  ProductModel::where(['is_show'=>1,'is_del'=>0])->count();
+        $onsale =  ProductModel::where(['is_show'=>1,'is_del'=>0])->where('mer_id',$this->adminId)->count();
         //待上架产品
-        $forsale =  ProductModel::where(['is_show'=>0,'is_del'=>0])->count();
+        $forsale =  ProductModel::where(['is_show'=>0,'is_del'=>0])->where('mer_id',$this->adminId)->count();
         //仓库中产品
-        $warehouse =  ProductModel::where(['is_del'=>0])->count();
+        $warehouse =  ProductModel::where(['is_del'=>0])->where('mer_id',$this->adminId)->count();
         //已经售馨产品
-        $outofstock = ProductModel::getModelObject()->where(ProductModel::setData(4))->count();
+        $outofstock = ProductModel::getModelObject()->where(ProductModel::setData(4))->where('mer_id',$this->adminId)->count();
         //警戒库存
-        $policeforce =ProductModel::getModelObject()->where(ProductModel::setData(5))->count();
+        $policeforce =ProductModel::getModelObject()->where(ProductModel::setData(5))->where('mer_id',$this->adminId)->count();
         //回收站
-        $recycle =  ProductModel::where(['is_del'=>1])->count();
+        $recycle =  ProductModel::where(['is_del'=>1])->where('mer_id',$this->adminId)->count();
 
         $this->assign(compact('type','onsale','forsale','warehouse','outofstock','policeforce','recycle'));
         return $this->fetch();
@@ -73,6 +73,7 @@ class StoreProduct extends AuthController
             ['cate_id',''],
             ['excel',0],
             ['order',''],
+            ['mer_id', $this->adminId],
             ['type',$this->request->param('type')]
         ]);
         return JsonService::successlayui(ProductModel::ProductList($where));
@@ -229,6 +230,7 @@ class StoreProduct extends AuthController
         $data['slider_image'] = json_encode($data['slider_image']);
         $data['add_time'] = time();
         $data['description'] = '';
+        $data['mer_id'] = $this->adminId;
         ProductModel::set($data);
         return Json::successful('添加产品成功!');
     }

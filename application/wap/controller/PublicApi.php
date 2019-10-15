@@ -66,7 +66,7 @@ class PublicApi
         $StoreProductModel = new StoreProduct;
         foreach ($cateInfo as $k=>$cate){
             $cate['product'] = $StoreProductModel::alias('A')->where('A.is_del',0)->where('A.is_show',1)
-                ->where('A.mer_id',0)->where('B.pid',$cate['id'])
+                ->where('B.pid',$cate['id'])
                 ->join('__STORE_CATEGORY__ B','B.id = A.cate_id')
                 ->order('A.is_benefit DESC,A.sort DESC,A.add_time DESC')
                 ->limit($limit)->field('A.id,A.image,A.store_name,A.sales,A.price,A.unit_name')->select()->toArray();
@@ -89,7 +89,7 @@ class PublicApi
         if(input('type')=='is_postage')
             $StoreProductmodel = $StoreProductmodel->where('is_postage',1);
 
-        $list = $StoreProductmodel->where('mer_id',0)->order('is_best DESC,sort DESC,add_time DESC')
+        $list = $StoreProductmodel->order('is_best DESC,sort DESC,add_time DESC')
             ->limit($first,$limit)->field('id,image,store_name,sales,price,unit_name')->select()->toArray();
 
         return JsonService::successful($list);
@@ -97,7 +97,7 @@ class PublicApi
 
     public function get_best_product_list($first = 0,$limit = 8)
     {
-        $list = StoreProduct::validWhere()->where('mer_id',0)->order('is_best DESC,sort DESC,add_time DESC')
+        $list = StoreProduct::validWhere()->order('is_best DESC,sort DESC,add_time DESC')
             ->limit($first,$limit)->field('id,image,store_name,sales,price,unit_name')->select()->toArray();
         return JsonService::successful($list);
     }

@@ -84,6 +84,9 @@ class StoreProduct extends ModelBasic
         $model=$model->alias('p')->join('StoreProductAttrValue pav','p.id=pav.product_id','LEFT');
         if(!empty($where)){
             $model=$model->group('p.id');
+            if(isset($where['mer_id']) && $where['mer_id']!=''){
+              $model = $model->where('p.mer_id', $where['mer_id']);
+            }
             if(isset($where['type']) && $where['type']!='' && ($data=self::setData($where['type']))){
                 $model = $model->where($data);
             }

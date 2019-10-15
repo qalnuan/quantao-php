@@ -28,7 +28,7 @@ class StoreProduct extends ModelBasic
 
     public static function validWhere()
     {
-        return self::where('is_del',0)->where('is_show',1)->where('mer_id',0);
+        return self::where('is_del',0)->where('is_show',1);
     }
 
     /**
@@ -39,7 +39,7 @@ class StoreProduct extends ModelBasic
      */
     public static function getNewProduct($field = '*',$limit = 0)
     {
-        $model = self::where('is_new',1)->where('is_del',0)->where('mer_id',0)
+        $model = self::where('is_new',1)->where('is_del',0)
             ->where('stock','>',0)->where('is_show',1)->field($field)
             ->order('sort DESC, id DESC');
         if($limit) $model->limit($limit);
@@ -54,7 +54,7 @@ class StoreProduct extends ModelBasic
      */
     public static function getHotProduct($field = '*',$limit = 0)
     {
-        $model = self::where('is_hot',1)->where('is_del',0)->where('mer_id',0)
+        $model = self::where('is_hot',1)->where('is_del',0)
             ->where('stock','>',0)->where('is_show',1)->field($field)
             ->order('sort DESC, id DESC');
         if($limit) $model->limit($limit);
@@ -69,7 +69,7 @@ class StoreProduct extends ModelBasic
      */
     public static function getBestProduct($field = '*',$limit = 0)
     {
-        $model = self::where('is_best',1)->where('is_del',0)->where('mer_id',0)
+        $model = self::where('is_best',1)->where('is_del',0)
             ->where('stock','>',0)->where('is_show',1)->field($field)
             ->order('sort DESC, id DESC');
         if($limit) $model->limit($limit);
@@ -86,7 +86,7 @@ class StoreProduct extends ModelBasic
     public static function getBenefitProduct($field = '*',$limit = 0)
     {
         $model = self::where('is_benefit',1)
-            ->where('is_del',0)->where('mer_id',0)->where('stock','>',0)
+            ->where('is_del',0)->where('stock','>',0)
             ->where('is_show',1)->field($field)
             ->order('sort DESC, id DESC');
         if($limit) $model->limit($limit);
