@@ -34,8 +34,11 @@ class StoreBargain extends BaseModel
      * 获取砍价的总数
      * @return int|string
      */
-    public static function getCountBargain(){
-        return self::where('is_del',0)->count();
+    public static function getCountBargain($where = array()){
+        $model = new self;
+        $model = self::isWhere($where,$model);
+        $model = $model->where('is_del',0);
+        return $model->count();
     }    /**
      * 砍价产品过滤条件
      * @param $model
@@ -332,9 +335,12 @@ class StoreBargain extends BaseModel
     }
 
     public static function isWhere($where = array(),$model = self::class){
-        if($where['status'] != '')  $model = $model->where('status',$where['status']);
-        if($where['store_name'] != '') $model = $model->where('id|title','LIKE',"%$where[store_name]%");
-        if($where['data'] != '') $model = $model->whereTime('add_time', 'between', explode('-',$where['data']));
+        if(isset($where['mer_id']) && $where['mer_id']!=''){
+            $model = $model->where('mer_id',$where['mer_id']);
+        }
+        if(isset($where['status']) && $where['status'] != '')  $model = $model->where('status',$where['status']);
+        if(isset($where['store_name']) && $where['store_name'] != '') $model = $model->where('id|title','LIKE',"%$where[store_name]%");
+        if(isset($where['data']) && $where['data'] != '') $model = $model->whereTime('add_time', 'between', explode('-',$where['data']));
         return $model;
     }
 

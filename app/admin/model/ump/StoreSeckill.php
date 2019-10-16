@@ -262,6 +262,15 @@ class StoreSeckill extends BaseModel
         return $list;
     }
 
+    public static function isWhere($where = array(),$model = self::class){
+        if(isset($where['mer_id']) && $where['mer_id']!=''){
+            $model = $model->where('mer_id',$where['mer_id']);
+        }
+        if(isset($where['status']) && $where['status'] != '')  $model = $model->where('status',$where['status']);
+        if(isset($where['store_name']) && $where['store_name'] != '') $model = $model->where('id|title','LIKE',"%$where[store_name]%");
+        return $model;
+    }
+
     /**
      * @param $where
      * @return array
@@ -270,6 +279,9 @@ class StoreSeckill extends BaseModel
         $model = new self;
         $model = $model->alias('s');
 //        $model = $model->join('StoreProduct p','p.id=s.product_id');
+        if(isset($where['mer_id']) && $where['mer_id']!=''){
+            $model = $model->where('s.mer_id',$where['mer_id']);
+        }
         if($where['status'] != '')  $model = $model->where('s.status',$where['status']);
         if($where['store_name'] != '') $model = $model->where('s.title|s.id','LIKE',"%$where[store_name]%");
         $model = $model->page(bcmul($where['page'],$where['limit'],0),$where['limit']);
@@ -290,8 +302,7 @@ class StoreSeckill extends BaseModel
     }
     public static function SaveExcel($where){
         $model = new self;
-        if($where['status'] != '')  $model = $model->where('status',$where['status']);
-        if($where['store_name'] != '') $model = $model->where('title|id','LIKE',"%$where[store_name]%");
+        $model = self::isWhere($where);
         $list = $model->order('id desc')->where('is_del',0)->select();
         count($list) && $list=$list->toArray();
         $excel=[];
@@ -328,16 +339,22 @@ class StoreSeckill extends BaseModel
      * 获取秒杀产品id
      * @return array
      */
-    public static function getSeckillIdAll(){
-        return self::where('is_del',0)->column('id','id');
+    public static function getSeckillIdAll($where = array()){
+        $model = new self;
+        $model = self::isWhere($where,$model);
+        $model = $model->where('is_del',0);
+        return $model->column('id','id');
     }
 
     /**
      * 获取秒杀的所有产品
      * @return int|string
      */
-    public static function getSeckillCount(){
-        return self::where('is_del',0)->count();
+    public static function getSeckillCount($where = array()){
+        $model = new self;
+        $model = self::isWhere($where,$model);
+        $model = $model->where('is_del',0);
+        return $model->count();
     }
 
     /**

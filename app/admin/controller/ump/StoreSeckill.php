@@ -34,14 +34,18 @@ class StoreSeckill extends AuthController
      */
     public function index()
     {
-        $this->assign('countSeckill',StoreSeckillModel::getSeckillCount());
-        $this->assign('seckillId',StoreSeckillModel::getSeckillIdAll());
+        $where=Util::getMore([
+            ['mer_id', $this->adminId],
+        ]);
+        $this->assign('countSeckill',StoreSeckillModel::getSeckillCount($where));
+        $this->assign('seckillId',StoreSeckillModel::getSeckillIdAll($where));
         return $this->fetch();
     }
     public function save_excel(){
         $where=Util::getMore([
             ['status',''],
-            ['store_name','']
+            ['store_name',''],
+            ['mer_id', $this->adminId],
         ]);
         StoreSeckillModel::SaveExcel($where);
     }
@@ -53,7 +57,8 @@ class StoreSeckill extends AuthController
             ['page',1],
             ['limit',20],
             ['status',''],
-            ['store_name','']
+            ['store_name',''],
+            ['mer_id', $this->adminId],
         ]);
         $seckillList = StoreSeckillModel::systemPage($where);
         if(is_object($seckillList['list'])) $seckillList['list'] = $seckillList['list']->toArray();
@@ -65,7 +70,10 @@ class StoreSeckill extends AuthController
     }
 
     public function get_seckill_id(){
-        return Json::successlayui(StoreSeckillModel::getSeckillIdAll());
+        $where=Util::getMore([
+            ['mer_id', $this->adminId],
+        ]);
+        return Json::successlayui(StoreSeckillModel::getSeckillIdAll($where));
     }
     /**
      * 添加秒杀产品
@@ -140,6 +148,7 @@ class StoreSeckill extends AuthController
         if($data['cost'] == '' || $data['cost'] < 0) return Json::fail('请输入产品成本价');
         if($data['stock'] == '' || $data['stock'] < 0) return Json::fail('请输入库存');
         if($data['num']<1) return Json::fail('请输入单次秒杀个数');
+        $data['mer_id'] = $this->adminId;
         if($id){
             $product = StoreSeckillModel::get($id);
             if(!$product) return Json::fail('数据不存在!');

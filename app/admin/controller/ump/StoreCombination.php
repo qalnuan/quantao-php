@@ -33,15 +33,19 @@ class StoreCombination extends AuthController
      */
     public function index()
     {
-        $this->assign('countCombination',StoreCombinationModel::getCombinationCount());
-        $this->assign(StoreCombinationModel::getStatistics());
-        $this->assign('combinationId',StoreCombinationModel::getCombinationIdAll());
+        $where = Util::getMore([
+            ['mer_id', $this->adminId],
+        ]);
+        $this->assign('countCombination',StoreCombinationModel::getCombinationCount($where));
+        $this->assign(StoreCombinationModel::getStatistics($where));
+        $this->assign('combinationId',StoreCombinationModel::getCombinationIdAll($where));
         return $this->fetch();
     }
     public function save_excel(){
         $where = Util::getMore([
             ['is_show',''],
             ['store_name',''],
+            ['mer_id', $this->adminId],
         ]);
         StoreCombinationModel::SaveExcel($where);
     }
@@ -55,7 +59,8 @@ class StoreCombination extends AuthController
             ['export',0],
             ['is_show',''],
             ['is_host',''],
-            ['store_name','']
+            ['store_name',''],
+            ['mer_id', $this->adminId],
         ]);
         $combinationList = StoreCombinationModel::systemPage($where);
         if(is_object($combinationList['list'])) $combinationList['list'] = $combinationList['list']->toArray();
@@ -170,6 +175,7 @@ class StoreCombination extends AuthController
         $data['start_time'] = strtotime($data['section_time'][0]);
         $data['stop_time'] = strtotime($data['section_time'][1]);
         unset($data['section_time']);
+        $data['mer_id'] = $this->adminId;
         if($id){
             $product = StoreCombinationModel::get($id);
             if(!$product) return Json::fail('数据不存在!');
@@ -362,6 +368,7 @@ class StoreCombination extends AuthController
         $where = Util::getMore([
             ['status',''],
             ['data',''],
+            ['mer_id', $this->adminId],
         ],$this->request);
         $this->assign('where',$where);
         $this->assign(StorePink::systemPage($where));

@@ -40,6 +40,7 @@ class StoreBargain extends AuthController
             ['store_name',''],
             ['export',0],
             ['data',''],
+            ['mer_id', $this->adminId],
         ],$this->request);
         $limitTimeList = [
             'today'=>implode(' - ',[date('Y/m/d'),date('Y/m/d',strtotime('+1 day'))]),
@@ -57,7 +58,7 @@ class StoreBargain extends AuthController
             ])
         ];
         $this->assign('where',$where);
-        $this->assign('countBargain',StoreBargainModel::getCountBargain());
+        $this->assign('countBargain',StoreBargainModel::getCountBargain($where));
         $this->assign('limitTimeList',$limitTimeList);
         $this->assign(StoreBargainModel::systemPage($where));
         $this->assign('bargainId',StoreBargainModel::getBargainIdAll($where));
@@ -74,7 +75,8 @@ class StoreBargain extends AuthController
             ['export',0],
             ['store_name',''],
             ['status',''],
-            ['data','']
+            ['data',''],
+            ['mer_id', $this->adminId],
         ]);
         $bargainList = StoreBargainModel::systemPage($where);
         if(is_object($bargainList['list'])) $bargainList['list'] = $bargainList['list']->toArray();
@@ -226,6 +228,7 @@ class StoreBargain extends AuthController
         if($data['stock'] == '' || $data['stock'] < 0) return JsonService::fail('请输入库存');
         if($data['num'] == '' || $data['num'] < 0) return JsonService::fail('请输入单次购买的砍价产品数量');
         unset($data['img']);
+        $data['mer_id'] = $this->adminId;
         if($id){
             $product = StoreBargainModel::get($id);
             if(!$product) return Json::fail('数据不存在!');
