@@ -10,6 +10,7 @@ namespace app\models\store;
 use crmeb\basic\BaseModel;
 use crmeb\services\UtilService;
 use crmeb\traits\ModelTrait;
+use app\models\system\SystemAdmin;
 
 /**
  * TODO 购物车Model
@@ -137,9 +138,9 @@ class StoreCart extends BaseModel
     public static function getUserProductCartList($uid,$cartIds='',$status=0)
     {
         $productInfoField = 'id,mer_id,image,price,ot_price,vip_price,postage,give_integral,sales,stock,store_name,unit_name,is_show,is_del,is_postage,cost';
-        $seckillInfoField = 'id,image,price,ot_price,postage,give_integral,sales,stock,title as store_name,unit_name,is_show,is_del,is_postage,cost';
+        $seckillInfoField = 'id,mer_id,image,price,ot_price,postage,give_integral,sales,stock,title as store_name,unit_name,is_show,is_del,is_postage,cost';
         $bargainInfoField = 'id,mer_id,image,min_price as price,price as ot_price,postage,give_integral,sales,stock,title as store_name,unit_name,status as is_show,is_del,is_postage,cost';
-        $combinationInfoField = 'id,image,price,postage,sales,stock,title as store_name,is_show,is_del,is_postage,cost';
+        $combinationInfoField = 'id,mer_id,image,price,postage,sales,stock,title as store_name,is_show,is_del,is_postage,cost';
         $model = new self();
         $valid = $invalid = [];
         $model = $model->where('uid',$uid)->where('type','product')->where('is_pay',0)
@@ -209,6 +210,8 @@ class StoreCart extends BaseModel
                 }
             }
         }
+
+        $merlist = array();
         foreach ($valid as $k=>$cart){
             if($cart['trueStock'] < $cart['cart_num']){
                 $cart['cart_num'] = $cart['trueStock'];
@@ -220,15 +223,40 @@ class StoreCart extends BaseModel
             if(isset($valid[$k]['productInfo'])){
                 unset($valid[$k]['productInfo']['is_del'],$valid[$k]['productInfo']['is_del'],$valid[$k]['productInfo']['is_show']);
             }
+            if (isset($merlist[$valid[$k]['productInfo']['mer_id']])) {
+              array_push($merlist[$valid[$k]['productInfo']['mer_id']]['validcarts'],($valid[$k]['id']));
+              array_push($merlist[$valid[$k]['productInfo']['mer_id']]['validindex'],($k));
+            } else {
+              $merlist[$valid[$k]['productInfo']['mer_id']]['mer_id'] = $valid[$k]['productInfo']['mer_id'];
+              $merlist[$valid[$k]['productInfo']['mer_id']]['name'] = SystemAdmin::getSystemAdminInfo($valid[$k]['productInfo']['mer_id'])['real_name'];
+              $merlist[$valid[$k]['productInfo']['mer_id']]['validcarts'] = array($valid[$k]['id']);
+              $merlist[$valid[$k]['productInfo']['mer_id']]['validindex'] = array($k);
+            }
         }
+        
         foreach ($invalid as $k=>$cart){
             unset($valid[$k]['uid'],$valid[$k]['is_del'],$valid[$k]['is_new'],$valid[$k]['is_pay'],$valid[$k]['add_time']);
             if(isset($invalid[$k]['productInfo'])){
                 unset($invalid[$k]['productInfo']['is_del'],$invalid[$k]['productInfo']['is_del'],$invalid[$k]['productInfo']['is_show']);
             }
+            
+            if (isset($merlist[$invalid[$k]['productInfo']['mer_id']])) {
+              array_push($merlist[$invalid[$k]['productInfo']['mer_id']]['validcarts'],($invalid[$k]['id']));
+              $merlist[$invalid[$k]['productInfo']['mer_id']]['validindex'] = array($k);
+            } else {
+              $merlist[$invalid[$k]['productInfo']['mer_id']]['mer_id'] = $invalid[$k]['productInfo']['mer_id'];
+              $merlist[$invalid[$k]['productInfo']['mer_id']]['name'] = SystemAdmin::getSystemAdminInfo($invalid[$k]['productInfo']['mer_id'])['real_name'];
+              $merlist[$invalid[$k]['productInfo']['mer_id']]['invalidcarts'] = array($invalid[$k]['id']);
+              $merlist[$invalid[$k]['productInfo']['mer_id']]['invalidindex'] = array($k);
+            }
         }
 
-        return compact('valid','invalid');
+        $merinfos = array();
+        foreach ($merlist as $key => $value) {
+          array_push($merinfos, $value);
+        }
+
+        return compact('valid','invalid','merinfos');
     }
 
     /**

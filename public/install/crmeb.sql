@@ -635,6 +635,7 @@ INSERT INTO `eb_routine_template` (`id`, `tempkey`, `name`, `content`, `tempid`,
 CREATE TABLE IF NOT EXISTS `eb_store_bargain` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '砍价产品ID',
   `product_id` int(11) unsigned NOT NULL COMMENT '关联产品ID',
+  `mer_id` int(10) unsigned DEFAULT '0' COMMENT '商户id',
   `title` varchar(255) NOT NULL COMMENT '砍价活动名称',
   `image` varchar(150) NOT NULL COMMENT '砍价活动图片',
   `unit_name` varchar(16) DEFAULT NULL COMMENT '单位名称',
@@ -1357,6 +1358,7 @@ CREATE TABLE IF NOT EXISTS `eb_store_product_reply` (
 CREATE TABLE IF NOT EXISTS `eb_store_seckill` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT '商品秒杀产品表id',
   `product_id` int(10) unsigned NOT NULL COMMENT '商品id',
+  `mer_id` int(10) unsigned DEFAULT '0' COMMENT '商户id',
   `image` varchar(255) NOT NULL COMMENT '推荐图',
   `images` varchar(2000) NOT NULL COMMENT '轮播图',
   `title` varchar(255) NOT NULL COMMENT '活动标题',
