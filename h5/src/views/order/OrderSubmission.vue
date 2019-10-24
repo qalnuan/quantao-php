@@ -22,7 +22,19 @@
       </div>
       <div class="iconfont icon-jiantou"></div>
     </div>
-    <OrderGoods :evaluate="0" :cartInfo="orderGroupInfo.cartInfo"></OrderGoods>
+    <div v-for="(orderinfo, index) in orderGroupInfo" :key="index">
+      <OrderGoods :evaluate="0" :cartInfo="orderinfo.cartInfo" :merinfo="orderinfo.mer_info"></OrderGoods>
+      <div class="poster acea-row row-between-wrapper">
+        <div>快递费用</div>
+        <div class="discount">
+          {{
+            orderinfo.priceGroup.storePostage > 0
+              ? orderinfo.priceGroup.storePostage
+              : "免运费"
+          }}
+        </div>
+      </div>
+    </div>
     <div class="wrapper">
       <div
         class="item acea-row row-between-wrapper"
@@ -52,16 +64,6 @@
               </label>
             </div>
           </div>
-        </div>
-      </div>
-      <div class="item acea-row row-between-wrapper">
-        <div>快递费用</div>
-        <div class="discount">
-          {{
-            orderGroupInfo.priceGroup.storePostage > 0
-              ? orderGroupInfo.priceGroup.storePostage
-              : "免运费"
-          }}
         </div>
       </div>
       <div class="item">
@@ -223,9 +225,9 @@ export default {
       showAddress: false,
       addressInfo: {},
       couponId: 0,
-      orderGroupInfo: {
+      orderGroupInfo: [{
         priceGroup: {}
-      },
+      }],
       usableCoupon: {},
       addressLoaded: false,
       useIntegral: false,
@@ -252,20 +254,33 @@ export default {
   },
   methods: {
     computedPrice() {
-      postOrderComputed(this.orderGroupInfo.orderKey, {
+      let orderKeys = [];
+      this.orderGroupInfo.forEach(orderinfo => {
+        orderKeys.push(orderinfo.orderKey);
+      });
+      postOrderComputed({
         addressId: this.addressInfo.id,
         useIntegral: this.useIntegral ? 1 : 0,
-        couponId: this.usableCoupon.id || 0
+        couponId: this.usableCoupon.id || 0,
+        orderKeys: orderKeys
       }).then(res => {
         const data = res.data;
         if (data.status === "EXTEND_ORDER") {
-          this.$router.replace({
-            path: "/order/detail/" + data.result.orderId
-          });
+          this.goToOrder(data.result.orderId, 0);
         } else {
           this.orderPrice = data.result;
         }
       });
+    },
+    goToOrder(orderIds, type) {
+        if (orderIds.length == 1) {
+          this.$router.replace({path: "/order/detail/" + orderIds[0]});
+        } else {
+          this.$router.replace({
+            path: "/order/list/" + type,
+            params: orderIds
+          });
+        }
     },
     getCartInfo() {
       const cartIds = this.$route.params.id;
@@ -320,7 +335,13 @@ export default {
       if (!this.addressInfo.id)
         return this.$dialog.toast({ mes: "请选择收货地址" });
       this.$dialog.loading.open("生成订单中");
-      createOrder(this.orderGroupInfo.orderKey, {
+
+      let orderKeys = [];
+      this.orderGroupInfo.forEach(orderinfo => {
+        orderKeys.push(orderinfo.orderKey);
+      });
+      createOrder({
+        orderKeys: orderKeys,
         addressId: this.addressInfo.id,
         useIntegral: this.useIntegral ? 1 : 0,
         couponId: this.usableCoupon.id || 0,
@@ -341,29 +362,22 @@ export default {
             case "PAY_DEFICIENCY":
             case "PAY_ERROR":
               this.$dialog.toast({ mes: res.msg });
-              this.$router.replace({
-                path: "/order/detail/" + data.result.orderId
-              });
+              this.goToOrder(data.result.orderIds, 0);
               break;
             case "SUCCESS":
+              console.log(data.result.orderIds);
               this.$dialog.success(res.msg);
-              this.$router.replace({
-                path: "/order/detail/" + data.result.orderId
-              });
+              this.goToOrder(data.result.orderIds, 1);
               break;
             case "WECHAT_H5_PAY":
-              this.$router.replace({
-                path: "/order/detail/" + data.result.orderId
-              });
+              this.goToOrder(data.result.orderIds, 0);
               setTimeout(() => {
                 location.href = data.result.jsConfig.mweb_url;
               }, 100);
               break;
             case "WECHAT_PAY":
               pay(data.result.jsConfig).finally(() => {
-                this.$router.replace({
-                  path: "/order/detail/" + data.result.orderId
-                });
+                this.goToOrder(data.result.orderIds, 1);
               });
           }
         })

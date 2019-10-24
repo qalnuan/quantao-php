@@ -1,6 +1,6 @@
 <template>
   <div class="orderGoods">
-    <div class="total">共{{ cartInfo.length }}件商品</div>
+    <div class="total">{{merinfo.name}}  共{{ cartInfo.length }}件商品</div>
     <div class="goodWrapper">
       <div
         class="item acea-row row-between-wrapper"
@@ -39,6 +39,9 @@ export default {
     cartInfo: {
       type: Array,
       default: () => []
+    },
+    merinfo: {
+      name: ""
     }
   },
   data: function() {

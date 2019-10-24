@@ -150,10 +150,10 @@ class StoreOrder extends BaseModel
         return (float)$totalPrice;
     }
 
-    public static function cacheOrderInfo($uid, $cartInfo, $priceGroup, $other = [], $cacheTime = 600)
+    public static function cacheOrderInfo($uid, $cartInfo, $priceGroup, $other = [], $merInfo, $cacheTime = 600)
     {
-        $key = md5(time());
-        Cache::set('user_order_' . $uid . $key, compact('cartInfo', 'priceGroup', 'other'), $cacheTime);
+        $key = md5(microtime());
+        Cache::set('user_order_' . $uid . $key, compact('cartInfo', 'priceGroup', 'other', 'merInfo'), $cacheTime);
         return $key;
     }
 
@@ -191,144 +191,159 @@ class StoreOrder extends BaseModel
      * @throws \think\exception\DbException
      */
 
-    public static function cacheKeyCreateOrder($uid, $key, $addressId, $payType, $useIntegral = false, $couponId = 0, $mark = '', $combinationId = 0, $pinkId = 0, $seckill_id = 0, $bargain_id = 0, $test = false, $isChannel = 0)
+    public static function cacheKeyCreateOrder($uid, $keys, $addressId, $payType, $useIntegral = false, $couponId = 0, $mark = '', $combinationId = 0, $pinkId = 0, $seckill_id = 0, $bargain_id = 0, $test = false, $isChannel = 0)
     {
         $offlinePayStatus = (int)SystemConfigService::get('offline_pay_status') ?? (int)2;
         if($offlinePayStatus == 2) unset(self::$payType['offline']);
         if (!array_key_exists($payType, self::$payType)) return self::setErrorInfo('选择支付方式有误!');
-        if (self::be(['unique' => $key, 'uid' => $uid])) return self::setErrorInfo('请勿重复提交订单');
+        if (self::be(['unique' => $keys, 'uid' => $uid])) return self::setErrorInfo('请勿重复提交订单');
         $userInfo = User::getUserInfo($uid);
         if (!$userInfo) return self::setErrorInfo('用户不存在!');
-        $cartGroup = self::getCacheOrderInfo($uid, $key);
-        if (!$cartGroup) return self::setErrorInfo('订单已过期,请刷新当前页面!');
-        $cartInfo = $cartGroup['cartInfo'];
-        $priceGroup = $cartGroup['priceGroup'];
-        $other = $cartGroup['other'];
-        $payPrice = (float)$priceGroup['totalPrice'];
-        $payPostage = $priceGroup['storePostage'];
-        if (!$test && !$addressId) return self::setErrorInfo('请选择收货地址!');
-        if (!$test && (!UserAddress::be(['uid' => $uid, 'id' => $addressId, 'is_del' => 0]) || !($addressInfo = UserAddress::find($addressId))))
-            return self::setErrorInfo('地址选择有误!');
-
-
-        $cartIds = [];
-        $totalNum = 0;
-        $gainIntegral = 0;
-        foreach ($cartInfo as $cart) {
-            $cartIds[] = $cart['id'];
-            $totalNum += $cart['cart_num'];
-            if(!$seckill_id) $seckill_id = $cart['seckill_id'];
-            if(!$bargain_id) $bargain_id = $cart['bargain_id'];
-            if(!$combinationId) $combinationId = $cart['combination_id'];
-            $cartInfoGainIntegral = isset($cart['productInfo']['give_integral']) ? bcmul($cart['cart_num'],$cart['productInfo']['give_integral'],2) :  0;
-            $gainIntegral = bcadd($gainIntegral, $cartInfoGainIntegral, 2);
-        }
-        $deduction = $seckill_id || $bargain_id || $combinationId;
-        if($deduction){
-            $couponId = 0;
-            $useIntegral = false;
-            if(!$test){
-                unset(self::$payType['offline']);
-                if (!array_key_exists($payType, self::$payType)) return self::setErrorInfo('营销产品不能使用线下支付!');
-            }
-        }
-        //使用优惠劵
-        $res1 = true;
-        if ($couponId) {
-            $couponInfo = StoreCouponUser::validAddressWhere()->where('id', $couponId)->where('uid', $uid)->find();
-            if (!$couponInfo) return self::setErrorInfo('选择的优惠劵无效!');
-            if ($couponInfo['use_min_price'] > $payPrice)
-                return self::setErrorInfo('不满足优惠劵的使用条件!');
-            $payPrice = (float)bcsub($payPrice, $couponInfo['coupon_price'], 2);
-            $res1 = StoreCouponUser::useCoupon($couponId);
-            $couponPrice = $couponInfo['coupon_price'];
-        } else {
-            $couponId = 0;
-            $couponPrice = 0;
-        }
-        if (!$res1) return self::setErrorInfo('使用优惠劵失败!');
-
-        //是否包邮
-        if ((isset($other['offlinePostage']) && $other['offlinePostage'] && $payType == 'offline')) $payPostage = 0;
-        $payPrice = (float)bcadd($payPrice, $payPostage, 2);
-
-        //积分抵扣
-        $res2 = true;
-        if ($useIntegral && $userInfo['integral'] > 0) {
-            $deductionPrice = (float)bcmul($userInfo['integral'], $other['integralRatio'], 2);
-            if ($deductionPrice < $payPrice) {
-                $payPrice = bcsub($payPrice, $deductionPrice, 2);
-                $usedIntegral = $userInfo['integral'];
-                $res2 = false !== User::edit(['integral' => 0], $userInfo['uid'], 'uid');
-            } else {
-                $deductionPrice = $payPrice;
-                $usedIntegral = (float)bcdiv($payPrice, $other['integralRatio'], 2);
-                $res2 = false !== User::bcDec($userInfo['uid'], 'integral', $usedIntegral, 'uid');
-                $payPrice = 0;
-            }
-            $res2 = $res2 && false != UserBill::expend('积分抵扣', $uid, 'integral', 'deduction', $usedIntegral, $key, $userInfo['integral'], '购买商品使用' . floatval($usedIntegral) . '积分抵扣' . floatval($deductionPrice) . '元');
-        } else {
-            $deductionPrice = 0;
-            $usedIntegral = 0;
-        }
-        if (!$res2) return self::setErrorInfo('使用积分抵扣失败!');
-        if($payPrice <= 0) $payPrice = 0;
-        if ($test) return [
-            'total_price' => $priceGroup['totalPrice'],
-            'pay_price' => $payPrice,
-            'pay_postage' => $payPostage,
-            'coupon_price' => $couponPrice,
-            'deduction_price' => $deductionPrice,
+        $retdata = array();
+        $orderPrice = [
+          'total_price' => 0,
+          'pay_price' => 0,
+          'pay_postage' => 0,
+          'coupon_price' => 0,
+          'deduction_price' => 0,
         ];
-        $orderInfo = [
-            'uid' => $uid,
-            'order_id' => $test ? 0 : self::getNewOrderId($uid),
-            'real_name' => $addressInfo['real_name'],
-            'user_phone' => $addressInfo['phone'],
-            'user_address' => $addressInfo['province'] . ' ' . $addressInfo['city'] . ' ' . $addressInfo['district'] . ' ' . $addressInfo['detail'],
-            'cart_id' => $cartIds,
-            'total_num' => $totalNum,
-            'total_price' => $priceGroup['totalPrice'],
-            'total_postage' => $priceGroup['storePostage'],
-            'coupon_id' => $couponId,
-            'coupon_price' => $couponPrice,
-            'pay_price' => $payPrice,
-            'pay_postage' => $payPostage,
-            'deduction_price' => $deductionPrice,
-            'paid' => 0,
-            'pay_type' => $payType,
-            'use_integral' => $usedIntegral,
-            'gain_integral' => $gainIntegral,
-            'mark' => htmlspecialchars($mark),
-            'combination_id' => $combinationId,
-            'pink_id' => $pinkId,
-            'seckill_id' => $seckill_id,
-            'bargain_id' => $bargain_id,
-            'cost' => $priceGroup['costPrice'],
-            'is_channel' => $isChannel,
-            'add_time' => time(),
-            'unique' => $key
-        ];
-        $order = self::create($orderInfo);
-        if (!$order) return self::setErrorInfo('订单生成失败!');
-        $res5 = true;
-        foreach ($cartInfo as $cart) {
-            //减库存加销量
-            if ($combinationId) $res5 = $res5 && StoreCombination::decCombinationStock($cart['cart_num'], $combinationId);
-            else if ($seckill_id) $res5 = $res5 && StoreSeckill::decSeckillStock($cart['cart_num'], $seckill_id);
-            else if ($bargain_id) $res5 = $res5 && StoreBargain::decBargainStock($cart['cart_num'], $bargain_id);
-            else $res5 = $res5 && StoreProduct::decProductStock($cart['cart_num'], $cart['productInfo']['id'], isset($cart['productInfo']['attrInfo']) ? $cart['productInfo']['attrInfo']['unique'] : '');
+        foreach ($keys as $key) {
+          $cartGroup = self::getCacheOrderInfo($uid, $key);
+          if (!$cartGroup) return self::setErrorInfo('订单已过期,请刷新当前页面!');
+          $cartInfo = $cartGroup['cartInfo'];
+          $priceGroup = $cartGroup['priceGroup'];
+          $other = $cartGroup['other'];
+          $merInfo = $cartGroup['merInfo'];
+          $payPrice = (float)$priceGroup['totalPrice'];
+          $payPostage = $priceGroup['storePostage'];
+          if (!$test && !$addressId) return self::setErrorInfo('请选择收货地址!');
+          if (!$test && (!UserAddress::be(['uid' => $uid, 'id' => $addressId, 'is_del' => 0]) || !($addressInfo = UserAddress::find($addressId))))
+              return self::setErrorInfo('地址选择有误!');
+          $cartIds = [];
+          $totalNum = 0;
+          $gainIntegral = 0;
+          foreach ($cartInfo as $cart) {
+              $cartIds[] = $cart['id'];
+              $totalNum += $cart['cart_num'];
+              if(!$seckill_id) $seckill_id = $cart['seckill_id'];
+              if(!$bargain_id) $bargain_id = $cart['bargain_id'];
+              if(!$combinationId) $combinationId = $cart['combination_id'];
+              $cartInfoGainIntegral = isset($cart['productInfo']['give_integral']) ? bcmul($cart['cart_num'],$cart['productInfo']['give_integral'],2) :  0;
+              $gainIntegral = bcadd($gainIntegral, $cartInfoGainIntegral, 2);
+          }
+          $deduction = $seckill_id || $bargain_id || $combinationId;
+          if($deduction){
+              $couponId = 0;
+              $useIntegral = false;
+              if(!$test){
+                  unset(self::$payType['offline']);
+                  if (!array_key_exists($payType, self::$payType)) return self::setErrorInfo('营销产品不能使用线下支付!');
+              }
+          }
+          //使用优惠劵
+          $res1 = true;
+          if ($couponId) {
+              $couponInfo = StoreCouponUser::validAddressWhere()->where('id', $couponId)->where('uid', $uid)->find();
+              if (!$couponInfo) return self::setErrorInfo('选择的优惠劵无效!');
+              if ($couponInfo['use_min_price'] > $payPrice)
+                  return self::setErrorInfo('不满足优惠劵的使用条件!');
+              $payPrice = (float)bcsub($payPrice, $couponInfo['coupon_price'], 2);
+              $res1 = StoreCouponUser::useCoupon($couponId);
+              $couponPrice = $couponInfo['coupon_price'];
+          } else {
+              $couponId = 0;
+              $couponPrice = 0;
+          }
+          if (!$res1) return self::setErrorInfo('使用优惠劵失败!');
+
+          //是否包邮
+          if ((isset($other['offlinePostage']) && $other['offlinePostage'] && $payType == 'offline')) $payPostage = 0;
+          $payPrice = (float)bcadd($payPrice, $payPostage, 2);
+
+          //积分抵扣
+          $res2 = true;
+          if ($useIntegral && $userInfo['integral'] > 0) {
+              $deductionPrice = (float)bcmul($userInfo['integral'], $other['integralRatio'], 2);
+              if ($deductionPrice < $payPrice) {
+                  $payPrice = bcsub($payPrice, $deductionPrice, 2);
+                  $usedIntegral = $userInfo['integral'];
+                  $res2 = false !== User::edit(['integral' => 0], $userInfo['uid'], 'uid');
+              } else {
+                  $deductionPrice = $payPrice;
+                  $usedIntegral = (float)bcdiv($payPrice, $other['integralRatio'], 2);
+                  $res2 = false !== User::bcDec($userInfo['uid'], 'integral', $usedIntegral, 'uid');
+                  $payPrice = 0;
+              }
+              $res2 = $res2 && false != UserBill::expend('积分抵扣', $uid, 'integral', 'deduction', $usedIntegral, $key, $userInfo['integral'], '购买商品使用' . floatval($usedIntegral) . '积分抵扣' . floatval($deductionPrice) . '元');
+          } else {
+              $deductionPrice = 0;
+              $usedIntegral = 0;
+          }
+          if (!$res2) return self::setErrorInfo('使用积分抵扣失败!');
+          if($payPrice <= 0) $payPrice = 0;
+          if ($test) {
+            $orderPrice['total_price'] += $priceGroup['totalPrice'];
+            $orderPrice['pay_price'] += $payPrice;
+            $orderPrice['pay_postage'] += $payPostage;
+            $orderPrice['coupon_price'] += $couponPrice;
+            $orderPrice['deduction_price'] += $deductionPrice;
+            continue;
+          }
+          $orderInfo = [
+              'uid' => $uid,
+              'order_id' => $test ? 0 : self::getNewOrderId($uid),
+              'real_name' => $addressInfo['real_name'],
+              'user_phone' => $addressInfo['phone'],
+              'user_address' => $addressInfo['province'] . ' ' . $addressInfo['city'] . ' ' . $addressInfo['district'] . ' ' . $addressInfo['detail'],
+              'cart_id' => $cartIds,
+              'total_num' => $totalNum,
+              'total_price' => $priceGroup['totalPrice'],
+              'total_postage' => $priceGroup['storePostage'],
+              'coupon_id' => $couponId,
+              'coupon_price' => $couponPrice,
+              'pay_price' => $payPrice,
+              'pay_postage' => $payPostage,
+              'deduction_price' => $deductionPrice,
+              'paid' => 0,
+              'pay_type' => $payType,
+              'use_integral' => $usedIntegral,
+              'gain_integral' => $gainIntegral,
+              'mark' => htmlspecialchars($mark),
+              'combination_id' => $combinationId,
+              'pink_id' => $pinkId,
+              'seckill_id' => $seckill_id,
+              'bargain_id' => $bargain_id,
+              'mer_id' => $merInfo['mer_id'],
+              'cost' => $priceGroup['costPrice'],
+              'is_channel' => $isChannel,
+              'add_time' => time(),
+              'unique' => $key
+          ];
+          $order = self::create($orderInfo);
+          if (!$order) return self::setErrorInfo('订单生成失败!');
+          $res5 = true;
+          foreach ($cartInfo as $cart) {
+              //减库存加销量
+              if ($combinationId) $res5 = $res5 && StoreCombination::decCombinationStock($cart['cart_num'], $combinationId);
+              else if ($seckill_id) $res5 = $res5 && StoreSeckill::decSeckillStock($cart['cart_num'], $seckill_id);
+              else if ($bargain_id) $res5 = $res5 && StoreBargain::decBargainStock($cart['cart_num'], $bargain_id);
+              else $res5 = $res5 && StoreProduct::decProductStock($cart['cart_num'], $cart['productInfo']['id'], isset($cart['productInfo']['attrInfo']) ? $cart['productInfo']['attrInfo']['unique'] : '');
+          }
+          //保存购物车商品信息
+          $res4 = false !== StoreOrderCartInfo::setCartInfo($order['id'], $cartInfo);
+          //购物车状态修改
+          $res6 = false !== StoreCart::where('id', 'IN', $cartIds)->update(['is_pay' => 1]);
+          if (!$res4 || !$res5 || !$res6) return self::setErrorInfo('订单生成失败!');
+          GoodsRepository::storeProductOrderCreateEbApi($order, compact('cartInfo', 'addressId'));
+          self::clearCacheOrderInfo($uid, $key);
+          self::commitTrans();
+          StoreOrderStatus::status($order['id'], 'cache_key_create_order', '订单生成');
+          array_push($retdata,$order);
         }
-        //保存购物车商品信息
-        $res4 = false !== StoreOrderCartInfo::setCartInfo($order['id'], $cartInfo);
-        //购物车状态修改
-        $res6 = false !== StoreCart::where('id', 'IN', $cartIds)->update(['is_pay' => 1]);
-        if (!$res4 || !$res5 || !$res6) return self::setErrorInfo('订单生成失败!');
-        GoodsRepository::storeProductOrderCreateEbApi($order, compact('cartInfo', 'addressId'));
-        self::clearCacheOrderInfo($uid, $key);
-        self::commitTrans();
-        StoreOrderStatus::status($order['id'], 'cache_key_create_order', '订单生成');
-        return $order;
+        if ($test) {
+          return $orderPrice;
+        }
+        return $retdata;
     }
 
     /*

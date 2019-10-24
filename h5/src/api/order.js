@@ -18,8 +18,8 @@ export function postOrderConfirm(cartId) {
  * @param data
  * @returns {*}
  */
-export function postOrderComputed(key, data) {
-  return request.post("/order/computed/" + key, data);
+export function postOrderComputed(data) {
+  return request.post("/order/computed", data);
 }
 
 /**
@@ -37,8 +37,8 @@ export function getOrderCoupon(price) {
  * @param data
  * @returns {*}
  */
-export function createOrder(key, data) {
-  return request.post("/order/create/" + key, data || {});
+export function createOrder(data) {
+  return request.post("/order/create", data || {});
 }
 
 /**

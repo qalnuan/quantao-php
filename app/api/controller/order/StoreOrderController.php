@@ -38,44 +38,95 @@ class StoreOrderController
         $cartGroup = StoreCart::getUserProductCartList($uid, $cartId, 1);
         if (count($cartGroup['invalid'])) return app('json')->fail($cartGroup['invalid'][0]['productInfo']['store_name'] . '已失效!');
         if (!$cartGroup['valid']) return app('json')->fail('请提交购买的商品');
-        $cartInfo = $cartGroup['valid'];
-        $priceGroup = StoreOrder::getOrderPriceGroup($cartInfo);
-        $other = [
-            'offlinePostage' => SystemConfigService::get('offline_postage'),
-            'integralRatio' => SystemConfigService::get('integral_ratio')
-        ];
-        $usableCoupon = StoreCouponUser::beUsableCoupon($uid, $priceGroup['totalPrice']);
-        $cartIdA = explode(',', $cartId);
-        $seckill_id = 0;
-        $combination_id = 0;
-        $bargain_id = 0;
-        if (count($cartIdA) == 1){
-            $seckill_id = StoreCart::where('id', $cartId)->value('seckill_id');
-            $combination_id = StoreCart::where('id', $cartId)->value('combination_id');
-            $bargain_id = StoreCart::where('id', $cartId)->value('bargain_id');
+        
+        if (count($cartGroup['merinfos']) == 1) {
+          $cartInfo = $cartGroup['valid'];
+          $merinfo = $cartGroup['merinfos'][0];
+          $priceGroup = StoreOrder::getOrderPriceGroup($cartInfo);
+          $other = [
+              'offlinePostage' => SystemConfigService::get('offline_postage'),
+              'integralRatio' => SystemConfigService::get('integral_ratio')
+          ];
+          $usableCoupon = StoreCouponUser::beUsableCoupon($uid, $priceGroup['totalPrice']);
+          $cartIdA = explode(',', $cartId);
+          $seckill_id = 0;
+          $combination_id = 0;
+          $bargain_id = 0;
+          if (count($cartIdA) == 1){
+              $seckill_id = StoreCart::where('id', $cartId)->value('seckill_id');
+              $combination_id = StoreCart::where('id', $cartId)->value('combination_id');
+              $bargain_id = StoreCart::where('id', $cartId)->value('bargain_id');
+          }
+          $data['deduction'] = $seckill_id || $combination_id || $bargain_id;
+          $data['usableCoupon'] = $usableCoupon;
+          $data['addressInfo'] = UserAddress::getUserDefaultAddress($uid);
+          $data['seckill_id'] = $seckill_id;
+          $data['combination_id'] = $combination_id;
+          $data['bargain_id'] = $bargain_id;
+          $data['cartInfo'] = $cartInfo;
+          $data['priceGroup'] = $priceGroup;
+          $data['orderKey'] = StoreOrder::cacheOrderInfo($uid, $cartInfo, $priceGroup, $other, $merinfo);
+          $data['offlinePostage'] = $other['offlinePostage'];
+          $vipId = UserLevel::getUserLevel($uid);
+          $user = $request->user();
+          if(isset($user['pwd'])) unset($user['pwd']);
+          $user['vip'] = $vipId !== false ? true : false;
+          if($user['vip']){
+              $user['vip_id'] = $vipId;
+              $user['discount'] = UserLevel::getUserLevelInfo($vipId,'discount');
+          }
+          $data['userInfo'] = $user;
+          $data['integralRatio'] = $other['integralRatio'];
+          $data['offline_pay_status'] = (int)SystemConfigService::get('offline_pay_status') ?? (int)2;
+          $data['mer_info'] = $merinfo;
+          
+          return app('json')->successful(array($data));
+        } else {
+          $ordersdata = array();
+          foreach ($cartGroup['merinfos'] as $k=>$merinfo){
+            $cartGroup = StoreCart::getUserProductCartList($uid, $merinfo['validcarts'], 1);
+            $cartInfo = $cartGroup['valid'];
+            $priceGroup = StoreOrder::getOrderPriceGroup($cartInfo);
+            $other = [
+                'offlinePostage' => SystemConfigService::get('offline_postage'),
+                'integralRatio' => SystemConfigService::get('integral_ratio')
+            ];
+            $usableCoupon = StoreCouponUser::beUsableCoupon($uid, $priceGroup['totalPrice']);
+            $cartIdA = explode(',', $cartId);
+            $seckill_id = 0;
+            $combination_id = 0;
+            $bargain_id = 0;
+            if (count($cartIdA) == 1){
+                $seckill_id = StoreCart::where('id', $cartId)->value('seckill_id');
+                $combination_id = StoreCart::where('id', $cartId)->value('combination_id');
+                $bargain_id = StoreCart::where('id', $cartId)->value('bargain_id');
+            }
+            $data['deduction'] = $seckill_id || $combination_id || $bargain_id;
+            $data['usableCoupon'] = $usableCoupon;
+            $data['addressInfo'] = UserAddress::getUserDefaultAddress($uid);
+            $data['seckill_id'] = $seckill_id;
+            $data['combination_id'] = $combination_id;
+            $data['bargain_id'] = $bargain_id;
+            $data['cartInfo'] = $cartInfo;
+            $data['priceGroup'] = $priceGroup;
+            $data['orderKey'] = StoreOrder::cacheOrderInfo($uid, $cartInfo, $priceGroup, $other, $merinfo);
+            $data['offlinePostage'] = $other['offlinePostage'];
+            $vipId = UserLevel::getUserLevel($uid);
+            $user = $request->user();
+            if(isset($user['pwd'])) unset($user['pwd']);
+            $user['vip'] = $vipId !== false ? true : false;
+            if($user['vip']){
+                $user['vip_id'] = $vipId;
+                $user['discount'] = UserLevel::getUserLevelInfo($vipId,'discount');
+            }
+            $data['userInfo'] = $user;
+            $data['integralRatio'] = $other['integralRatio'];
+            $data['offline_pay_status'] = (int)SystemConfigService::get('offline_pay_status') ?? (int)2;
+            $data['mer_info'] = $merinfo;
+            array_push($ordersdata, $data);
+          }
+          return app('json')->successful($ordersdata);
         }
-        $data['deduction'] = $seckill_id || $combination_id || $bargain_id;
-        $data['usableCoupon'] = $usableCoupon;
-        $data['addressInfo'] = UserAddress::getUserDefaultAddress($uid);
-        $data['seckill_id'] = $seckill_id;
-        $data['combination_id'] = $combination_id;
-        $data['bargain_id'] = $bargain_id;
-        $data['cartInfo'] = $cartInfo;
-        $data['priceGroup'] = $priceGroup;
-        $data['orderKey'] = StoreOrder::cacheOrderInfo($uid, $cartInfo, $priceGroup, $other);
-        $data['offlinePostage'] = $other['offlinePostage'];
-        $vipId = UserLevel::getUserLevel($uid);
-        $user = $request->user();
-        if(isset($user['pwd'])) unset($user['pwd']);
-        $user['vip'] = $vipId !== false ? true : false;
-        if($user['vip']){
-            $user['vip_id'] = $vipId;
-            $user['discount'] = UserLevel::getUserLevelInfo($vipId,'discount');
-        }
-        $data['userInfo'] = $user;
-        $data['integralRatio'] = $other['integralRatio'];
-        $data['offline_pay_status'] = (int)SystemConfigService::get('offline_pay_status') ?? (int)2;
-        return app('json')->successful($data);
     }
 
     /**
@@ -88,17 +139,18 @@ class StoreOrderController
      * @throws \think\db\exception\ModelNotFoundException
      * @throws \think\exception\DbException
      */
-    public function computedOrder(Request $request, $key)
+    public function computedOrder(Request $request)
     {
-
-//        $priceGroup = StoreOrder::getOrderPriceGroup($cartInfo);
-        if (!$key) return app('json')->fail('参数错误!');
         $uid = $request->uid();
-        if (StoreOrder::be(['order_id|unique' => $key, 'uid' => $uid, 'is_del' => 0]))
-            return app('json')->status('extend_order', '订单已生成', ['orderId' => $key, 'key' => $key]);
-        list($addressId, $couponId, $payType, $useIntegral, $mark, $combinationId, $pinkId, $seckill_id, $formId, $bargainId) = UtilService::postMore([
-            'addressId', 'couponId', ['payType', 'yue'], ['useIntegral',0], 'mark', ['combinationId', 0], ['pinkId', 0], ['seckill_id', 0], ['formId', ''], ['bargainId', '']
+        list($orderKeys, $addressId, $couponId, $payType, $useIntegral, $mark, $combinationId, $pinkId, $seckill_id, $formId, $bargainId) = UtilService::postMore([
+            ['orderKeys', []], 'addressId', 'couponId', ['payType', 'yue'], ['useIntegral',0], 'mark', ['combinationId', 0], ['pinkId', 0], ['seckill_id', 0], ['formId', ''], ['bargainId', '']
         ], $request, true);
+        if (count($orderKeys) === 0) {
+          return app('json')->fail('参数错误!');
+        }
+
+        if (StoreOrder::be(['order_id|unique' => $orderKeys, 'uid' => $uid, 'is_del' => 0]))
+            return app('json')->status('extend_order', '订单已生成', ['orderId' => $orderKeys, 'key' => $orderKeys]);
         $payType = strtolower($payType);
         if ($bargainId){
             $bargainUserTableId = StoreBargainUser::getBargainUserTableId($bargainId,$uid);//TODO 获取用户参与砍价表编号
@@ -116,7 +168,7 @@ class StoreOrderController
                 return app('json')->status('ORDER_EXIST', '订单生成失败，你已经参加该团了，请先支付订单', ['orderId' => StoreOrder::getStoreIdPink($pinkId, $request->uid())]);
         }
         Db::startTrans();
-        $priceGroup = StoreOrder::cacheKeyCreateOrder($request->uid(), $key, $addressId, $payType, (int)$useIntegral, $couponId, $mark, $combinationId, $pinkId, $seckill_id, $bargainId, true, 0);
+        $priceGroup = StoreOrder::cacheKeyCreateOrder($request->uid(), $orderKeys, $addressId, $payType, (int)$useIntegral, $couponId, $mark, $combinationId, $pinkId, $seckill_id, $bargainId, true, 0);
         if($priceGroup)
             return app('json')->status('NONE', 'ok', $priceGroup);
         else
@@ -133,15 +185,19 @@ class StoreOrderController
      * @throws \think\db\exception\ModelNotFoundException
      * @throws \think\exception\DbException
      */
-    public function create(Request $request, $key)
+    public function create(Request $request)
     {
-        if (!$key) return app('json')->fail('参数错误!');
         $uid = $request->uid();
-        if (StoreOrder::be(['order_id|unique' => $key, 'uid' => $uid, 'is_del' => 0]))
-            return app('json')->status('extend_order', '订单已生成', ['orderId' => $key, 'key' => $key]);
-        list($addressId, $couponId, $payType, $useIntegral, $mark, $combinationId, $pinkId, $seckill_id, $formId, $bargainId, $from) = UtilService::postMore([
-            'addressId', 'couponId', 'payType', ['useIntegral',0], 'mark', ['combinationId', 0], ['pinkId', 0], ['seckill_id', 0], ['formId', ''], ['bargainId', ''], ['from', 'weixin']
+        list($orderKeys, $addressId, $couponId, $payType, $useIntegral, $mark, $combinationId, $pinkId, $seckill_id, $formId, $bargainId, $from) = UtilService::postMore([
+            ['orderKeys', []], 'addressId', 'couponId', 'payType', ['useIntegral',0], 'mark', ['combinationId', 0], ['pinkId', 0], ['seckill_id', 0], ['formId', ''], ['bargainId', ''], ['from', 'weixin']
         ], $request, true);
+        
+        if (count($orderKeys) === 0) {
+          return app('json')->fail('参数错误!');
+        }
+        if (StoreOrder::be(['order_id|unique' => $orderKeys, 'uid' => $uid, 'is_del' => 0]))
+            return app('json')->status('extend_order', '订单已生成', ['orderId' => $orderKeys, 'key' => $orderKeys]);
+        
         $payType = strtolower($payType);
         if ($bargainId){
             $bargainUserTableId = StoreBargainUser::getBargainUserTableId($bargainId,$uid);//TODO 获取用户参与砍价表编号
@@ -160,12 +216,14 @@ class StoreOrderController
         }
         $isChannel = 1;
         if($from == 'weixin')  $isChannel = 0;
-        $order = StoreOrder::cacheKeyCreateOrder($request->uid(), $key, $addressId, $payType, (int)$useIntegral, $couponId, $mark, $combinationId, $pinkId, $seckill_id, $bargainId, false, $isChannel);
-        $orderId = $order['order_id'];
-        $info = compact('orderId', 'key');
-        if ($orderId) {
-            event('OrderCreated', [$order]);
-
+        $orders = StoreOrder::cacheKeyCreateOrder($request->uid(), $orderKeys, $addressId, $payType, (int)$useIntegral, $couponId, $mark, $combinationId, $pinkId, $seckill_id, $bargainId, false, $isChannel);
+        $orderIds = array();
+        foreach ($orders as $key => $value) {
+          array_push($orderIds, $value['order_id']);
+        }
+        $info = compact('orderIds', 'orderKeys');
+        if (count($orderIds) > 0) {
+            event('OrderCreated', $orders);
             switch ($payType) {
                 case "weixin":
                     $orderInfo = StoreOrder::where('order_id', $orderId)->find();
@@ -208,15 +266,19 @@ class StoreOrderController
                     }
                     break;
                 case 'yue':
-                    if (StoreOrder::yuePay($orderId, $request->uid(), $formId))
-                        return app('json')->status('success', '余额支付成功', $info);
-                    else {
-                        $errorinfo = StoreOrder::getErrorInfo();
-                        if (is_array($errorinfo))
-                            return app('json')->status($errorinfo['status'], $errorinfo['msg'], $info);
-                        else
-                            return app('json')->status('pay_error', $errorinfo);
+                    foreach ($orderIds as $key => $orderId) {
+                        if (StoreOrder::yuePay($orderId, $request->uid(), $formId))
+                            continue;
+                        else {
+                            $errorinfo = StoreOrder::getErrorInfo();
+                            if (is_array($errorinfo))
+                                return app('json')->status($errorinfo['status'], $errorinfo['msg'], $info);
+                            else
+                                return app('json')->status('pay_error', $errorinfo);
+                        }
                     }
+                    
+                    return app('json')->status('success', '余额支付成功', $info);
                     break;
                 case 'offline':
                     RoutineFormId::SetFormId($formId, $request->uid());

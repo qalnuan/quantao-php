@@ -491,6 +491,7 @@ border-radius:2rem;top:-0.1rem;right:0;height:0.3rem;line-height:0.3rem;padding:
 .order-submission .address .addressCon .default{margin-right:0.12rem;}
 .order-submission .address .addressCon .setaddress{color:#333;font-size:0.28rem;}
 .order-submission .address .iconfont{font-size:0.35rem;color:#707070;}
+.order-submission .poster{background-color:#fff;padding:0.27rem 0.3rem;font-size:0.3rem;color:#282828;border-bottom:1px solid #f0f0f0;}
 .order-submission .wrapper{background-color:#fff;margin-top:0.13rem;}
 .order-submission .wrapper .item{padding:0.27rem 0.3rem;font-size:0.3rem;color:#282828;border-bottom:1px solid #f0f0f0;}
 .order-submission .wrapper .item .discount{font-size:0.3rem;color:#999;}

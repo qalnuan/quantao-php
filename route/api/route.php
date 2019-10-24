@@ -95,8 +95,8 @@ Route::group(function () {
     Route::get('cart/count', 'store.StoreCartController/count')->name('cartCount'); //购物车 获取数量
     //订单类
     Route::post('order/confirm', 'order.StoreOrderController/confirm')->name('orderConfirm'); //订单确认
-    Route::post('order/computed/:key', 'order.StoreOrderController/computedOrder')->name('computedOrder'); //计算订单金额
-    Route::post('order/create/:key', 'order.StoreOrderController/create')->name('orderCreate'); //订单创建
+    Route::post('order/computed', 'order.StoreOrderController/computedOrder')->name('computedOrder'); //计算订单金额
+    Route::post('order/create', 'order.StoreOrderController/create')->name('orderCreate'); //订单创建
     Route::get('order/data', 'order.StoreOrderController/data')->name('orderData'); //订单统计数据
     Route::get('order/list', 'order.StoreOrderController/lst')->name('orderList'); //订单列表
     Route::get('order/detail/:uni', 'order.StoreOrderController/detail')->name('orderDetail'); //订单详情
