@@ -451,6 +451,21 @@ class WechatService
                         }catch (\Exception $e){
                             return false;
                         }
+                    } else if (strpos(strtolower($notify->attach),'mutil_pay') !== false){ // 多商户支付
+                        try{
+                            $attachArr = explode('&&',$notify->attach);
+                            $res = true;
+                            foreach ($attachArr as $key => $value) {
+                                if ($value !== 'mutil_pay') {
+                                    if(StoreOrderWapModel::be(['order_id'=>$value,'paid'=>1])) continue;
+                                    $res1 = StoreOrderWapModel::paySuccess($value);
+                                    $res = $res && $res1;
+                                }
+                            }
+                            return $res;
+                        }catch (\Exception $e){
+                            return false;
+                        }
                     }
                 }
                 WechatMessage::setOnceMessage($notify,$notify->openid,'payment_success',$notify->out_trade_no);

@@ -196,7 +196,7 @@ class StoreOrderController
           return app('json')->fail('参数错误!');
         }
         if (StoreOrder::be(['order_id|unique' => $orderKeys, 'uid' => $uid, 'is_del' => 0]))
-            return app('json')->status('extend_order', '订单已生成', ['orderId' => $orderKeys, 'key' => $orderKeys]);
+            return app('json')->status('extend_order', '订单已生成', ['orderIds' => $orderKeys, 'orderKeys' => $orderKeys]);
         
         $payType = strtolower($payType);
         if ($bargainId){
@@ -226,23 +226,62 @@ class StoreOrderController
             event('OrderCreated', $orders);
             switch ($payType) {
                 case "weixin":
-                    $orderInfo = StoreOrder::where('order_id', $orderId)->find();
+                    $orderInfos = StoreOrder::where('order_id', 'IN', $orderIds)->select();
+                    $orderInfos = $orderInfos->toArray();
+                    $isMultiPay = false;
+                    if (count($orderInfos) === 0) {
+                        return app('json')->fail('支付订单不存在!');
+                    }
+                    if (count($orderInfos) === 1) {
+                        $orderInfo = $orderInfos[0];
+                        $orderId = $orderIds[0];
+                    } else {
+                        $paid = 0;
+                        $payPrice = (float)0;
+                        $order_ids = array();
+                        foreach ($orderInfos as $key => $orderinfo) {
+                            array_push($order_ids, $orderinfo['order_id']);
+                            $payPrice = (float)bcadd($payPrice, (float)$orderinfo['pay_price'], 2);
+                            $paid += $orderinfo['paid'];
+                        }
+                        $orderInfo = array();
+                        $orderInfo['paid'] = $paid;
+                        $orderInfo['pay_price'] = $payPrice;
+                        $orderInfo['order_id'] = $order_ids;
+                        $orderInfo['uid'] = $uid;
+                        $isMultiPay = true;
+                    }
+                    
                     if (!$orderInfo || !isset($orderInfo['paid'])) return app('json')->fail('支付订单不存在!');
-                    $orderInfo = $orderInfo->toArray();
                     if ($orderInfo['paid']) return app('json')->fail('支付已支付!');
                     //支付金额为0
                     if (bcsub((float)$orderInfo['pay_price'], 0, 2) <= 0) {
                         //创建订单jspay支付
-                        $payPriceStatus = StoreOrder::jsPayPrice($orderId, $uid, $formId);
-                        if ($payPriceStatus)//0元支付成功
-                            return app('json')->status('success', '微信支付成功', $info);
-                        else
-                            return app('json')->status('pay_error', StoreOrder::getErrorInfo());
+                        if ($isMultiPay) {
+                            foreach ($orderInfo as $key => $orderinfo) {
+                                $payPriceStatus = StoreOrder::jsPayPrice($orderinfo['order_id'], $uid, $formId);
+                                if ($payPriceStatus)//0元支付成功
+                                    continue;
+                                else
+                                    return app('json')->status('pay_error', StoreOrder::getErrorInfo());
+                            }
+                            return app('json')->st.atus('success', '微信支付成功', $info);
+                        } else {
+                            $payPriceStatus = StoreOrder::jsPayPrice($orderId, $uid, $formId);
+                            if ($payPriceStatus)//0元支付成功
+                                return app('json')->st.atus('success', '微信支付成功', $info);
+                            else
+                                return app('json')->status('pay_error', StoreOrder::getErrorInfo());
+                        }
                     } else {
                         try {
                             if ($from == 'routine') {
                                 RoutineFormId::SetFormId($formId, $request->uid());
-                                $jsConfig = StoreOrder::jsPay($orderId); //创建订单jspay
+                                if ($isMultiPay) {
+                                    $jsConfig = StoreOrder::jsPay($orderInfo); //创建订单jspay
+                                } else {
+                                    $jsConfig = StoreOrder::jsPay($orderId); //创建订单jspay
+                                }
                                 if (isset($jsConfig['package']) && $jsConfig['package']) {
                                     $package = str_replace('prepay_id=', '', $jsConfig['package']);
                                     for ($i = 0; $i < 3; $i++) {
@@ -250,9 +289,17 @@ class StoreOrderController
                                     }
                                 }
                             } else if($from == 'weixinh5'){
-                                $jsConfig = StoreOrder::h5Pay($orderId);
+                                if ($isMultiPay) {
+                                    $jsConfig = StoreOrder::h5Pay($orderInfo);
+                                } else {
+                                    $jsConfig = StoreOrder::h5Pay($orderId);
+                                }
                             }else {
-                                $jsConfig = StoreOrder::wxPay($orderId);
+                                if ($isMultiPay) {
+                                    $jsConfig = StoreOrder::wxPay($orderInfo);
+                                } else {
+                                    $jsConfig = StoreOrder::wxPay($orderId);
+                                }
                             }
                         } catch (\Exception $e) {
                             return app('json')->status('pay_error', $e->getMessage(), $info);

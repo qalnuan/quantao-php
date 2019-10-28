@@ -282,11 +282,11 @@ class StoreOrder extends BaseModel
           if (!$res2) return self::setErrorInfo('使用积分抵扣失败!');
           if($payPrice <= 0) $payPrice = 0;
           if ($test) {
-            $orderPrice['total_price'] += $priceGroup['totalPrice'];
-            $orderPrice['pay_price'] += $payPrice;
-            $orderPrice['pay_postage'] += $payPostage;
-            $orderPrice['coupon_price'] += $couponPrice;
-            $orderPrice['deduction_price'] += $deductionPrice;
+            $orderPrice['total_price'] = (float)bcadd($orderPrice['total_price'], $priceGroup['totalPrice'], 2);
+            $orderPrice['pay_price'] = (float)bcadd($orderPrice['pay_price'], $payPrice, 2);
+            $orderPrice['pay_postage'] = (float)bcadd($orderPrice['pay_postage'], $payPostage, 2);
+            $orderPrice['coupon_price'] = (float)bcadd($orderPrice['coupon_price'], $couponPrice, 2);
+            $orderPrice['deduction_price'] = (float)bcadd($orderPrice['deduction_price'], $deductionPrice, 2);
             continue;
           }
           $orderInfo = [
@@ -470,7 +470,15 @@ class StoreOrder extends BaseModel
         if($orderInfo['paid']) exception('支付已支付!');
         if($orderInfo['pay_price'] <= 0) exception('该支付无需支付!');
         $openid = WechatUser::uidToOpenid($orderInfo['uid'],'openid');
-        return WechatService::jsPay($openid,$orderInfo['order_id'],$orderInfo['pay_price'],'product',SystemConfigService::get('site_name'));
+        $attach = 'product';
+        if (is_array($orderInfo['order_id'])) {
+            $attach = 'mutil_pay';
+            foreach ($orderInfo['order_id'] as $key => $order_id) {
+                $attach .= "&&".$order_id;
+            }
+            $orderInfo['order_id'] = self::getNewOrderId($orderInfo['uid']);
+        }
+        return WechatService::jsPay($openid,$orderInfo['order_id'],$orderInfo['pay_price'],$attach,SystemConfigService::get('site_name'));
     }
 
     /**
