@@ -473,10 +473,15 @@ class StoreOrder extends BaseModel
         $attach = 'product';
         if (is_array($orderInfo['order_id'])) {
             $attach = 'mutil_pay';
+            $payOrderId = self::getNewOrderId($orderInfo['uid']);
             foreach ($orderInfo['order_id'] as $key => $order_id) {
+                self::where('order_id', $order_id)->update(['pay_order_id' => $payOrderId]); //填写支付订单号
                 $attach .= "&&".$order_id;
             }
-            $orderInfo['order_id'] = self::getNewOrderId($orderInfo['uid']);
+            $orderInfo['order_id'] = $payOrderId;
+        } else {
+            self::where('order_id', $orderInfo['order_id'])->update(['pay_order_id' => $orderInfo['order_id']]); //填写支付订单号
+
         }
         return WechatService::jsPay($openid,$orderInfo['order_id'],$orderInfo['pay_price'],$attach,SystemConfigService::get('site_name'));
     }

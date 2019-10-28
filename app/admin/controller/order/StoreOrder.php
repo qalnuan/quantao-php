@@ -432,18 +432,19 @@ class StoreOrder extends AuthController
         }
         $type =  $data['type'];
         unset($data['type']);
-        $refund_data['pay_price'] = $product['pay_price'];
+        $refund_data['pay_price'] = "".StoreOrderModel::where('pay_order_id',$product['pay_order_id'])->sum('pay_price');
         $refund_data['refund_price'] = $refund_price;
+        $refund_data['refund_id'] = $product['order_id'];
         if($product['pay_type'] == 'weixin'){
             if($product['is_channel']){//小程序
                 try{
-                    MiniProgramService::payOrderRefund($product['order_id'],$refund_data);//2.5.36
+                    MiniProgramService::payOrderRefund($product['pay_order_id'],$refund_data);//2.5.36
                 }catch(\Exception $e){
                     return Json::fail($e->getMessage());
                 }
             }else{//TODO 公众号
                 try{
-                    WechatService::payOrderRefund($product['order_id'],$refund_data);
+                    WechatService::payOrderRefund($product['pay_order_id'],$refund_data);
                 }catch(\Exception $e){
                     return Json::fail($e->getMessage());
                 }
