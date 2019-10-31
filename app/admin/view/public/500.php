@@ -4,8 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title> {$title}</title>
-    <meta name="keywords" content="CRMEB-500错误页面">
-    <meta name="description" content="CRMEB 500错误页面">
+    <meta name="keywords" content="淘易赚-500错误页面">
+    <meta name="description" content="淘易赚 500错误页面">
 
     <link rel="shortcut icon" href="favicon.ico">
     <link href="{__FRAME_PATH}css/bootstrap.min.css" rel="stylesheet">

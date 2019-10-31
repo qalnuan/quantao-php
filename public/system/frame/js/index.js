@@ -256,7 +256,7 @@
                             return chnStr;
                         },
                         titleRoll: function (newTitle) {
-                            var time = this.noticeTime, oldTitle = 'CRMEB管理系统';
+                            var time = this.noticeTime, oldTitle = '淘易赚管理系统';
                             var timeInterval = setInterval(function () {
                                 console.log(time);
                                 if (time <= 0) {

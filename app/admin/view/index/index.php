@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="renderer" content="webkit">
     <meta http-equiv="Cache-Control" content="no-siteapp" />
-    <title>CRMEB管理系统</title>
+    <title>淘易赚管理系统</title>
     <!--[if lt IE 9]>
     <meta http-equiv="refresh" content="0;ie.html" />
     <![endif]-->
@@ -150,7 +150,7 @@
         </div>
         <!--底部版权-->
         <div class="footer"  @touchmove.prevent>
-            <div class="pull-right">© 2014-2018 <a href="http://www.crmeb.com/" target="_blank">CRMEB</a>
+            <div class="pull-right">© 2014-2018 <a href="http://www.taoyizuan.com/" target="_blank">淘易赚</a>
             </div>
         </div>
     </div>

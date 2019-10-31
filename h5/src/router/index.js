@@ -243,7 +243,7 @@ router.beforeEach((to, form, next) => {
     if (form.name === "Login") return;
     return toLogin(true, to.fullPath);
   }
-  document.title = title || process.env.VUE_APP_NAME || "crmeb商城";
+  document.title = title || process.env.VUE_APP_NAME || "淘易赚";
   //判断是否显示底部导航
   footer === true ? $store.commit("SHOW_FOOTER") : $store.commit("HIDE_FOOTER");
 
