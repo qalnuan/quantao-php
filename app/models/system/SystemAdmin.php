@@ -32,7 +32,7 @@ class SystemAdmin extends BaseModel
     public static function getSystemAdminInfo($id)
     {
         $model=new self();
-        $adminInfo=self::where('id',$id)->field(['real_name'])->find();
+        $adminInfo=self::where('id',$id)->field(['real_name','check_id'])->find();
         return $adminInfo;
     }
 

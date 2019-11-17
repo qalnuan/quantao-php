@@ -96,6 +96,7 @@
     <OrderGoods
       :evaluate="status.type || 0"
       :cartInfo="orderInfo.cartInfo || []"
+      :merinfo="orderInfo.mer_info || []"
     ></OrderGoods>
     <div class="wrapper">
       <div class="item acea-row row-between">
