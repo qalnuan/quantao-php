@@ -332,8 +332,8 @@ export default {
     },
     createOrder() {
       if (!this.active) return this.$dialog.toast({ mes: "请选择支付方式" });
-      if (!this.addressInfo.id)
-        return this.$dialog.toast({ mes: "请选择收货地址" });
+      // if (!this.addressInfo.id)
+      //   return this.$dialog.toast({ mes: "请选择收货地址" });
       this.$dialog.loading.open("生成订单中");
 
       let orderKeys = [];

@@ -50,6 +50,7 @@ class SystemAdmin extends AuthController
         $f[] = Form::input('account','管理员账号');
         $f[] = Form::input('pwd','管理员密码')->type('password');
         $f[] = Form::input('conf_pwd','确认密码')->type('password');
+        $f[] = Form::input('comm_rate','佣金比例(%)')->type('number');
         $f[] = Form::input('real_name','管理员姓名');
         $f[] = Form::select('roles','管理员身份')->setOptions(function ()use($admin){
                     $list = SystemRole::getRole(bcadd($admin->level,1,0));
@@ -77,6 +78,7 @@ class SystemAdmin extends AuthController
             'account',
             'conf_pwd',
             'pwd',
+            'comm_rate',
             'real_name',
             ['roles',[]],
             ['status',0]
@@ -89,6 +91,7 @@ class SystemAdmin extends AuthController
         $data['pwd'] = md5($data['pwd']);
         $data['add_time'] = time();
         unset($data['conf_pwd']);
+        if ($data['comm_rate'] < 0 || $data['comm_rate'] > 100) return Json::fail('佣金比例需要在0-100之间');
         $data['level'] = $this->adminInfo['level'] + 1;
         $data['add_time'] =time();
         if(!AdminModel::create($data)) return Json::fail('添加管理员失败');
@@ -111,6 +114,7 @@ class SystemAdmin extends AuthController
         $f[] = Form::input('pwd','管理员密码')->type('password');
         $f[] = Form::input('conf_pwd','确认密码')->type('password');
         $f[] = Form::input('real_name','管理员姓名',$admin->real_name);
+        $f[] = Form::input('comm_rate','佣金比例(%)')->type('number');
         $f[] = Form::select('roles','管理员身份',explode(',',$admin->roles))->setOptions(function ()use($admin){
             $list = SystemRole::getRole($admin->level);
             $options = [];
@@ -139,6 +143,7 @@ class SystemAdmin extends AuthController
             'conf_pwd',
             'pwd',
             'real_name',
+            'comm_rate',
             ['roles',[]],
             ['status',0]
         ]);
@@ -152,6 +157,7 @@ class SystemAdmin extends AuthController
         }
         if(AdminModel::where('account',$data['account'])->where('id','<>',$id)->count()) return Json::fail('管理员账号已存在');
         unset($data['conf_pwd']);
+        if ($data['comm_rate'] < 0 || $data['comm_rate'] > 100) return Json::fail('佣金比例需要在0-100之间');
         if(!AdminModel::edit($data,$id)) return Json::fail('修改失败');
         return Json::successful('修改成功!');
     }

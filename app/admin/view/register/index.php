@@ -16,23 +16,31 @@
     </script>
 </head>
 <body class="gray-bg login-bg">
-<canvas id="canvas" width="900" height="300" style="position: fixed;top: -50px;width: 60%;left: 20%"></canvas>
 <div class="middle-box text-center loginscreen  animated fadeInDown">
-    <div class="login-group">
+    <div class="login-group" style="margin-top:3vh">
         <h3 class="login-logo">
             <img src="{__ADMIN_PATH}images/logo.png">
         </h3>
-        <form role="form" action="{:url('verify')}" method="post">
+        <form role="form" action="{:url('register')}" method="post">
             <div class="form-group">
                 <div class="input-group m-b"><span class="input-group-addon"><i class="fa fa-user"></i> </span>
-                    <input type="text" id="account" name="account" placeholder="用户名" placeholder="用户名" class="form-control">
+                    <input type="phone" id="account" name="account" placeholder="手机号" placeholder="手机号" class="form-control">
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="input-group m-b"><span class="input-group-addon"><i class="fa fa-user"></i> </span>
+                    <input type="text" id="real_name" name="real_name" placeholder="商户名" placeholder="商户名" class="form-control">
                 </div>
             </div>
             <div class="form-group">
                 <div class="input-group m-b"><span class="input-group-addon"><i class="fa fa-unlock-alt"></i> </span>
                     <input type="password" class="form-control" id="pwd" name="pwd" placeholder="密码" required="">
                 </div>
-
+            </div>
+            <div class="form-group">
+                <div class="input-group m-b"><span class="input-group-addon"><i class="fa fa-unlock-alt"></i> </span>
+                    <input type="password" class="form-control" id="repwd" name="repwd" placeholder="确认密码" required="">
+                </div>
             </div>
             <div class="form-group">
                 <div class="input-group">
@@ -47,10 +55,10 @@
                     <p class="text-danger" id="err" style="display: none;"></p>
                 </strong>
             </div>
-            <button type="submit" class="btn btn-primary block full-width m-b">登 录</button>
+            <button type="submit" class="btn btn-primary block full-width m-b">注册</button>
             <?php /*  <p class="text-muted text-center"> <a href="{:url('./forgetpwd')}"><small>忘记密码了？</small></a> | <a href="{:url('./register')}">注册一个新账号</a>
               </p>  */ ?>
-            <p class="text-muted text-center"> <a href="{:url('./register')}">注册新商户</a>
+            <p class="text-muted text-center"> <a href="{:url('./login')}">登录已有商户</a>
               </p>
         </form>
     </div>
@@ -63,9 +71,9 @@
 <!-- 全局js -->
 <script src="{__PLUG_PATH}jquery-1.10.2.min.js"></script>
 <script src="{__FRAME_PATH}js/bootstrap.min.js?v=3.4.0"></script>
-<script src="{__MODULE_PATH}login/flaotfont.js"></script>
-<script src="{__MODULE_PATH}login/ios-parallax.js"></script>
-<script src="{__MODULE_PATH}login/index.js"></script>
+<script src="{__MODULE_PATH}register/flaotfont.js"></script>
+<script src="{__MODULE_PATH}register/ios-parallax.js"></script>
+<script src="{__MODULE_PATH}register/index.js"></script>
 <!--统计代码，可删除-->
 <!--点击刷新验证码-->
 </body>

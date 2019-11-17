@@ -100,6 +100,8 @@ Route::group(function () {
     Route::get('order/data', 'order.StoreOrderController/data')->name('orderData'); //订单统计数据
     Route::get('order/list', 'order.StoreOrderController/lst')->name('orderList'); //订单列表
     Route::get('order/detail/:uni', 'order.StoreOrderController/detail')->name('orderDetail'); //订单详情
+    Route::get('order/getverifyorderdetail/:orderId', 'order.StoreOrderController/getverifyorderdetail')->name('getVerifyOrderDetail'); //核销订单详情
+    Route::post('order/verifyorder', 'order.StoreOrderController/verifyorder')->name('verifyOrder'); //核销订单
     Route::get('order/refund/reason', 'order.StoreOrderController/refund_reason')->name('orderRefundReason'); //订单退款理由
     Route::post('order/refund/verify', 'order.StoreOrderController/refund_verify')->name('orderRefundVerify'); //订单退款审核
     Route::post('order/take', 'order.StoreOrderController/take')->name('orderTake'); //订单收货

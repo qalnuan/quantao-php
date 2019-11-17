@@ -120,3 +120,18 @@ export function express(uni) {
 export function payOrder(uni, paytype, from) {
   return request.post("order/pay", { uni, paytype, from });
 }
+
+/**
+ * 核销订单详情
+ */
+export function getVerifyOrderDetail(orderId) {
+  return request.get("/order/getverifyorderdetail/" + orderId);
+}
+
+/**
+ * 核销订单
+ * @returns {*}
+ */
+export function verifyOrder(data) {
+  return request.post("order/verifyorder", data);
+}

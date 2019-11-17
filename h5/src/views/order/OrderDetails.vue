@@ -22,8 +22,8 @@
           <div :class="{ on: status.type === 0 || status.type === 9 }">
             待付款
           </div>
-          <div :class="{ on: status.type === 1 }">待发货</div>
-          <div :class="{ on: status.type === 2 }">待收货</div>
+          <!-- <div :class="{ on: status.type === 1 }">待发货</div> -->
+          <div :class="{ on: status.type === 5 }">待核销</div>
           <div :class="{ on: status.type === 3 }">待评价</div>
           <div :class="{ on: status.type === 4 }">已完成</div>
         </div>
@@ -44,8 +44,8 @@
           <div
             class="iconfont"
             :class="[
-              status.type === 1 ? 'icon-webicon318' : 'icon-yuandianxiao',
-              status.type >= 1 && status.type != 6 && status.type != 9
+              status.type === 5 ? 'icon-webicon318' : 'icon-yuandianxiao',
+              status.type >= 1 && status.type != 6 && status.type != 9 && status.type != 5
                 ? 'font-color-red'
                 : ''
             ]"
@@ -54,30 +54,14 @@
             class="line"
             :class="{
               'bg-color-red':
-                status.type > 1 && status.type != 6 && status.type != 9
-            }"
-          ></div>
-          <div
-            class="iconfont icon-yuandianxiao"
-            :class="[
-              status.type === 2 ? 'icon-webicon318' : 'icon-yuandianxiao',
-              status.type >= 2 && status.type != 6 && status.type != 9
-                ? 'font-color-red'
-                : ''
-            ]"
-          ></div>
-          <div
-            class="line"
-            :class="{
-              'bg-color-red':
-                status.type > 2 && status.type != 6 && status.type != 9
+                status.type > 2 && status.type != 6 && status.type != 9 && status.type != 5
             }"
           ></div>
           <div
             class="iconfont icon-yuandianxiao"
             :class="[
               status.type === 3 ? 'icon-webicon318' : 'icon-yuandianxiao',
-              status.type >= 3 && status.type != 6 && status.type != 9
+              status.type >= 3 && status.type != 6 && status.type != 9 && status.type != 5
                 ? 'font-color-red'
                 : ''
             ]"
@@ -86,14 +70,14 @@
             class="line"
             :class="{
               'bg-color-red':
-                status.type > 3 && status.type != 6 && status.type != 9
+                status.type > 3 && status.type != 6 && status.type != 9 && status.type != 5
             }"
           ></div>
           <div
             class="iconfont icon-yuandianxiao"
             :class="[
               status.type == 4 ? 'icon-webicon318' : 'icon-yuandianxiao',
-              status.type >= 4 && status.type != 6 && status.type != 9
+              status.type >= 4 && status.type != 6 && status.type != 9 && status.type != 5
                 ? 'font-color-red'
                 : ''
             ]"
@@ -151,7 +135,18 @@
       </div>
     </div>
 
-    <div v-if="orderInfo.status != 0">
+    <div v-if="orderInfo.status == 2 && orderInfo.is_mer_check == 0">
+      <div class="wrapper">
+        <div class="item acea-row row-between">
+          <div>核销码：</div>
+        </div>
+        <div class="item acea-row row-center-wrapper">
+          <vue-qr :logoSrc="imageUrl" :text="QRCodeMsg" :size="200"></vue-qr>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="orderInfo.status != 0 && orderInfo.delivery_name">
       <div class="wrapper" v-if="orderInfo.delivery_type === 'express'">
         <div class="item acea-row row-between">
           <div>配送方式：</div>
@@ -301,6 +296,7 @@
   </div>
 </template>
 <script>
+import vueQr from 'vue-qr' //引入生成二维码插件
 import OrderGoods from "@components/OrderGoods";
 import { orderDetail } from "@api/order";
 import ClipboardJS from "clipboard";
@@ -320,7 +316,8 @@ export default {
   name: NAME,
   components: {
     OrderGoods,
-    Payment
+    Payment,
+    vueQr
   },
   props: {},
   data: function() {
@@ -333,6 +330,7 @@ export default {
       orderInfo: {
         _status: {}
       },
+      QRCodeMsg: "", //生成二维码信息
       status: {},
       pay: false,
       payType: ["yue", "weixin"],
@@ -418,6 +416,7 @@ export default {
       } //查看拼团
       if (type === 2 && delivery_type === "express") status.class_status = 2; //查看物流
       if (type === 2) status.class_status = 3; //确认收货
+      if (type === 5) status.class_status = 7; //待核销
       if (type === 4 || type === 0) status.class_status = 4; //删除订单
       if (
         !seckill_id &&
@@ -440,6 +439,9 @@ export default {
         .then(res => {
           this.orderInfo = res.data;
           this.getOrderStatus();
+          if (this.orderInfo.verify_url) {
+            this.QRCodeMsg = this.orderInfo.verify_url;
+          }
           if (this.orderInfo.combination_id > 0) {
             this.orderTypeName = "拼团订单";
             this.orderTypeNameStatus = false;

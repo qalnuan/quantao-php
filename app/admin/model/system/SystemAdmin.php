@@ -42,6 +42,31 @@ class SystemAdmin extends BaseModel
         return is_array($value) ? implode(',', $value) : $value;
     }
 
+    /**
+     * 用户登陆
+     * @param $account
+     * @param $pwd
+     * @return bool
+     */
+    public static function register($account,$real_name,$pwd)
+    {
+        if(self::be(['account'=>$account])) return self::setErrorInfo('用户已存在');
+        $phone = $account;
+        $data['account'] = $account;
+        $data['pwd'] = md5($pwd);
+        $data['real_name'] = $real_name;
+        $data['roles'] = 6;
+        $data['level'] = 1;
+        $data['status'] = 0;
+        $data['add_time'] = time();
+        $data['add_ip'] = app('request')->ip();
+        $data['last_time'] = time();
+        $data['last_ip'] = app('request')->ip();
+        self::beginTrans();
+        $res = self::create($data);
+        self::checkTrans($res);
+        return $res;
+    }
 
     /**
      * 用户登陆

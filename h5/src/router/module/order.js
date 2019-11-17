@@ -68,5 +68,15 @@ export default [
       auth: true
     },
     component: () => import("@views/order/ReturnList.vue")
+  },
+  {
+    path: "/order/verifyorder/:oid?",
+    name: "VerifyOrder",
+    meta: {
+      title: "核销订单",
+      keepAlive: false,
+      auth: true
+    },
+    component: () => import("@views/order/VerifyOrder.vue")
   }
 ];

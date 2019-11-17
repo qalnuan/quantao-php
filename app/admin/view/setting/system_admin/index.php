@@ -49,10 +49,10 @@
                     <table class="table table-striped  table-bordered">
                         <thead>
                         <tr>
-
                             <th class="text-center">姓名</th>
                             <th class="text-center">账号</th>
                             <th class="text-center">身份</th>
+                            <th class="text-center">佣金比例</th>
                             <th class="text-center">最后一次登陆时间</th>
                             <th class="text-center">最后一次登陆ip</th>
                             <th class="text-center">开启</th>
@@ -72,6 +72,9 @@
                                 {$vo.roles}
                             </td>
                             <td class="text-center">
+                                {$vo.comm_rate} %
+                            </td>
+                            <td class="text-center">
                                 {$vo.last_time? date('Y/m/d H:i',$vo.last_time) : ''}
                             </td>
                             <td class="text-center">
@@ -80,7 +83,6 @@
                             <td class="text-center">
                                 <i class="fa {eq name='vo.status' value='1'}fa-check text-navy{else/}fa-close text-danger{/eq}"></i>
                             </td>
-
                             <td class="text-center">
                                 <button class="btn btn-info btn-xs" type="button"  onclick="$eb.createModalFrame('编辑','{:Url('edit',array('id'=>$vo['id']))}')"><i class="fa fa-paste"></i> 编辑</button>
                                 <button class="btn btn-warning btn-xs" data-url="{:Url('delete',array('id'=>$vo['id']))}" type="button"><i class="fa fa-warning"></i> 删除

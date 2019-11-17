@@ -216,9 +216,9 @@ class StoreOrder extends BaseModel
           $merInfo = $cartGroup['merInfo'];
           $payPrice = (float)$priceGroup['totalPrice'];
           $payPostage = $priceGroup['storePostage'];
-          if (!$test && !$addressId) return self::setErrorInfo('请选择收货地址!');
-          if (!$test && (!UserAddress::be(['uid' => $uid, 'id' => $addressId, 'is_del' => 0]) || !($addressInfo = UserAddress::find($addressId))))
-              return self::setErrorInfo('地址选择有误!');
+          // if (!$test && !$addressId) return self::setErrorInfo('请选择收货地址!');
+          // if (!$test && (!UserAddress::be(['uid' => $uid, 'id' => $addressId, 'is_del' => 0]) || !($addressInfo = UserAddress::find($addressId))))
+          //     return self::setErrorInfo('地址选择有误!');
           $cartIds = [];
           $totalNum = 0;
           $gainIntegral = 0;
@@ -292,9 +292,9 @@ class StoreOrder extends BaseModel
           $orderInfo = [
               'uid' => $uid,
               'order_id' => $test ? 0 : self::getNewOrderId($uid),
-              'real_name' => $addressInfo['real_name'],
-              'user_phone' => $addressInfo['phone'],
-              'user_address' => $addressInfo['province'] . ' ' . $addressInfo['city'] . ' ' . $addressInfo['district'] . ' ' . $addressInfo['detail'],
+              // 'real_name' => $addressInfo['real_name'],
+              // 'user_phone' => $addressInfo['phone'],
+              // 'user_address' => $addressInfo['province'] . ' ' . $addressInfo['city'] . ' ' . $addressInfo['district'] . ' ' . $addressInfo['detail'],
               'cart_id' => $cartIds,
               'total_num' => $totalNum,
               'total_price' => $priceGroup['totalPrice'],
@@ -615,7 +615,7 @@ class StoreOrder extends BaseModel
     {
         $order = self::where('order_id', $orderId)->find();
         $resPink = true;
-        $res1 = self::where('order_id', $orderId)->update(['paid' => 1, 'pay_type' => $paytype, 'pay_time' => time()]);//订单改为支付
+        $res1 = self::where('order_id', $orderId)->update(['paid' => 1, 'pay_type' => $paytype, 'status' => 2, 'pay_time' => time()]);//订单改为支付
         User::bcInc($order['uid'], 'pay_count', 1, 'uid');
         if ($order->combination_id && $res1 && !$order->refund_status) $resPink = StorePink::createPink($order);//创建拼团
         $oid = self::where('order_id', $orderId)->value('id');
@@ -679,6 +679,11 @@ class StoreOrder extends BaseModel
     public static function getUserOrderDetail($uid, $key)
     {
         return self::where('order_id|unique', $key)->where('uid', $uid)->where('is_del', 0)->find();
+    }
+
+    public static function getVerifyOrderDetail($key)
+    {
+        return self::where('order_id|unique', $key)->where('is_del', 0)->find();
     }
 
 
@@ -896,10 +901,17 @@ class StoreOrder extends BaseModel
                 $status['_class'] = 'state-ysh';
             }
         } else if ($order['status'] == 2) {
-            $status['_type'] = 3;
-            $status['_title'] = '待评价';
-            $status['_msg'] = '已收货,快去评价一下吧';
-            $status['_class'] = 'state-ypj';
+            if (!$order['is_mer_check']) {
+                $status['_type'] = 5;
+                $status['_title'] = '待核销';
+                $status['_msg'] = '已购买,请找商户核销';
+                $status['_class'] = 'state-ysh';
+            } else {
+                $status['_type'] = 3;
+                $status['_title'] = '待评价';
+                $status['_msg'] = '已收货,快去评价一下吧';
+                $status['_class'] = 'state-ypj';
+            }
         } else if ($order['status'] == 3) {
             $status['_type'] = 4;
             $status['_title'] = '交易完成';
@@ -911,6 +923,10 @@ class StoreOrder extends BaseModel
         if (isset($order['delivery_type']))
             $status['_deliveryType'] = isset(self::$deliveryType[$order['delivery_type']]) ? self::$deliveryType[$order['delivery_type']] : '其他方式';
         $order['_status'] = $status;
+        if ($detail == true && isset($order['id']) && $status['_type'] == 5) {
+          $siteUrl = SystemConfigService::get('site_url');
+          $order['verify_url'] = $siteUrl.'/order/verifyorder/'.$order['order_id'];
+        }
         $order['_pay_time'] = isset($order['pay_time']) && $order['pay_time'] != null ? date('Y-m-d H:i:s', $order['pay_time']) : date('Y-m-d H:i:s', $order['add_time']);
         $order['_add_time'] = isset($order['add_time']) ? (strstr($order['add_time'], '-') === false ? date('Y-m-d H:i:s', $order['add_time']) : $order['add_time']) : '';
         $order['status_pic'] = '';
@@ -941,9 +957,11 @@ class StoreOrder extends BaseModel
         else if ($status == 2)//待收货
             return $model->where('paid', 1)->where('status', 1)->where('refund_status', 0);
         else if ($status == 3)//待评价
-            return $model->where('paid', 1)->where('status', 2)->where('refund_status', 0);
+            return $model->where('paid', 1)->where('status', 2)->where('refund_status', 0)->where('is_mer_check', 1);
         else if ($status == 4)//已完成
             return $model->where('paid', 1)->where('status', 3)->where('refund_status', 0);
+        else if ($status == 5)//待核销
+            return $model->where('paid', 1)->where('status', 2)->where('is_mer_check', 0);
         else if ($status == -1)//退款中
             return $model->where('paid', 1)->where('refund_status', 1);
         else if ($status == -2)//已退款
@@ -960,10 +978,10 @@ class StoreOrder extends BaseModel
     public static function getUserOrderList($uid, $status = '', $page = 0, $limit = 8)
     {
         if($page) $list = self::statusByWhere($status, $uid)->where('is_del', 0)->where('uid', $uid)
-            ->field('add_time,seckill_id,bargain_id,combination_id,id,order_id,pay_price,total_num,total_price,pay_postage,total_postage,paid,status,refund_status,pay_type,coupon_price,deduction_price,pink_id,delivery_type,is_del')
+            ->field('add_time,is_mer_check,seckill_id,bargain_id,combination_id,id,order_id,pay_price,total_num,total_price,pay_postage,total_postage,paid,status,refund_status,pay_type,coupon_price,deduction_price,pink_id,delivery_type,is_del')
             ->order('add_time DESC')->page((int)$page, (int)$limit)->select()->toArray();
         else  $list = self::statusByWhere($status, $uid)->where('is_del', 0)->where('uid', $uid)
-            ->field('add_time,seckill_id,bargain_id,combination_id,id,order_id,pay_price,total_num,total_price,pay_postage,total_postage,paid,status,refund_status,pay_type,coupon_price,deduction_price,pink_id,delivery_type,is_del')
+            ->field('add_time,is_mer_check,seckill_id,bargain_id,combination_id,id,order_id,pay_price,total_num,total_price,pay_postage,total_postage,paid,status,refund_status,pay_type,coupon_price,deduction_price,pink_id,delivery_type,is_del')
             ->order('add_time DESC')->page((int)$page, (int)$limit)->select()->toArray();
         foreach ($list as $k => $order) {
             $list[$k] = self::tidyOrder($order, true);
@@ -986,7 +1004,7 @@ class StoreOrder extends BaseModel
 
     public static function searchUserOrder($uid, $order_id)
     {
-        $order = self::where('uid', $uid)->where('order_id', $order_id)->where('is_del', 0)->field('seckill_id,bargain_id,combination_id,id,order_id,pay_price,total_num,total_price,pay_postage,total_postage,paid,status,refund_status,pay_type,coupon_price,deduction_price,delivery_type')
+        $order = self::where('uid', $uid)->where('order_id', $order_id)->where('is_del', 0)->field('seckill_id,bargain_id,combination_id,id,order_id,pay_price,total_num,total_price,pay_postage,total_postage,paid,status,refund_status,pay_type,coupon_price,deduction_price,delivery_type,is_mer_check')
             ->order('add_time DESC')->find();
         if (!$order)
             return false;
@@ -1179,6 +1197,8 @@ class StoreOrder extends BaseModel
         $data['unshipped_count'] = self::statusByWhere(1, $uid)->where('is_del', 0)->where('uid', $uid)->count();
         //订单待收货 数量
         $data['received_count'] = self::statusByWhere(2, $uid)->where('is_del', 0)->where('uid', $uid)->count();
+        //订单待核销 数量
+        $data['unchecked_count'] = self::statusByWhere(5, $uid)->where('is_del', 0)->where('uid', $uid)->count();
         //订单待评价 数量
         $data['evaluated_count'] = self::statusByWhere(3, $uid)->where('is_del', 0)->where('uid', $uid)->count();
         //订单已完成 数量
@@ -1460,7 +1480,7 @@ class StoreOrder extends BaseModel
     }
 
     public static function orderList($where){
-        $model = self::getOrderWhere($where,self::alias('a')->join('user r','r.uid=a.uid','LEFT'),'a.','r')->field('a.id,a.order_id,a.add_time,a.status,a.total_num,a.total_price,a.total_postage,a.pay_price,a.pay_postage,a.paid,a.refund_status,a.remark,a.pay_type');
+        $model = self::getOrderWhere($where,self::alias('a')->join('user r','r.uid=a.uid','LEFT'),'a.','r')->field('a.id,a.order_id,a.add_time,a.status,a.total_num,a.total_price,a.total_postage,a.pay_price,a.pay_postage,a.paid,a.refund_status,a.remark,a.pay_type,a.is_mer_check');
         if($where['order']!=''){
             $model = $model->order(self::setOrder($where['order']));
         }else{
@@ -1851,6 +1871,20 @@ class StoreOrder extends BaseModel
         $count = self::where('id',$id)->where('paid', 0)->count();
         if(!$count) return self::setErrorInfo('订单已支付');
         $res = self::where('id', $id)->update(['paid'=>1,'pay_time'=>time()]);
+        return $res;
+    }
+
+    /**
+     * 线下付款
+     * @param $id
+     * @return $this
+     */
+    public static function verifyOrder($id){
+        $count = self::where('id',$id)->count();
+        if(!$count) return self::setErrorInfo('订单不存在');
+        $count = self::where('id',$id)->where('is_mer_check', 0)->count();
+        if(!$count) return self::setErrorInfo('订单已核销');
+        $res = self::where('id', $id)->update(['is_mer_check'=>1,'check_time'=>time()]);
         return $res;
     }
 }
