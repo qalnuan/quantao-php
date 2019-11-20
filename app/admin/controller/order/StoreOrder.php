@@ -419,6 +419,7 @@ class StoreOrder extends AuthController
         if(!$id) return $this->failed('数据不存在');
         $product = StoreOrderModel::get($id);
         if(!$product) return Json::fail('数据不存在!');
+        if($product['is_mer_check'] == 1) return Json::fail('订单已核销，不能退款');
         if($product['pay_price'] == $product['refund_price']) return Json::fail('已退完支付金额!不能再退款了');
         if(!$data['refund_price']) return Json::fail('请输入退款金额');
         $refund_price = $data['refund_price'];

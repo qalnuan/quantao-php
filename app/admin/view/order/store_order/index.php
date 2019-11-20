@@ -308,7 +308,7 @@
                                     <i class="fa fa-paste"></i> 订单备注
                                 </a>
                             </li>
-                            {{#  if(parseFloat(d.pay_price) > parseFloat(d.refund_price)){ }}
+                            {{#  if((parseFloat(d.pay_price) > parseFloat(d.refund_price)) && !d.is_mer_check==1){ }}
                             <li>
                                 <a href="javascript:void(0);" onclick="$eb.createModalFrame('退款','{:Url('refund_y')}?id={{d.id}}')">
                                     <i class="fa fa-history"></i> 立即退款
@@ -341,7 +341,7 @@
                                     <i class="fa fa-paste"></i> 订单备注
                                 </a>
                             </li>
-                            {{#  if(parseFloat(d.pay_price) > parseFloat(d.refund_price)){ }}
+                            {{#  if((parseFloat(d.pay_price) > parseFloat(d.refund_price)) && !d.is_mer_check==1){ }}
                             <li>
                                 <a href="javascript:void(0);" onclick="$eb.createModalFrame('退款','{:Url('refund_y')}?id={{d.id}}')">
                                     <i class="fa fa-history"></i> 立即退款

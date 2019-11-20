@@ -961,7 +961,7 @@ class StoreOrder extends BaseModel
         else if ($status == 4)//已完成
             return $model->where('paid', 1)->where('status', 3)->where('refund_status', 0);
         else if ($status == 5)//待核销
-            return $model->where('paid', 1)->where('status', 2)->where('is_mer_check', 0);
+            return $model->where('paid', 1)->where('status', 2)->where('is_mer_check', 0)->where('refund_status', 0);
         else if ($status == -1)//退款中
             return $model->where('paid', 1)->where('refund_status', 1);
         else if ($status == -2)//已退款
@@ -1198,7 +1198,7 @@ class StoreOrder extends BaseModel
         //订单待收货 数量
         $data['received_count'] = self::statusByWhere(2, $uid)->where('is_del', 0)->where('uid', $uid)->count();
         //订单待核销 数量
-        $data['unchecked_count'] = self::statusByWhere(5, $uid)->where('is_del', 0)->where('uid', $uid)->count();
+        $data['unchecked_count'] = self::statusByWhere(5, $uid)->where('is_del', 0)->where('uid', $uid)->where('refund_status', 0)->count();
         //订单待评价 数量
         $data['evaluated_count'] = self::statusByWhere(3, $uid)->where('is_del', 0)->where('uid', $uid)->count();
         //订单已完成 数量
@@ -1764,6 +1764,8 @@ class StoreOrder extends BaseModel
             return $model->where($alert.'paid',1)->where($alert.'status',2)->where($alert.'refund_status',0);
         else if($status == 4)// 交易完成
             return $model->where($alert.'paid',1)->where($alert.'status',3)->where($alert.'refund_status',0);
+        else if($status == 5)// 待核销
+            return $model->where($alert.'paid',1)->where($alert.'status',2)->where($alert.'refund_status',0);
         else if($status == -1)//退款中
             return $model->where($alert.'paid',1)->where($alert.'refund_status',1);
         else if($status == -2)//已退款
