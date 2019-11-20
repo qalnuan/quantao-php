@@ -6,8 +6,8 @@
         <span class="iconfont icon-xiazai5"></span>搜索商品
       </router-link>
     </div>
-    <div class="slider-banner banner">
-      <swiper :options="swiperOption" v-if="banner.length > 0">
+    <div class="slider-banner banner" v-if="banner.length > 0">
+      <swiper :options="swiperOption">
         <swiper-slide v-for="(item, index) in banner" :key="index">
           <router-link
             :to="item.wap_url ? item.wap_url : ''"
@@ -30,13 +30,13 @@
         <div>{{ item.name }}</div>
       </router-link>
     </div>
-    <div class="news acea-row row-between-wrapper">
+    <div class="news acea-row row-between-wrapper" 
+          v-if="roll.length > 0">
       <div class="pictrue"><img src="@assets/images/news.png" /></div>
       <div class="swiper-no-swiping new-banner">
         <swiper
           class="swiper-wrapper"
           :options="swiperRoll"
-          v-if="roll.length > 0"
         >
           <swiper-slide
             class="swiper-slide"
@@ -128,7 +128,7 @@
           >更多<span class="iconfont icon-jiantou"></span
         ></router-link>
       </div>
-      <div class="slider-banner boutique">
+      <!-- <div class="slider-banner boutique" v-if="info.bastBanner.length > 0">
         <swiper class="swiper-wrapper" :options="swiperBoutique">
           <swiper-slide
             class="swiper-slide"
@@ -141,7 +141,7 @@
           </swiper-slide>
         </swiper>
         <div class="swiper-pagination"></div>
-      </div>
+      </div> -->
       <Good-list :good-list="info.bastList" :is-sort="false"></Good-list>
     </div>
     <div class="hotList" v-if="likeInfo.length > 0">
@@ -187,11 +187,11 @@
         </router-link>
       </div>
     </div>
-    <div v-if="lovely.img">
+    <!-- <div v-if="lovely.img">
       <div class="adver">
         <img :src="lovely.img" />
       </div>
-    </div>
+    </div> -->
     <div class="wrapper" v-if="info.firstList.length > 0">
       <div class="title acea-row row-between-wrapper">
         <div class="text">

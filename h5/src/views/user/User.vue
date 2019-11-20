@@ -139,7 +139,7 @@
         </div>
       </div>
     </div>
-    <img src="@assets/images/support.png" class="support" />
+    <!-- <img src="@assets/images/support.png" class="support" /> -->
     <div class="footer-line-height"></div>
     <SwitchWindow
       v-on:changeswitch="changeswitch"
