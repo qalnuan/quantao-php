@@ -119,6 +119,17 @@
                     <script type="text/html" id="status">
                         {{d.status_name}}
                     </script>
+                    <!--核销员-->
+                    <script type="text/html" id="verifyname">
+                        {{#  if(d.is_mer_check==1 && d.verifyname){ }}
+                          <div>
+                              <span>
+                                  <img style="width: 30px;height: 30px;margin:0;cursor: pointer;" src="{{d.verifyimage}}">
+                              </span>
+                              <span>{{d.verifyname}}</span>
+                          </div>
+                        {{# } }}
+                    </script>
                     <!--商品信息-->
                     <script type="text/html" id="info">
                         {{#  layui.each(d._info, function(index, item){ }}
@@ -371,6 +382,7 @@
             {field: 'pay_price', title: '实际支付',width:'8%',align:'center'},
             {field: 'paid', title: '支付状态',templet:'#paid',width:'8%',align:'center'},
             {field: 'status', title: '订单状态',templet:'#status',width:'8%',align:'center'},
+            {field: 'verifyname', title: '核销员',templet:"#verifyname",width:'10%',align:'center'},
             {field: 'add_time', title: '下单时间',width:'10%',sort: true,align:'center'},
             {field: 'right', title: '操作',align:'center',toolbar:'#act',width:'10%'},
         ];

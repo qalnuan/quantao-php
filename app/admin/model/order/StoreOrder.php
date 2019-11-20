@@ -90,6 +90,9 @@ class StoreOrder extends BaseModel
                 unset($cart_info);
             }
             $item['_info'] = $_info;
+            $_verifyinfo = Db::name('store_verify_service')->where('uid', $item['check_uid'])->field('nickname,avatar')->find();
+            $item['verifyname'] = $_verifyinfo['nickname'];
+            $item['verifyimage'] = $_verifyinfo['avatar'];
             $item['add_time'] = date('Y-m-d H:i:s',$item['add_time']);
             if($item['pink_id'] || $item['combination_id']){
                 $pinkStatus = StorePink::where('order_id_key',$item['id'])->value('status');
@@ -154,7 +157,11 @@ class StoreOrder extends BaseModel
             }else if($item['paid']==1 && $item['status']==1 && $item['refund_status']==0){
                 $item['status_name']='待收货';
             }else if($item['paid']==1 && $item['status']==2 && $item['refund_status']==0){
-                $item['status_name']='待评价';
+                if (!$item['is_mer_check']) {
+                    $item['status_name']='待核销';
+                } else {
+                    $item['status_name']='待评价';
+                }
             }else if($item['paid']==1 && $item['status']==3 && $item['refund_status']==0){
                 $item['status_name']='已完成';
             }else if($item['paid']==1 && $item['refund_status']==1){

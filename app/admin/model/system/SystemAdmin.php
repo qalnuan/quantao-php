@@ -194,4 +194,14 @@ class SystemAdmin extends BaseModel
             $admin->roles = SystemRole::where('id','IN',$admin->roles)->column('role_name','id');
         },$where);
     }
+
+    /**
+     * 选择管理员身份
+     * @param int $level
+     * @return array
+     */
+    public static function getAdminInfoList()
+    {
+        return self::where('status',1)->where('is_del',0)->column('real_name','id');
+    }
 }

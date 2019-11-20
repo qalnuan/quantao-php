@@ -42,7 +42,6 @@ class SystemRole extends BaseModel
      */
     public static function getRole($level = 0)
     {
-
         return self::where('status',1)->where('level',$level)->column('role_name','id');
     }
 

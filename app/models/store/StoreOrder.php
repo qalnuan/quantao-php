@@ -1879,12 +1879,15 @@ class StoreOrder extends BaseModel
      * @param $id
      * @return $this
      */
-    public static function verifyOrder($id){
+    public static function verifyOrder($id, $cuid){
         $count = self::where('id',$id)->count();
         if(!$count) return self::setErrorInfo('订单不存在');
         $count = self::where('id',$id)->where('is_mer_check', 0)->count();
         if(!$count) return self::setErrorInfo('订单已核销');
-        $res = self::where('id', $id)->update(['is_mer_check'=>1,'check_time'=>time()]);
+        $res = self::where('id', $id)->update(['check_uid'=>$cuid,'is_mer_check'=>1,'check_time'=>time()]);
+        if($res){
+            $res = StoreOrderStatus::status($id, 'verfiy_success', '商户核销成功');
+        }
         return $res;
     }
 }

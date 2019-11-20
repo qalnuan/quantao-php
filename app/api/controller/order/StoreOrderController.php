@@ -14,6 +14,7 @@ use app\models\user\UserLevel;
 use app\models\user\User;
 
 use app\models\system\SystemAdmin;
+use app\models\store\StoreVerifyService;
 use app\Request;
 use crmeb\services\CacheService;
 use crmeb\services\ExpressService;
@@ -197,15 +198,13 @@ class StoreOrderController
         $order = StoreOrder::getVerifyOrderDetail($order_id);
         if(!$order) return app('json')->fail('订单不存在');
         $order = $order->toArray();
-        $adminInfo = SystemAdmin::getSystemAdminInfo($order['mer_id']);
-        if(!$adminInfo) return app('json')->fail('商户信息不存在');
-        if (empty($adminInfo['check_id'])) {
-          SystemAdmin::updateCheckId($order['mer_id'], $uid);
-          $adminInfo['check_id'] = $uid;
-        }
-        if ($adminInfo['check_id'] != $uid) return app('json')->fail('非绑定核销用户，无权限核销');
         
-        $res = StoreOrder::verifyOrder($order['id']);
+        $verifyInfo = StoreVerifyService::getVerifyServiceInfo($uid);
+        if(!$verifyInfo) return app('json')->fail('非核销员，权限不足');
+
+        if ($order['mer_id'] != $verifyInfo['mer_id']) return app('json')->fail('非商户绑定核销用户，无权限核销');
+        
+        $res = StoreOrder::verifyOrder($order['id'], $uid);
         if($res){
             return app('json')->successful('核销成功');
         }else{
@@ -229,17 +228,19 @@ class StoreOrderController
         $order = StoreOrder::getVerifyOrderDetail($orderId);
         if(!$order) return app('json')->fail('订单不存在');
         $order = $order->toArray();
+        
+        $verifyInfo = StoreVerifyService::getVerifyServiceInfo($uid);
+        if(!$verifyInfo) return app('json')->fail('非核销员，权限不足');
+
+        if ($order['mer_id'] != $verifyInfo['mer_id']) return app('json')->fail('非商户绑定核销用户，无权限核销');
+        
         $adminInfo = SystemAdmin::getSystemAdminInfo($order['mer_id']);
         if(!$adminInfo) return app('json')->fail('商户信息不存在');
-        if (empty($adminInfo['check_id'])) {
-          SystemAdmin::updateCheckId($order['mer_id'], $uid);
-          $adminInfo['check_id'] = $uid;
-        }
         
-        if ($adminInfo['check_id'] != $uid) return app('json')->fail('非绑定核销用户，无权限核销');
         $nickname = User::getUserInfo($order['uid'], 'nickname')['nickname'];
         $orderInfo = StoreOrder::tidyOrder($order, true);
         $orderInfo['nickname'] = $nickname;
+        $orderInfo['mer_info'] = $adminInfo['real_name'];
         return app('json')->successful('ok',$orderInfo);
     }
 

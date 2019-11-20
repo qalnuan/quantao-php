@@ -32,18 +32,7 @@ class SystemAdmin extends BaseModel
     public static function getSystemAdminInfo($id)
     {
         $model=new self();
-        $adminInfo=self::where('id',$id)->field(['real_name','check_id'])->find();
-        return $adminInfo;
-    }
-
-    /*
-     * 设置核销微信openid
-     * @return array
-     * */
-    public static function updateCheckId($id, $uid)
-    {
-        $model=new self();
-        $adminInfo=self::where('id',$id)->update(['check_id' => $uid]);
+        $adminInfo=self::where('id',$id)->field(['real_name'])->find();
         return $adminInfo;
     }
 }
