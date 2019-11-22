@@ -19,7 +19,7 @@
         <div class="swiper-pagination" slot="pagination"></div>
       </swiper>
     </div>
-    <div class="nav acea-row">
+    <div class="nav acea-row" v-if="menus.length >0">
       <router-link
         :to="item.wap_url ? item.wap_url : ''"
         class="item"
@@ -58,20 +58,19 @@
       </div>
     </div>
     <div
-      class="specialArea acea-row row-between-wrapper"
-      v-if="activity.length"
+      class="specialArea acea-row row-column-between"
     >
       <router-link
         :to="activityOne.wap_link ? activityOne.wap_link : ''"
         class="assemble"
       >
         <img :src="activityOne.pic" />
-        <div class="text">
+        <!-- <div class="text">
           <div class="name">{{ activityOne.title }}</div>
           <div class="infor">{{ activityOne.info }}</div>
-        </div>
+        </div> -->
       </router-link>
-      <div class="list acea-row row-column-between">
+      <div class="list acea-row row-between-wrapper" v-if="activity.length">
         <router-link
           :to="item.wap_link ? item.wap_link : ''"
           class="item"
@@ -79,14 +78,14 @@
           :key="index"
         >
           <img :src="item.pic" />
-          <div class="text">
+          <!-- <div class="text">
             <div class="name">{{ item.title }}</div>
             <div class="infor">{{ item.info }}</div>
-          </div>
+          </div> -->
         </router-link>
       </div>
     </div>
-    <div class="wrapper" v-if="info.fastList.length > 0">
+    <!-- <div class="wrapper" v-if="info.fastList.length > 0">
       <div class="title acea-row row-between-wrapper">
         <div class="text">
           <div class="name line1">快速选择</div>
@@ -117,18 +116,9 @@
           </swiper-slide>
         </swiper>
       </div>
-    </div>
+    </div> -->
     <div class="wrapper" v-if="info.bastList.length > 0">
-      <div class="title acea-row row-between-wrapper">
-        <div class="text">
-          <div class="name line1">精品推荐</div>
-          <div class="line1">{{ info.bastInfo }}</div>
-        </div>
-        <router-link :to="{ path: '/hot_new_goods/' + 1 }" class="more"
-          >更多<span class="iconfont icon-jiantou"></span
-        ></router-link>
-      </div>
-      <!-- <div class="slider-banner boutique" v-if="info.bastBanner.length > 0">
+      <div class="slider-banner boutique" v-if="info.bastBanner.length > 0">
         <swiper class="swiper-wrapper" :options="swiperBoutique">
           <swiper-slide
             class="swiper-slide"
@@ -141,7 +131,17 @@
           </swiper-slide>
         </swiper>
         <div class="swiper-pagination"></div>
-      </div> -->
+      </div>
+      <div class="title acea-row row-between-wrapper">
+        <div class="text">
+          <div class="name line1">精品推荐</div>
+          <div class="line1">{{ info.bastInfo }}</div>
+        </div>
+        <router-link :to="{ path: '/hot_new_goods/' + 1 }" class="more"
+          >更多<span class="iconfont icon-jiantou"></span
+        ></router-link>
+      </div>
+      
       <Good-list :good-list="info.bastList" :is-sort="false"></Good-list>
     </div>
     <div class="hotList" v-if="likeInfo.length > 0">

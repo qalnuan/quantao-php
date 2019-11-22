@@ -35,7 +35,7 @@ class PublicController
         $banner = GroupDataService::getData('routine_home_banner') ?: [];//TODO 首页banner图
         $menus = GroupDataService::getData('routine_home_menus') ?: [];//TODO 首页按钮
         $roll = GroupDataService::getData('routine_home_roll_news') ?: [];//TODO 首页滚动新闻
-        $activity = GroupDataService::getData('routine_home_activity', 3) ?: [];//TODO 首页活动区域图片
+        $activity = GroupDataService::getData('routine_home_activity') ?: [];//TODO 首页活动区域图片
         $site_name = SystemConfigService::get('site_name');
         $routine_index_page = GroupDataService::getData('routine_index_page');
         $info['fastInfo'] = $routine_index_page[0]['fast_info'] ?? '';//SystemConfigService::get('fast_info');//TODO 快速选择简介
