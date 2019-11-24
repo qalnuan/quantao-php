@@ -231,7 +231,7 @@
         <div class="bnt cancel" @click="cancelOrder">取消订单</div>
         <div class="bnt bg-color-red" @click="pay = true">立即付款</div>
       </template>
-      <template v-if="status.type === 1">
+      <template v-if="(status.type === 1) || (status.type === 5)">
         <div
           class="bnt cancel"
           @click="$router.push({ path: '/order/refund/' + orderInfo.order_id })"

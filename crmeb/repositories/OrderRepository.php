@@ -35,6 +35,24 @@ class OrderRepository
     }
 
     /**
+     * 用户确认收货
+     * @param $order
+     * @param $uid
+     * @throws \think\Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public static function storeProductOrderUserVerify($order, $uid)
+    {
+        $res1 = StoreOrder::gainUserIntegral($order);
+        $res2 = User::backOrderBrokerage($order);
+        $giveCouponMinPrice = SystemConfigService::get('store_give_con_min_price');
+        if($order['total_price'] >= $giveCouponMinPrice) WechatUser::userTakeOrderGiveCoupon($uid);
+        if(!($res1 && $res2)) exception('核销失败!');
+    }
+
+    /**
      * 修改状态 为已收货  admin模块
      * @param $order
      * @throws \Exception

@@ -30,6 +30,22 @@ body{font-size:0.28rem;background-color:#f5f5f5;transition: background-color .3s
 .goodList .item .text .vip-money .image{width:0.46rem;height:0.21rem;margin-left:0.05rem;}
 .goodList .item .text .vip-money .num{font-size:0.22rem;color:#aaa;font-weight:normal;margin:-0.02rem 0 0 0;}
 .goodList .item .iconfont{position:absolute;right:0.3rem;width:0.5rem;height:0.5rem;border-radius:50%;font-size:0.3rem;bottom:0.38rem;}
+
+.newGoodList .item{position:relative;padding-left:0.3rem;background-color:#fff;}
+.newGoodList .item .pictrue{width:100%;height:100%;position:relative;}
+.newGoodList .item .pictrue .image{width:100%;height:100%;border-radius:0.06rem;}
+.newGoodList .item .pictrue .numPic{position:absolute;left:0.07rem;top:0.07rem;width:0.5rem;height:0.5rem;border-radius:50%;}
+.newGoodList .item .underline{padding:0.3rem 0.3rem 0.3rem 0;border-bottom:1px solid #f5f5f5;}
+.newGoodList .item:nth-last-child(1) .underline{border-bottom:0;}
+.newGoodList .item .text{font-size:0.3rem;color:#222;width:4.89rem;text-align: left;}
+.newGoodList .item .text .money{font-size:0.26rem;font-weight:bold;margin-top:0.1rem;}
+.newGoodList .item .text .money .num{font-size:0.34rem;}
+.newGoodList .item .text .vip-money{font-size:0.24rem;color:#282828;font-weight:bold;margin-top:0.1rem;}
+.newGoodList .item .text .vip-money .vip{margin-right:0.22rem;}
+.newGoodList .item .text .vip-money .image{width:0.46rem;height:0.21rem;margin-left:0.05rem;}
+.newGoodList .item .text .vip-money .num{font-size:0.22rem;color:#aaa;font-weight:normal;margin:-0.02rem 0 0 0;}
+.newGoodList .item .iconfont{position:absolute;right:0.3rem;width:0.5rem;height:0.5rem;border-radius:50%;font-size:0.3rem;bottom:0.38rem;}
+
 .promotionGood{padding:0 0.3rem;}
 .promotionGood .item{border-bottom:1px solid #eee;height:2.5rem;}
 .promotionGood .item .pictrue{width:1.88rem;height:1.88rem;}
@@ -227,7 +243,7 @@ body{font-size:0.28rem;background-color:#f5f5f5;transition: background-color .3s
 .index .header .search{width:5rem;height:0.64rem;background-color:#f7f7f7;border-radius:0.5rem;padding:0 0.28rem;
     font-size:0.28rem;color:#bbb;}
 .index .header  .search .iconfont{font-size:0.34rem;margin-right:0.16rem;}
-.index .banner{height:3rem;}
+.index .banner{height:3.25rem;}
 .index .banner img{width:100%;height:100%;}
 .index .banner .swiper-pagination{bottom:0.07rem;}
 .index .banner .swiper-pagination-bullet{width:0.2rem;height:0.04rem;border-radius:0.03rem;

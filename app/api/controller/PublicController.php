@@ -49,10 +49,10 @@ class PublicController
         $bastNumber = $routine_index_page[0]['bast_number'] ?? 6;//SystemConfigService::get('bast_number');//TODO 精品推荐个数
         $firstNumber = $routine_index_page[0]['first_number'] ?? 6;//SystemConfigService::get('first_number');//TODO 首发新品个数
         $info['fastList'] = StoreCategory::byIndexList((int)$fastNumber);//TODO 快速选择分类个数
-        $info['bastList'] = StoreProduct::getBestProduct('id,image,store_name,cate_id,price,ot_price,IFNULL(sales,0) + IFNULL(ficti,0) as sales,unit_name', (int)$bastNumber, $request->uid());//TODO 精品推荐个数
-        $info['firstList'] = StoreProduct::getNewProduct('id,image,store_name,cate_id,price,unit_name,IFNULL(sales,0) + IFNULL(ficti,0) as sales', (int)$firstNumber,$request->uid());//TODO 首发新品个数
+        $info['bastList'] = StoreProduct::getBestProduct('id,image,store_name,store_info,cate_id,price,ot_price,IFNULL(sales,0) + IFNULL(ficti,0) as sales,unit_name', (int)$bastNumber, $request->uid());//TODO 精品推荐个数
+        $info['firstList'] = StoreProduct::getNewProduct('id,image,store_name,store_info,cate_id,price,unit_name,IFNULL(sales,0) + IFNULL(ficti,0) as sales', (int)$firstNumber,$request->uid());//TODO 首发新品个数
         $info['bastBanner'] = GroupDataService::getData('routine_home_bast_banner') ?? [];//TODO 首页精品推荐图片
-        $benefit = StoreProduct::getBenefitProduct('id,image,store_name,cate_id,price,ot_price,stock,unit_name', 3);//TODO 首页促销单品
+        $benefit = StoreProduct::getBenefitProduct('id,image,store_name,store_info,cate_id,price,ot_price,stock,unit_name', 3);//TODO 首页促销单品
         $lovely = GroupDataService::getData('routine_home_new_banner') ?: [];//TODO 首发新品顶部图
         $likeInfo = StoreProduct::getHotProduct('id,image,store_name,cate_id,price,unit_name', 3);//TODO 热门榜单 猜你喜欢
         $couponList = StoreCouponIssue::getIssueCouponList($request->uid(), 3);

@@ -270,11 +270,13 @@ export default {
       this.shareInfoStatus = !this.shareInfoStatus;
       this.posters = false;
     },
-    shareCode: function() {
+    shareCode: function(value) {
       var that = this;
       getProductCode(that.id).then(res => {
         that.posterData.code = res.data.code;
-        //that.listenerActionSheet();
+        if (value === false) {
+            that.listenerActionSheet();
+        }
       });
     },
     setPosterImageStatus: function() {

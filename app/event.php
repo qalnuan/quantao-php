@@ -52,6 +52,7 @@ return [
         'OrderCreateAgain' => [], //用户再次下单
         'UserOrderRemoved' => [], //用户删除订单
         'UserOrderTake' => [], //用户确认收货
+        'UserOrderVerify' => [], //用户订单核销
         'UserCommented' => [], //用户评价商品
         'RechargeSuccess' => [], //用户充值成功后
         'ImportNowMoney' => [], //用户佣金转成余额成功后

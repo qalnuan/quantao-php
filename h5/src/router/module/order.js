@@ -5,7 +5,8 @@ export default [
     meta: {
       title: "我的订单",
       keepAlive: false,
-      auth: true
+      auth: true,
+      footer: true
     },
     component: () => import("@views/order/MyOrder")
   },
@@ -15,7 +16,8 @@ export default [
     meta: {
       title: "物流信息",
       keepAlive: true,
-      auth: true
+      auth: true,
+      footer: true
     },
     component: () => import("@views/order/Logistics")
   },
@@ -45,7 +47,8 @@ export default [
     meta: {
       title: "支付状态",
       keepAlive: true,
-      auth: true
+      auth: true,
+      footer: true
     },
     component: () => import("@views/order/PaymentStatus")
   },
@@ -55,7 +58,8 @@ export default [
     meta: {
       title: "申请退货",
       keepAlive: true,
-      auth: true
+      auth: true,
+      footer: true
     },
     component: () => import("@views/order/GoodsReturn.vue")
   },
@@ -65,7 +69,8 @@ export default [
     meta: {
       title: "退货列表",
       keepAlive: true,
-      auth: true
+      auth: true,
+      footer: true
     },
     component: () => import("@views/order/ReturnList.vue")
   },

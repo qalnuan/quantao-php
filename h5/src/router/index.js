@@ -33,7 +33,8 @@ const router = new Router({
       meta: {
         title: "客服聊天",
         keepAlive: false,
-        auth: true
+        auth: true,
+        footer: true
       },
       component: () => import("@views/user/CustomerService.vue")
     },
@@ -54,7 +55,8 @@ const router = new Router({
       meta: {
         title: "收藏商品",
         keepAlive: false,
-        auth: true
+        auth: true,
+        footer: true
       },
       component: () => import("@views/shop/GoodsCollection.vue")
     },
@@ -64,7 +66,8 @@ const router = new Router({
       meta: {
         title: "搜索商品",
         keepAlive: true,
-        backgroundColor: "#fff"
+        backgroundColor: "#fff",
+        footer: true
       },
       component: Search
     },
@@ -74,7 +77,8 @@ const router = new Router({
       meta: {
         title: "新闻详情",
         keepAlive: true,
-        backgroundColor: "#fff"
+        backgroundColor: "#fff",
+        footer: true
       },
       component: () => import("@views/shop/news/NewsDetail.vue")
     },
@@ -104,7 +108,8 @@ const router = new Router({
       meta: {
         title: "商品评价",
         keepAlive: true,
-        auth: true
+        auth: true,
+        footer: true
       },
       component: () => import("@views/shop/GoodsEvaluate.vue")
     },
@@ -113,7 +118,8 @@ const router = new Router({
       name: "GoodsPromotion",
       meta: {
         title: "促销单品",
-        keepAlive: false
+        keepAlive: false,
+        footer: true
       },
       component: () => import("@views/shop/GoodsPromotion.vue")
     },
@@ -122,7 +128,8 @@ const router = new Router({
       name: "HotNewGoods",
       meta: {
         title: "热门榜单",
-        keepAlive: false
+        keepAlive: false,
+        footer: true
       },
       component: () => import("@views/shop/HotNewGoods.vue")
     },
@@ -151,7 +158,8 @@ const router = new Router({
       name: "GoodsList",
       meta: {
         title: "商品列表",
-        keepAlive: true
+        keepAlive: true,
+        footer: true
       },
       component: GoodsList
     },
@@ -160,7 +168,8 @@ const router = new Router({
       name: "Register",
       meta: {
         title: "注册",
-        keepAlive: true
+        keepAlive: true,
+        footer: true
       },
       component: () =>
         import(/* webpackChunkName: "login" */ "@views/user/Register.vue")
@@ -172,7 +181,8 @@ const router = new Router({
         title: "修改密码",
         keepAlive: true,
         backgroundColor: "#fff",
-        auth: true
+        auth: true,
+        footer: true
       },
       component: () =>
         import(/* webpackChunkName: "login" */ "@views/user/ChangePassword.vue")
@@ -249,6 +259,12 @@ router.beforeEach((to, form, next) => {
 
   //控制悬浮按钮是否显示
   home === false ? $store.commit("HIDE_HOME") : $store.commit("SHOW_HOME");
+
+  if (home !== false && footer !== true) {
+    $store.commit("OPEN_HOME");
+  } else {
+    $store.commit("CLOSE_HOME");
+  }
 
   $store.commit("BACKGROUND_COLOR", backgroundColor || "#F5F5F5");
 

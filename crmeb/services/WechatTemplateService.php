@@ -57,6 +57,9 @@ class WechatTemplateService
     //砍价成功
     const BARGAIN_SUCCESS = 'OPENTM410292733';
 
+    //核销成功
+    const VERIFYORDER_SUCCESS = 'OPENTM405896004';
+
 
 
     public static function getConstants($code='') {

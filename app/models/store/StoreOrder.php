@@ -1881,15 +1881,46 @@ class StoreOrder extends BaseModel
      * @param $id
      * @return $this
      */
-    public static function verifyOrder($id, $cuid){
+    public static function verifyOrder($id, $cuid,  $formId = ''){
         $count = self::where('id',$id)->count();
         if(!$count) return self::setErrorInfo('订单不存在');
         $count = self::where('id',$id)->where('is_mer_check', 0)->count();
         if(!$count) return self::setErrorInfo('订单已核销');
-        $res = self::where('id', $id)->update(['check_uid'=>$cuid,'is_mer_check'=>1,'check_time'=>time()]);
-        if($res){
-            $res = StoreOrderStatus::status($id, 'verfiy_success', '商户核销成功');
+
+        $order = self::where('id', $id)->find();
+        if (!$order) return self::setErrorInfo('订单不存在!');
+        $order = self::tidyOrder($order);
+        $uid = $order['uid'];
+        $uni = $order['order_id'];
+        self::beginTrans();
+        if (false !== self::where('id', $id)->update(['check_uid'=>$cuid,'is_mer_check'=>1,'check_time'=>time()]) &&
+            false !== StoreOrderStatus::status($id, 'verfiy_success', '商户核销成功')) {
+            try {
+                OrderRepository::storeProductOrderUserVerify($order, $uid);
+            } catch (\Exception $e) {
+                self::rollbackTrans();
+                return self::setErrorInfo($e->getMessage());
+            }
+            self::commitTrans();
+            event('UserOrderVerify', $uni);
+            $openid = WechatUser::uidToOpenid($order['uid'], 'openid');
+            $routineOpenid = WechatUser::uidToOpenid($order['uid'], 'routine_openid');
+            try{
+                if($openid){//公众号发送模板消息
+                    WechatTemplateService::sendTemplate($openid,WechatTemplateService::VERIFYORDER_SUCCESS, [
+                        'first'=>'亲，您购买的商品已核销成功',
+                        'keyword1'=>date('Y/m/d H:i',$order['check_time']),
+                        'keyword2'=>"订单号:{$order['order_id']}",
+                        'keyword3'=>$order['pay_price'],
+                        'remark'=>'点击查看订单详情'
+                    ],Route::buildUrl('order/detail/'.$order['order_id'])->suffix('')->domain(true)->build());
+                }else if($routineOpenid){//小程序发送模板消息
+                }
+            }catch (\Exception $e){}
+            return true;
+        } else {
+            self::rollbackTrans();
+            return false;
         }
-        return $res;
     }
 }

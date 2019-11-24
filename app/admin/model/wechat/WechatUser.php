@@ -574,7 +574,7 @@ use app\admin\model\order\StoreOrderStatus;
              $item['number_price'] = UserBill::where(['category'=>'now_money','type'=>'brokerage','link_id'=>$item['id']])->value('number');
              $item['_pay_time'] = date('Y-m-d H:i:s',$item['pay_time']);
              $item['_add_time'] = date('Y-m-d H:i:s',$item['add_time']);
-             $item['take_time'] = ($change_time = StoreOrderStatus::where(['change_type'=>'user_take_delivery','oid'=>$item['id']])->value('change_time')) ?
+             $item['verify_time'] = ($change_time = StoreOrderStatus::where(['change_type'=>'verfiy_success','oid'=>$item['id']])->value('change_time')) ?
                  date('Y-m-d H:i:s',$change_time) : '暂无';
          }
          $count = self::setSairOrderWhere($where,new StoreOrder())->count();

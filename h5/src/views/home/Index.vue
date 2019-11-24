@@ -134,7 +134,7 @@
       </div>
       <div class="title acea-row row-between-wrapper">
         <div class="text">
-          <div class="name line1">精品推荐</div>
+          <div class="name line1">美食推荐</div>
           <div class="line1">{{ info.bastInfo }}</div>
         </div>
         <router-link :to="{ path: '/hot_new_goods/' + 1 }" class="more"
@@ -246,7 +246,7 @@
 <script>
 import { swiper, swiperSlide } from "vue-awesome-swiper";
 import "@assets/css/swiper.min.css";
-import GoodList from "@components/GoodList";
+import GoodList from "@components/NewGoodList";
 import PromotionGood from "@components/PromotionGood";
 import CouponWindow from "@components/CouponWindow";
 import { getHomeData, getShare } from "@api/public";
