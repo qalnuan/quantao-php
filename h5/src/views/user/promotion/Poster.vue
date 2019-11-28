@@ -11,7 +11,12 @@
         </swiperSlide>
       </swiper>
     </div>
-    <div class="keep bg-color-red" @click="saveImg">保存海报</div>
+    <!-- <div class="keep bg-color-red" @click="saveImg">保存海报</div> -->
+    <div class="preserve acea-row row-center-wrapper">
+      <div class="line"></div>
+      <div class="tip">长按保存图片</div>
+      <div class="line"></div>
+    </div>
   </div>
 </template>
 <script>
