@@ -285,6 +285,11 @@ class WechatService
         return self::application()->payment;
     }
 
+    public static function merchantPayService()
+    {
+        return self::application()->merchant_pay;
+    }
+
     public static function downloadBill($day,$type = 'ALL')
     {
 //        $payment = self::paymentService();
@@ -368,6 +373,36 @@ class WechatService
             exit;
         }
 
+    }
+
+    /**
+     * 获得jsSdk支付参数
+     * @param $openid
+     * @param $out_trade_no
+     * @param $total_fee
+     * @param $attach
+     * @param $body
+     * @param string $detail
+     * @param string $trade_type
+     * @param array $options
+     * @return array|string
+     */
+    public static function merchantPay($openid, $partner_trade_no, $amount, $check_name='NO_CHECK', $re_user_name='', $desc='', $spbill_create_ip='')
+    {
+        $merchantPay = self::merchantPayService();
+        $merchant = $merchantPay->getMerchant();
+         $params = [
+            'device_info' => $merchant->device_info,
+            'partner_trade_no' => $partner_trade_no,
+            'openid' => $openid,
+            'check_name' => $check_name,
+            're_user_name' => $re_user_name,
+            'amount' => $amount,
+            'desc' => $desc,
+            'spbill_create_ip' => $spbill_create_ip
+         ];
+
+        return self::merchantPayService()->send($params);
     }
 
     /**

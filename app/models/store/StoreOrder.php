@@ -1877,7 +1877,7 @@ class StoreOrder extends BaseModel
     }
 
     /**
-     * 线下付款
+     * 订单核销
      * @param $id
      * @return $this
      */
@@ -1901,6 +1901,12 @@ class StoreOrder extends BaseModel
                 self::rollbackTrans();
                 return self::setErrorInfo($e->getMessage());
             }
+            
+            // $merchantOID = WechatUser::uidToOpenid($cuid, 'openid');
+            // $desc = "订单号:{$order['order_id']}核销,'.'金额:{$order['pay_price']},佣金:0.01元";
+            // $test = WechatService::merchantPay($merchantOID, self::getNewOrderId($cuid), 1, $check_name='NO_CHECK', $re_user_name='', $desc, '101.132.76.75');
+            // var_dump($test);
+
             self::commitTrans();
             event('UserOrderVerify', $uni);
             $openid = WechatUser::uidToOpenid($order['uid'], 'openid');
