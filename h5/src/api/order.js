@@ -18,8 +18,8 @@ export function postOrderConfirm(cartId) {
  * @param data
  * @returns {*}
  */
-export function postOrderComputed(data) {
-  return request.post("/order/computed", data);
+export function postOrderComputed(key, data) {
+  return request.post("/order/computed/" + key, data);
 }
 
 /**
@@ -37,8 +37,8 @@ export function getOrderCoupon(price) {
  * @param data
  * @returns {*}
  */
-export function createOrder(data) {
-  return request.post("/order/create", data || {});
+export function createOrder(key, data) {
+  return request.post("/order/create/" + key, data || {});
 }
 
 /**
@@ -134,4 +134,11 @@ export function getVerifyOrderDetail(orderId) {
  */
 export function verifyOrder(data) {
   return request.post("order/verifyorder", data);
+}
+/**
+ * 订单核销
+ * @returns {*}
+ */
+export function orderVerific(verify_code, is_confirm) {
+  return request.post("order/order_verific", { verify_code, is_confirm });
 }

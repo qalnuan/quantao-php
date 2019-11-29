@@ -49,13 +49,14 @@ class StoreOrder extends BaseModel
           $mer_id = 0;
         }
         $data['wz']=self::statusByWhere(0,new self())->where(['is_system_del'=>0, 'mer_id'=>$mer_id])->count();
-        $data['wf']=self::statusByWhere(1,new self())->where(['is_system_del'=>0, 'mer_id'=>$mer_id])->count();
-        $data['ds']=self::statusByWhere(2,new self())->where(['is_system_del'=>0, 'mer_id'=>$mer_id])->count();
+        $data['wf']=self::statusByWhere(1,new self())->where(['is_system_del'=>0, 'shipping_type'=>1, 'mer_id'=>$mer_id])->count();
+        $data['ds']=self::statusByWhere(2,new self())->where(['is_system_del'=>0,'shipping_type'=>1, 'mer_id'=>$mer_id])->count();
         $data['dp']=self::statusByWhere(3,new self())->where(['is_system_del'=>0, 'mer_id'=>$mer_id])->count();
         $data['jy']=self::statusByWhere(4,new self())->where(['is_system_del'=>0, 'mer_id'=>$mer_id])->count();
         $data['tk']=self::statusByWhere(-1,new self())->where(['is_system_del'=>0, 'mer_id'=>$mer_id])->count();
         $data['yt']=self::statusByWhere(-2,new self())->where(['is_system_del'=>0, 'mer_id'=>$mer_id])->count();
         $data['del']=self::statusByWhere(-4,new self())->where(['is_system_del'=>0, 'mer_id'=>$mer_id])->count();
+        $data['write_off'] =self::statusByWhere(5,new self())->where(['is_system_del'=>0])->count();
         $data['general']=self::where(['pink_id'=>0,'combination_id'=>0,'seckill_id'=>0,'bargain_id'=>0,'is_system_del'=>0, 'mer_id'=>$mer_id])->count();
         $data['pink']=self::where('pink_id|combination_id','>',0)->where(['is_system_del'=>0, 'mer_id'=>$mer_id])->count();
         $data['seckill']=self::where('seckill_id','>',0)->where(['is_system_del'=>0, 'mer_id'=>$mer_id])->count();
@@ -79,7 +80,7 @@ class StoreOrder extends BaseModel
         }else{
             $data=($data=$model->page((int)$where['page'],(int)$where['limit'])->select()) && count($data) ? $data->toArray() : [];
         }
-//        $data=($data=$model->page((int)$where['page'],(int)$where['limit'])->select()) && count($data) ? $data->toArray() : [];
+
         foreach ($data as &$item){
             $_info = Db::name('store_order_cart_info')->where('oid',$item['id'])->field('cart_info')->select();
             $_info = count($_info) ? $_info->toArray() : [];
@@ -90,10 +91,12 @@ class StoreOrder extends BaseModel
                 unset($cart_info);
             }
             $item['_info'] = $_info;
+            $item['spread_nickname'] = Db::name('user')->where('uid',$item['spread_uid'])->value('nickname');
             $_verifyinfo = Db::name('store_verify_service')->where('uid', $item['check_uid'])->field('nickname,avatar')->find();
             $item['verifyname'] = $_verifyinfo['nickname'];
             $item['verifyimage'] = $_verifyinfo['avatar'];
             $item['add_time'] = date('Y-m-d H:i:s',$item['add_time']);
+            $item['back_integral'] = $item['back_integral'] ? : 0;
             if($item['pink_id'] || $item['combination_id']){
                 $pinkStatus = StorePink::where('order_id_key',$item['id'])->value('status');
                 switch ($pinkStatus){
@@ -121,8 +124,13 @@ class StoreOrder extends BaseModel
                 $item['pink_name'] = '[砍价订单]';
                 $item['color'] = '#12c5e9';
             }else{
-                $item['pink_name'] = '[普通订单]';
-                $item['color'] = '#895612';
+                if($item['shipping_type']==1){
+                    $item['pink_name'] = '[普通订单]';
+                    $item['color'] = '#895612';
+                }else if($item['shipping_type']==2){
+                    $item['pink_name'] = '[核销订单]';
+                    $item['color'] = '#8956E8';
+                }
             }
             if($item['paid']==1){
                 switch ($item['pay_type']){
@@ -152,16 +160,16 @@ class StoreOrder extends BaseModel
             }
             if($item['paid']==0 && $item['status']==0){
                 $item['status_name']='未支付';
-            }else if($item['paid']==1 && $item['status']==0 && $item['refund_status']==0){
+            }else if($item['paid']==1 && $item['status']==0 && $item['shipping_type']==1 && $item['refund_status']==0){
                 $item['status_name']='未发货';
-            }else if($item['paid']==1 && $item['status']==1 && $item['refund_status']==0){
+            }else if($item['paid']==1 && $item['status']==0 && $item['shipping_type']==2 && $item['refund_status']==0){
+                $item['status_name']='未核销';
+            }else if($item['paid']==1 && $item['status']==1 && $item['shipping_type']==1 && $item['refund_status']==0){
                 $item['status_name']='待收货';
+            }else if($item['paid']==1 && $item['status']==1 && $item['shipping_type']==2 && $item['refund_status']==0){
+                $item['status_name']='未核销';
             }else if($item['paid']==1 && $item['status']==2 && $item['refund_status']==0){
-                if (!$item['is_mer_check']) {
-                    $item['status_name']='待核销';
-                } else {
-                    $item['status_name']='待评价';
-                }
+                $item['status_name']='待评价';
             }else if($item['paid']==1 && $item['status']==3 && $item['refund_status']==0){
                 $item['status_name']='已完成';
             }else if($item['paid']==1 && $item['refund_status']==1){
@@ -175,14 +183,25 @@ class StoreOrder extends BaseModel
                             $img .='<img style="height:50px;" src="'.$itemImg.'" />';
                     }
                 }
-                if(!strlen(trim($img)))  $img = '无';
-                $item['status_name']=<<<HTML
+                if (!strlen(trim($img)))  $img = '无';
+                if (isset($where['excel']) && $where['excel'] == 1) {
+                    $refundImageStr = implode(',',$refundReasonWapImg);
+                    $item['status_name'] = <<<TEXT
+退款原因:{$item['refund_reason_wap']} 
+备注说明：{$item['refund_reason_wap_explain']}
+退款时间：{$refundReasonTime}
+凭证连接：{$refundImageStr}
+TEXT;
+                    unset($refundImageStr);
+                }else {
+                    $item['status_name'] = <<<HTML
 <b style="color:#f124c7">申请退款</b><br/>
 <span>退款原因：{$item['refund_reason_wap']}</span><br/>
 <span>备注说明：{$item['refund_reason_wap_explain']}</span><br/>
 <span>退款时间：{$refundReasonTime}</span><br/>
 <span>退款凭证：{$img}</span>
 HTML;
+                }
             }else if($item['paid']==1 && $item['refund_status']==2){
                 $item['status_name']='已退款';
             }
@@ -244,7 +263,7 @@ HTML;
                 $item['pay_postage'],
                 $item['coupon_price'],
                 $item['pay_type_name'],
-                $item['pay_time'] > 0 ? date('Y/md H:i',$item['pay_time']) : '暂无',
+                $item['pay_time'] > 0 ? date('Y/m-d H:i',$item['pay_time']) : '暂无',
                 $item['status_name'],
                 $item['add_time'],
                 $item['mark']
@@ -359,21 +378,23 @@ HTML;
         else if($status == 8)
             return $model;
         else if($status == 0)//未支付
-            return $model->where($alert.'paid',0)->where($alert.'status',0)->where($alert.'refund_status',0);
+            return $model->where($alert.'paid',0)->where($alert.'status',0)->where($alert.'refund_status',0)->where($alert.'is_del',0);
         else if($status == 1)//已支付 未发货
-            return $model->where($alert.'paid',1)->where($alert.'status',0)->where($alert.'refund_status',0);
+            return $model->where($alert.'paid',1)->where($alert.'status',0)->where($alert.'shipping_type',1)->where($alert.'refund_status',0)->where($alert.'is_del',0);
         else if($status == 2)//已支付  待收货
-            return $model->where($alert.'paid',1)->where($alert.'status',1)->where($alert.'refund_status',0);
+            return $model->where($alert.'paid',1)->where($alert.'status',1)->where($alert.'shipping_type',1)->where($alert.'refund_status',0)->where($alert.'is_del',0);
+        else if($status == 5)//已支付  待核销
+            return $model->where($alert.'paid',1)->where($alert.'status',0)->where($alert.'shipping_type',2)->where($alert.'refund_status',0)->where($alert.'is_del',0);
         else if($status == 3)// 已支付  已收货  待评价
-            return $model->where($alert.'paid',1)->where($alert.'status',2)->where($alert.'refund_status',0);
+            return $model->where($alert.'paid',1)->where($alert.'status',2)->where($alert.'refund_status',0)->where($alert.'is_del',0);
         else if($status == 4)// 交易完成
-            return $model->where($alert.'paid',1)->where($alert.'status',3)->where($alert.'refund_status',0);
+            return $model->where($alert.'paid',1)->where($alert.'status',3)->where($alert.'refund_status',0)->where($alert.'is_del',0);
         else if($status == -1)//退款中
-            return $model->where($alert.'paid',1)->where($alert.'refund_status',1);
+            return $model->where($alert.'paid',1)->where($alert.'refund_status',1)->where($alert.'is_del',0);
         else if($status == -2)//已退款
-            return $model->where($alert.'paid',1)->where($alert.'refund_status',2);
+            return $model->where($alert.'paid',1)->where($alert.'refund_status',2)->where($alert.'is_del',0);
         else if($status == -3)//退款
-            return $model->where($alert.'paid',1)->where($alert.'refund_status','in','1,2');
+            return $model->where($alert.'paid',1)->where($alert.'refund_status','in','1,2')->where($alert.'is_del',0);
         else if($status == -4)//已删除
             return $model->where($alert.'is_del',1);
         else
@@ -423,7 +444,7 @@ HTML;
             'keyword2'=>$order['pay_price'],
             'keyword3'=>date('Y-m-d H:i:s',$order['add_time']),
             'remark'=>'点击查看订单详情'
-        ],Url::buildUrl('wap/My/order',['uni'=>$order['order_id']],true,true));
+        ],Url::buildUrl('/order/detail/'.$order['order_id'])->suffix('')->domain(true)->build());
     }
 
     /**
@@ -1069,14 +1090,14 @@ HTML;
     {
 
         $order = self::where('id',$oid)->find();
-        $url = Url::buildUrl('wap/My/order',['uni'=>$order['order_id']],true,true);
+        $url = Url::buildUrl('/order/detail/'.$order['order_id'])->suffix('')->domain(true)->build();
         $group = [
             'first'=>'亲,您的订单已发货,请注意查收',
             'remark'=>'点击查看订单详情'
         ];
         if($postageData['delivery_type'] == 'send'){//送货
             $goodsName = StoreOrderCartInfo::getProductNameList($order['id']);
-            if($order['is_channel']){
+            if($order['is_channel'] == 1){
                 //小程序送货模版消息
                 RoutineTemplate::sendOrderPostage($order);
             }else{//公众号
@@ -1091,7 +1112,7 @@ HTML;
                 WechatTemplateService::sendTemplate($openid,WechatTemplateService::ORDER_DELIVER_SUCCESS,$group,$url);
             }
         }else if($postageData['delivery_type'] == 'express') {//发货
-            if ($order['is_channel']) {
+            if ($order['is_channel'] == 1) {
                 //小程序发货模版消息
                 RoutineTemplate::sendOrderPostage($order,1);
             } else {//公众号
@@ -1128,7 +1149,7 @@ HTML;
             $title = StoreProduct::where('id',$cartInfo['product_id'])->value('store_name');
         }
 
-        if($order['is_channel']){//小程序
+        if($order['is_channel'] == 1){//小程序
             RoutineTemplate::sendOut('OREDER_TAKEVER',$order['uid'],[
                 'keyword1'=>$order['order_id'],
                 'keyword2'=>$title,
@@ -1164,7 +1185,7 @@ HTML;
             $store_name = StoreProduct::where('id',$productId)->value('store_name');
             $title.=$store_name.',';
         }
-        if($order->is_channel){
+        if($order->is_channel == 1){
             RoutineTemplate::sendOut('ORDER_REFUND_FILE',$order->uid,[
                 'keyword1'=>$order->order_id,
                 'keyword2'=>$title,
@@ -1178,7 +1199,7 @@ HTML;
                 'keyword2'=>$order->pay_price,
                 'keyword3'=>date('Y-m-d H:i:s',time()),
                 'remark'=>'给您带来的不便，请谅解！'
-            ]);
+            ],Url::buildUrl('/order/detail/'.$order['order_id'])->suffix('')->domain(true)->build());
         }
     }
 

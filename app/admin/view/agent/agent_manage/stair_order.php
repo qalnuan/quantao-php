@@ -78,7 +78,7 @@
                     <script type="text/html" id="time">
                         <p>下单：{{d._add_time}}</p>
                         <p>支付：{{d._pay_time}}</p>
-                        <p>核销：{{d.verify_time}}</p>
+                        <p>收货：{{d.take_time}}</p>
                     </script>
                     <script type="text/html" id="user_info">
                         <p>{{d.user_info}}</p>

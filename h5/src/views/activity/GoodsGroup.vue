@@ -48,14 +48,14 @@ export default {
       status: false, //砍价列表是否获取完成 false 未完成 true 完成
       loading: false, //当前接口是否请求完成 false 完成 true 未完成
       page: 1, //页码
-      limit: 20, //数量
+      limit: 10, //数量
       loadingList: false
     };
   },
   mounted: function() {
     this.getCombinationList();
     this.$scroll(this.$refs.container, () => {
-      !this.loadingList && this.getCombinationList();
+      !this.loading && this.getCombinationList();
     });
   },
   methods: {
@@ -63,12 +63,17 @@ export default {
       var that = this;
       if (that.loading) return;
       if (that.status) return;
-      getCombinationList({ page: that.page, limit: that.limit }).then(res => {
-        that.status = res.data.length < that.limit;
-        that.combinationList.push.apply(that.combinationList, res.data);
-        that.page++;
-        that.loading = false;
-      });
+      that.loading = true;
+      getCombinationList({ page: that.page, limit: that.limit })
+        .then(res => {
+          that.status = res.data.length < that.limit;
+          that.combinationList.push.apply(that.combinationList, res.data);
+          that.page++;
+          that.loading = false;
+        })
+        .catch(() => {
+          that.loading = false;
+        });
     },
     link: function(id) {
       this.$router.push({

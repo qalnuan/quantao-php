@@ -36,8 +36,8 @@ class UserLevel extends AuthController
         if($id) $vipinfo=SystemUserLevel::get($id);
         $field[]= Form::input('name','等级名称',isset($vipinfo) ? $vipinfo->name : '')->col(Form::col(24));
         $field[]= Form::radio('is_forever','是否为永久',isset($vipinfo) ? $vipinfo->is_forever : 0)->options([['label'=>'永久','value'=>1],['label'=>'非永久','value'=>0]])->col(24);
-        $field[]= Form::number('money','等级价格',isset($vipinfo) ? $vipinfo->money : 0)->min(0)->col(24);
-        $field[]= Form::radio('is_pay','是否需要购买',isset($vipinfo) ? $vipinfo->is_pay : 0)->options([['label'=>'需要','value'=>1],['label'=>'免费','value'=>0]])->col(24);
+        //$field[]= Form::number('money','等级价格',isset($vipinfo) ? $vipinfo->money : 0)->min(0)->col(24);
+        //$field[]= Form::radio('is_pay','是否需要购买',isset($vipinfo) ? $vipinfo->is_pay : 0)->options([['label'=>'需要','value'=>1],['label'=>'免费','value'=>0]])->col(24);
         $field[]= Form::number('valid_date','有效时间(天)',isset($vipinfo) ? $vipinfo->valid_date : 0)->min(0)->col(8);
         $field[]= Form::number('grade','等级',isset($vipinfo) ? $vipinfo->grade : 0)->min(0)->col(8);
         $field[]= Form::number('discount','享受折扣',isset($vipinfo) ? $vipinfo->discount : 0)->min(0)->col(8);
@@ -262,7 +262,7 @@ class UserLevel extends AuthController
             ['illustrate',''],
         ]);
         if(!$data['task_type']) return JsonService::fail('请选择任务类型');
-        if($data['number'] < 0) return JsonService::fail('请输入限定数量');
+        if($data['number'] < 1) return JsonService::fail('请输入限定数量,数量不能小于1');
         $tash=SystemUserTask::getTaskType($data['task_type']);
         if($tash['max_number']!=0 && $data['number'] > $tash['max_number']) return JsonService::fail('您设置的限定数量超出最大限制,最大限制为:'.$tash['max_number']);
         $data['name']=SystemUserTask::setTaskName($data['task_type'],$data['number']);

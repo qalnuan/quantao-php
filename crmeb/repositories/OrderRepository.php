@@ -78,7 +78,7 @@ class OrderRepository
      */
     public static function storeProductOrderRefundY($data,$oid){
         $order = AdminStoreOrder::where('id', $oid)->find();
-        if($order['is_channel'])
+        if($order['is_channel'] == 1)
             return AdminStoreOrder::refundRoutineTemplate($oid); //TODO 小程序余额退款模板消息
         else
             return AdminStoreOrder::refundTemplate($data,$oid);//TODO 公众号余额退款模板消息

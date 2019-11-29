@@ -15,9 +15,10 @@ Page({
       'class': '0'
     },
     combinationList: [],
-    limit: 20,
-    offset: 0,
-    status:false,
+    limit: 10,
+    page: 1,
+    loading:false,
+    loadend:false,
   },
   
   /**
@@ -40,18 +41,23 @@ Page({
   },
   getCombinationList:function(){
     var that = this;
-    if (that.data.status) return;
-    var data = { offset: that.data.offset, limit: that.data.limit};
+    if (that.data.loadend) return;
+    if (that.data.loading) return;
+    var data = { page: that.data.page, limit: that.data.limit};
+    that.setData({loading:true});
     getCombinationList(data).then(function (res) {
-        var combinationList = that.data.combinationList;
-        var limit = that.data.limit;
-        var offset = that.data.offset;
-        that.setData({
-          status: limit > res.data.length,
-          combinationList: combinationList.concat(res.data),
-          offset: Number(offset) + Number(limit)
-        });
-      })
+      var combinationList = that.data.combinationList;
+      var limit = that.data.limit;
+      that.data.page++;
+      that.setData({
+        loadend: limit > res.data.length,
+        combinationList: combinationList.concat(res.data),
+        page: that.data.page,
+        loading:false,
+      });
+    }).catch(()=>{
+      that.setData({loading:false});
+    })
   },
   /**
    * 生命周期函数--监听页面隐藏

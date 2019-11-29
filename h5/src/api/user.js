@@ -326,3 +326,21 @@ export function bindingPhone(data) {
 export function switchH5Login() {
   return request.post("switch_h5", { from: "wechat" });
 }
+/*
+ * 获取推广人排行
+ * */
+export function getRankList(q) {
+  return request.get("rank", q);
+}
+/*
+ * 获取佣金排名
+ * */
+export function getBrokerageRank(q) {
+  return request.get("brokerage_rank", q);
+}
+/**
+ * 检测会员等级
+ */
+export function setDetection() {
+  return request.get("user/level/detection");
+}

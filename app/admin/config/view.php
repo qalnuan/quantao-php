@@ -6,6 +6,8 @@
 return [
     // 模板后缀
     'view_suffix'  => 'php',
+    // 模板路径
+    'view_path'    => app_path('view'),
     // 视图输出字符串内容替换
     'tpl_replace_string'       => [
         '{__PUBLIC_PATH}' =>  '/',              //public 目录

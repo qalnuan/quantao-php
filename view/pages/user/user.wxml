@@ -25,7 +25,7 @@
             <view>当前佣金</view>
             <view class='num'>{{userInfo.brokerage_price || 0}}</view>
          </view>
-         <view class='item' wx:else>
+         <view class='item' wx:else data-url='/pages/user_integral/index' bindtap='goPages'>
             <view>当前积分</view>
             <view class='num'>{{userInfo.integral || 0}}</view>
          </view>

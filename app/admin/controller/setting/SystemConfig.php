@@ -1,7 +1,8 @@
 <?php
 namespace app\admin\controller\setting;
 
-use app\admin\model\system\SystemAttachment;
+use crmeb\services\CacheService;
+use crmeb\services\SystemConfigService;
 use think\facade\Route as Url;
 use crmeb\services\FormBuilder as Form;
 use crmeb\services\UtilService as Util;
@@ -224,6 +225,7 @@ class SystemConfig extends AuthController
            $data['value'] = json_encode($data['value']);
        }
        ConfigModel::create($data);
+       CacheService::delete(SystemConfigService::CACHE_SYSTEM);
        return Json::successful('添加菜单成功!');
    }
 
@@ -250,7 +252,7 @@ class SystemConfig extends AuthController
      * @param $id
      * @return mixed
      */
-    public function edit_cinfig($id){
+    public function edit_config($id){
         $menu = ConfigModel::get($id)->getData();
         if(!$menu) return Json::fail('数据不存在!');
         $formbuider = array();
@@ -342,11 +344,12 @@ class SystemConfig extends AuthController
      * 删除子字段
      * @return \think\response\Json
      */
-    public function delete_cinfig(){
+    public function delete_config(){
         $id = input('id');
-        if(!ConfigModel::del($id))
+        if(!ConfigModel::del($id)) {
+            CacheService::delete(SystemConfigService::CACHE_SYSTEM);
             return Json::fail(ConfigModel::getErrorInfo('删除失败,请稍候再试!'));
-        else
+        }else
             return Json::successful('删除成功!');
     }
 
@@ -372,6 +375,7 @@ class SystemConfig extends AuthController
             foreach ($post as $k=>$v){
                 ConfigModel::edit(['value' => json_encode($v)],$k,'menu_name');
             }
+            CacheService::delete(SystemConfigService::CACHE_SYSTEM);
             return $this->successful('修改成功');
         }
     }
@@ -395,7 +399,7 @@ class SystemConfig extends AuthController
     * 文件上传
     * */
    public function file_upload(){
-       $res = Upload::file($this->request->param('file','file'),'config/file');
+       $res = Upload::getInstance()->setUploadPath('config/file')->file($this->request->param('file','file'));
        if(!$res->status) return Json::fail($res->error);
        return Json::successful('上传成功!',['filePath'=>$res->filePath]);
    }

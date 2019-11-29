@@ -194,7 +194,7 @@
                             } else {
                                 h = window.innerHeight;
                             }
-                            var area = [(opt.w || window.innerWidth / 2.4) + 'px', (!opt.h || opt.h > h ? h : opt.h) + 'px'];
+                            var area = [(opt.w || window.innerWidth / 2) + 'px', (!opt.h || opt.h > h ? h : opt.h) + 'px'];
                             return layer.open({
                                 type: 2,
                                 title: title,
@@ -268,16 +268,43 @@
                                 newTitle = document.title.substring(0, newTitle.length);
                                 time--;
                             }, 1000)
+                        },
+                        getNotice:function () {
+                            var that = this;
+                            $.ajax({
+                                url: '/admin/index/Jnotice',
+                                type: 'get',
+                                dataType: 'json',
+                                success: function (rem) {
+                                   that.setNoticeDate(rem.data);
+                                },
+                                error: function (err) {
+
+                                }
+                            })
+                        },
+                        setNoticeDate:function(data)
+                        {
+                            $('#msgcount').html(data.msgcount);
+                            $('#ordernum').html(data.ordernum + '个');
+                            $('#inventory').html(data.inventory + '个');
+                            $('#commentnum').html(data.commentnum + '个');
+                            $('#reflectnum').html(data.reflectnum + '个');
                         }
                     },
                     mounted: function () {
                         window._mpApi = this.globalApi();
+                        this.getNotice();
                         var that = this;
                         $('.admin_close').on('click', function (e) {
                             $('.admin_open').removeClass('open');
                         });
                         var ws = new Socket;
                         ws.setVm(this);
+
+                        this.$on('ADMIN_NEW_PUSH',function (data) {
+                            that.setNoticeDate(data);
+                        })
                         this.$on('NEW_ORDER', function(data){
                             that.$Notice.info({
                                 title: '新订单',

@@ -48,5 +48,16 @@ export default [
       auth: true
     },
     component: () => import("@views/orderAdmin/Statistics.vue")
+  },
+  {
+    path: "/order/order_cancellation",
+    name: "OrderCancellation",
+    meta: {
+      title: "订单核销",
+      keepAlive: true,
+      auth: true,
+      backgroundColor: "#fff"
+    },
+    component: () => import("@views/orderAdmin/OrderCancellation.vue")
   }
 ];

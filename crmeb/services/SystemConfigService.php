@@ -18,6 +18,8 @@ class SystemConfigService
 {
     protected static $configList = null;
 
+    const CACHE_SYSTEM= 'system_config';
+
     public static $ProtectedKey = [
         'wechat_appid', 'wechat_appsecret', 'wechat_token', 'wechat_encodingaeskey', 'wechat_encode',
         'pay_weixin_mchid', 'pay_weixin_client_cert', 'pay_weixin_client_key', 'pay_weixin_key', 'pay_weixin_open',
@@ -25,12 +27,24 @@ class SystemConfigService
         'pay_routine_mchid', 'pay_routine_key', 'pay_routine_client_cert', 'pay_routine_client_key', 'pay_weixin_open'
     ];
 
+    /**
+     * 初始化
+     */
+    protected static function init()
+    {
+        if(!(self::$configList = CacheService::get(self::CACHE_SYSTEM))){
+            self::$configList = self::getAll();
+            CacheService::set('system_config',self::$configList);
+        }
+    }
+
     /**获取系统配置
      * @param $key
      * @return mixed|null
      */
     public static function config($key)
     {
+        self::init();
         if (self::$configList === null) self::$configList = self::getAll();
         return isset(self::$configList[$key]) ? self::$configList[$key] : null;
     }
@@ -39,9 +53,10 @@ class SystemConfigService
      * @param $key
      * @return bool|mixed
      */
-    public static function get($key)
+    public static function get($key,$default = '')
     {
-        return SystemConfig::getConfigValue($key);
+        self::init();
+        return isset(self::$configList[$key]) ? self::$configList[$key] : $default;
     }
 
     /** 获取多个配置

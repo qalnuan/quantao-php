@@ -39,7 +39,7 @@ class Login extends SystemBasic
         $res = SystemAdmin::login($account,$pwd);
         if($res){
             Session::set('login_error',null);
-            return $this->redirect(Url::buildUrl('Index/index'));
+            return $this->successful(['url'=>Url::buildUrl('Index/index')->build()]);
         }else{
             $error['num'] += 1;
             $error['time'] = time();
@@ -60,6 +60,6 @@ class Login extends SystemBasic
     public function logout()
     {
         SystemAdmin::clearLoginInfo();
-        $this->redirect('Login/index');
+        $this->redirect(Url::buildUrl('index')->build());
     }
 }

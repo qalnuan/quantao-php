@@ -23,7 +23,6 @@ use EasyWeChat\Message\Video;
 use EasyWeChat\Message\Voice;
 use EasyWeChat\Payment\Order;
 use EasyWeChat\Server\Guard;
-use think\facade\Route as Url;
 use app\models\store\StoreOrder as StoreOrderWapModel;
 use app\models\user\UserRecharge;
 use think\Response;
@@ -42,6 +41,7 @@ class WechatService
             'token'=>isset($wechat['wechat_token']) ? trim($wechat['wechat_token']) :'',
             'guzzle' => [
                 'timeout' => 10.0, // 超时时间（秒）
+                'verify' => false
             ],
         ];
         if(isset($wechat['wechat_encode']) && (int)$wechat['wechat_encode']>0 && isset($wechat['wechat_encodingaeskey']) && !empty($wechat['wechat_encodingaeskey']))
@@ -52,7 +52,6 @@ class WechatService
                 'key'=>trim($payment['pay_weixin_key']),
                 'cert_path'=>realpath('.'.$payment['pay_weixin_client_cert']),
                 'key_path'=>realpath('.'.$payment['pay_weixin_client_key']),
-                //'notify_url'=>SystemConfigService::get('site_url').Url::buildUrl('wap/Wechat/notify')
                 'notify_url'=>SystemConfigService::get('site_url') . '/api/wechat/notify'
             ];
         }
@@ -472,6 +471,9 @@ class WechatService
         self::paymentService()->handleNotify(function($notify, $successful){
             if($successful && isset($notify->out_trade_no)){
                 if(isset($notify->attach) && $notify->attach){
+                    if(($count = strpos($notify->out_trade_no,'_')) !== false){
+                        $notify->out_trade_no = substr($notify->out_trade_no,$count+1);
+                    }
                     if(strtolower($notify->attach) == 'product'){//TODO  商品订单支付成功后
                         try{
                             if(StoreOrderWapModel::be(['order_id'=>$notify->out_trade_no,'paid'=>1])) return true;
@@ -483,21 +485,6 @@ class WechatService
                         try{
                             if(UserRecharge::be(['order_id'=>$notify->out_trade_no,'paid'=>1])) return true;
                             return UserRecharge::rechargeSuccess($notify->out_trade_no);
-                        }catch (\Exception $e){
-                            return false;
-                        }
-                    } else if (strpos(strtolower($notify->attach),'mutil_pay') !== false){ // 多商户支付
-                        try{
-                            $attachArr = explode('&&',$notify->attach);
-                            $res = true;
-                            foreach ($attachArr as $key => $value) {
-                                if ($value !== 'mutil_pay') {
-                                    if(StoreOrderWapModel::be(['order_id'=>$value,'paid'=>1])) continue;
-                                    $res1 = StoreOrderWapModel::paySuccess($value);
-                                    $res = $res && $res1;
-                                }
-                            }
-                            return $res;
                         }catch (\Exception $e){
                             return false;
                         }
@@ -520,7 +507,7 @@ class WechatService
 
     public static function jsSdk($url = '')
     {
-        $apiList = ['onMenuShareTimeline', 'onMenuShareAppMessage', 'onMenuShareQQ', 'onMenuShareWeibo', 'onMenuShareQZone', 'startRecord', 'stopRecord', 'onVoiceRecordEnd', 'playVoice', 'pauseVoice', 'stopVoice', 'onVoicePlayEnd', 'uploadVoice', 'downloadVoice', 'chooseImage', 'previewImage', 'uploadImage', 'downloadImage', 'translateVoice', 'getNetworkType', 'openLocation', 'getLocation', 'hideOptionMenu', 'showOptionMenu', 'hideMenuItems', 'showMenuItems', 'hideAllNonBaseMenuItem', 'showAllNonBaseMenuItem', 'closeWindow', 'scanQRCode', 'chooseWXPay', 'openProductSpecificView', 'addCard', 'chooseCard', 'openCard'];
+        $apiList = ['editAddress','openAddress','updateTimelineShareData','updateAppMessageShareData','onMenuShareTimeline', 'onMenuShareAppMessage', 'onMenuShareQQ', 'onMenuShareWeibo', 'onMenuShareQZone', 'startRecord', 'stopRecord', 'onVoiceRecordEnd', 'playVoice', 'pauseVoice', 'stopVoice', 'onVoicePlayEnd', 'uploadVoice', 'downloadVoice', 'chooseImage', 'previewImage', 'uploadImage', 'downloadImage', 'translateVoice', 'getNetworkType', 'openLocation', 'getLocation', 'hideOptionMenu', 'showOptionMenu', 'hideMenuItems', 'showMenuItems', 'hideAllNonBaseMenuItem', 'showAllNonBaseMenuItem', 'closeWindow', 'scanQRCode', 'chooseWXPay', 'openProductSpecificView', 'addCard', 'chooseCard', 'openCard'];
         $jsService = self::jsService();
         if($url) $jsService->setUrl($url);
         try{

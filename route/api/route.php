@@ -37,10 +37,12 @@ Route::group(function () {
     Route::get('admin/order/time', 'admin.StoreOrderController/time')->name('adminOrderTime');//订单交易额时间统计
     Route::post('admin/order/offline', 'admin.StoreOrderController/offline')->name('adminOrderOffline');//订单支付
     Route::post('admin/order/refund', 'admin.StoreOrderController/refund')->name('adminOrderRefund');//订单退款
+    Route::post('order/order_verific','order.StoreOrderController/order_verific')->name('order');//订单核销
 })->middleware(\app\http\middleware\AllowOriginMiddleware::class)->middleware(\app\http\middleware\AuthTokenMiddleware::class, true)->middleware(\app\http\middleware\CustomerMiddleware::class);
 
 //会员授权接口
 Route::group(function () {
+
     Route::get('logout', 'AuthController/logout')->name('logout');// 退出登录
     Route::post('switch_h5', 'AuthController/switch_h5')->name('switch_h5');// 切换账号
     Route::post('binding', 'AuthController/binding_phone')->name('bindingPhone');// 绑定手机号
@@ -70,6 +72,9 @@ Route::group(function () {
     Route::post('collect/add', 'user.UserController/collect_add')->name('collectAdd');//添加收藏
     Route::post('collect/del', 'user.UserController/collect_del')->name('collectDel');//取消收藏
     Route::post('collect/all', 'user.UserController/collect_all')->name('collectAll');//批量添加收藏
+
+    Route::get('brokerage_rank','user.UserController/brokerage_rank')->name('brokerageRank');//佣金排行
+    Route::get('rank','user.UserController/rank')->name('rank');//推广人排行
     //用戶类 分享
     Route::post('user/share', 'PublicController/user_share')->name('user_share');//记录用户分享
     //用户类 点赞
@@ -95,8 +100,8 @@ Route::group(function () {
     Route::get('cart/count', 'store.StoreCartController/count')->name('cartCount'); //购物车 获取数量
     //订单类
     Route::post('order/confirm', 'order.StoreOrderController/confirm')->name('orderConfirm'); //订单确认
-    Route::post('order/computed', 'order.StoreOrderController/computedOrder')->name('computedOrder'); //计算订单金额
-    Route::post('order/create', 'order.StoreOrderController/create')->name('orderCreate'); //订单创建
+    Route::post('order/computed/:key', 'order.StoreOrderController/computedOrder')->name('computedOrder'); //计算订单金额
+    Route::post('order/create/:key', 'order.StoreOrderController/create')->name('orderCreate'); //订单创建
     Route::get('order/data', 'order.StoreOrderController/data')->name('orderData'); //订单统计数据
     Route::get('order/list', 'order.StoreOrderController/lst')->name('orderList'); //订单列表
     Route::get('order/detail/:uni', 'order.StoreOrderController/detail')->name('orderDetail'); //订单详情
@@ -156,7 +161,7 @@ Route::group(function () {
     Route::get('category', 'store.CategoryController/category')->name('category');
     //产品类
     Route::post('image_base64', 'PublicController/get_image_base64')->name('getImageBase64');// 获取图片base64
-    Route::get('product/detail/:id', 'store.StoreProductController/detail')->name('detail');//产品详情
+    Route::get('product/detail/:id/[:type]', 'store.StoreProductController/detail')->name('detail');//产品详情
     Route::get('groom/list/:type', 'store.StoreProductController/groom_list')->name('groomList');//获取首页推荐不同类型产品的轮播图和产品
     Route::get('products', 'store.StoreProductController/lst')->name('products');//产品列表
     Route::get('product/hot', 'store.StoreProductController/product_hot')->name('productHot');//为你推荐
@@ -208,7 +213,13 @@ Route::group(function () {
 })->middleware(\app\http\middleware\AllowOriginMiddleware::class)->middleware(\app\http\middleware\AuthTokenMiddleware::class, false);
 
 
-Route::get('test', 'AuthController/test');
 Route::miss(function() {
-    return \think\Response::create()->code(404);
+    if(app()->request->isOptions())
+        return \think\Response::create('ok')->code(200)->header([
+            'Access-Control-Allow-Origin'   => '*',
+            'Access-Control-Allow-Headers'  => 'Authori-zation,Authorization, Content-Type, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, X-Requested-With',
+            'Access-Control-Allow-Methods'  => 'GET,POST,PATCH,PUT,DELETE,OPTIONS,DELETE',
+        ]);
+    else
+        return \think\Response::create()->code(404);
 });

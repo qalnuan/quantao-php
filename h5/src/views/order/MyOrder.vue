@@ -22,31 +22,22 @@
         <div>待付款</div>
         <div class="num">{{ orderData.unpaid_count || 0 }}</div>
       </div>
-      
       <div
-        class="item"
-        :class="{ on: type === 5 }"
-        @click="$router.replace({ path: '/order/list/5' })"
-      >
-        <div>待核销</div>
-        <div class="num">{{ orderData.unchecked_count || 0 }}</div>
-      </div>
-      <!-- <div
         class="item"
         :class="{ on: type === 1 }"
         @click="$router.replace({ path: '/order/list/1' })"
       >
         <div>待发货</div>
         <div class="num">{{ orderData.unshipped_count || 0 }}</div>
-      </div> -->
-      <!-- <div
+      </div>
+      <div
         class="item"
         :class="{ on: type === 2 }"
         @click="$router.replace({ path: '/order/list/2' })"
       >
         <div>待收货</div>
         <div class="num">{{ orderData.received_count || 0 }}</div>
-      </div> -->
+      </div>
       <div
         class="item"
         :class="{ on: type === 3 }"
@@ -182,14 +173,6 @@
             </div>
             <div class="bnt bg-color-red" @click="takeOrder(order)">
               确认收货
-            </div>
-          </template>
-          <template v-if="order._status._type === 5">
-            <div
-              class="bnt bg-color-red"
-              @click="$router.push({ path: '/order/detail/' + order.order_id })"
-            >
-              去核销
             </div>
           </template>
           <template v-if="order._status._type === 3">
@@ -370,7 +353,11 @@ export default {
             that.changeType(type);
             that.getOrderData();
           })
-          .catch(() => {
+          .catch(res => {
+            if (res.status === "WECHAT_H5_PAY")
+              return that.$router.push({
+                path: "/order/status/" + order.order_id + "/5"
+              });
             const type = parseInt(that.$route.params.type) || 0;
             that.changeType(type);
             that.getOrderData();

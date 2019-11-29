@@ -25,77 +25,76 @@
     </div>
     <div v-if="cartList.valid.length > 0 || cartList.invalid.length > 0">
       <div class="list">
-        <div 
-          v-for="(merinfo, mer_index) in cartList.merinfos"
-          :key="mer_index"
+        <div
+          class="item acea-row row-between-wrapper"
+          v-for="(item, index) in cartList.valid"
+          :key="index"
         >
-          <div class="title">{{merinfo.name}}</div>
-          <div
-            class="item acea-row row-between-wrapper"
-            v-for="(index) in merinfo.validindex"
-            :key="index"
-          >
-            <div class="select-btn">
-              <div class="checkbox-wrapper">
-                <label class="well-check">
-                  <input
-                    type="checkbox"
-                    name=""
-                    value=""
-                    :checked="cartList.valid[index].checked"
-                    @click="switchSelect(index)"
-                  />
-                  <i class="icon"></i>
-                </label>
-              </div>
-            </div>
-            <div class="picTxt acea-row row-between-wrapper">
-              <div
-                class="pictrue"
-                @click="$router.push({ path: '/detail/' + cartList.valid[index].product_id })"
-              >
-                <img
-                  :src="cartList.valid[index].productInfo.attrInfo.image"
-                  v-if="cartList.valid[index].productInfo.attrInfo"
+          <div class="select-btn">
+            <div class="checkbox-wrapper">
+              <label class="well-check">
+                <input
+                  type="checkbox"
+                  name=""
+                  value=""
+                  :checked="item.checked"
+                  @click="switchSelect(index)"
                 />
-                <img :src="cartList.valid[index].productInfo.image" v-else />
+                <i class="icon"></i>
+              </label>
+            </div>
+          </div>
+          <div class="picTxt acea-row row-between-wrapper">
+            <div
+              class="pictrue"
+              @click="$router.push({ path: '/detail/' + item.product_id })"
+            >
+              <img
+                :src="item.productInfo.attrInfo.image"
+                v-if="item.productInfo.attrInfo"
+              />
+              <img :src="item.productInfo.image" v-else />
+            </div>
+            <div class="text">
+              <div class="line1">{{ item.productInfo.store_name }}</div>
+              <div class="infor line1" v-if="item.productInfo.attrInfo">
+                属性：{{ item.productInfo.attrInfo.suk }}
               </div>
-              <div class="text">
-                <div class="line1">{{ cartList.valid[index].productInfo.store_name }}</div>
-                <div class="infor line1" v-if="cartList.valid[index].productInfo.attrInfo">
-                  属性：{{ cartList.valid[index].productInfo.attrInfo.suk }}
-                </div>
-                <div class="money">￥{{ cartList.valid[index].truePrice }}</div>
+              <div class="money">￥{{ item.truePrice }}</div>
+            </div>
+            <div class="carnum acea-row row-center-wrapper">
+              <div
+                class="reduce"
+                :class="cartList.valid[index].cart_num <= 1 ? 'on' : ''"
+                @click.prevent="reduce(index)"
+              >
+                -
               </div>
-              <div class="carnum acea-row row-center-wrapper">
-                <div
-                  class="reduce"
-                  :class="cartList.valid[index].cart_num <= 1 ? 'on' : ''"
-                  @click.prevent="reduce(index)"
-                >
-                  -
-                </div>
-                <div class="num">{{ cartList.valid[index].cart_num }}</div>
-                <div
-                  class="plus"
-                  v-if="cartList.valid[index].attrInfo"
-                  :class="cartList.valid[index].cart_num >= cartList.valid[index].attrInfo.stock ? 'on' : ''"
-                  @click.prevent="plus(index)"
-                >
-                  +
-                </div>
-                <div
-                  class="plus"
-                  v-else
-                  :class="
-                    cartList.valid[index].cart_num >= cartList.valid[index].stock
-                      ? 'on'
-                      : ''
-                  "
-                  @click.prevent="plus(index)"
-                >
-                  +
-                </div>
+              <div class="num">{{ item.cart_num }}</div>
+              <div
+                class="plus"
+                v-if="cartList.valid[index].attrInfo"
+                :class="
+                  cartList.valid[index].cart_num >=
+                  cartList.valid[index].attrInfo.stock
+                    ? 'on'
+                    : ''
+                "
+                @click.prevent="plus(index)"
+              >
+                +
+              </div>
+              <div
+                class="plus"
+                v-else
+                :class="
+                  cartList.valid[index].cart_num >= cartList.valid[index].stock
+                    ? 'on'
+                    : ''
+                "
+                @click.prevent="plus(index)"
+              >
+                +
               </div>
             </div>
           </div>
@@ -206,7 +205,7 @@ export default {
   props: {},
   data: function() {
     return {
-      cartList: { invalid: [], valid: [], merlist: {} },
+      cartList: { invalid: [], valid: [] },
       isAllSelect: false,
       cartCount: 0,
       countmoney: 0,
@@ -244,14 +243,21 @@ export default {
         let checkedIds = cookie.get(CHECKED_IDS) || [];
         if (!Array.isArray(checkedIds)) checkedIds = [];
         this.cartList.valid.forEach(cart => {
-          if (checkedIds.indexOf(cart.id) !== -1) cart.checked = true;
+          if (checkedIds.length) {
+            if (checkedIds.indexOf(cart.id) !== -1) cart.checked = true;
+            else cart.checked = false;
+          } else {
+            cart.checked = true;
+            that.checkedIds.push(cart.id);
+          }
         });
         if (checkedIds.length) {
           that.checkedIds = checkedIds;
-          that.isAllSelect = checkedIds.length === this.cartList.valid.length;
-          that.carnum();
-          that.countMoney();
         }
+        that.isAllSelect =
+          that.checkedIds.length === this.cartList.valid.length;
+        that.carnum();
+        that.countMoney();
         this.loaded = true;
       });
     },

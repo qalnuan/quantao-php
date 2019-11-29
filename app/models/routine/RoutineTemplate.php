@@ -50,7 +50,6 @@ class RoutineTemplate
             $data['keyword2'] =  $order['delivery_name'];
             $data['keyword3'] =  $order['delivery_id'];
             $data['keyword4'] =  date('Y-m-d H:i:s',time());
-            $data['keyword5'] =  '您的商品已经发货请注意查收';
             return self::sendOut('ORDER_DELIVER_SUCCESS',$order['uid'],$data);
         }
     }

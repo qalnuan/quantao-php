@@ -8,10 +8,11 @@ Page({
    */
   data: {
     bargainList:[],
-    offset:0,
+    page:0,
     limit:20,
-    status:false,
-    userInfo:'',
+    loading:false,
+    loadend:false,
+    userInfo:{},
     navH:''
   },
 
@@ -22,7 +23,6 @@ Page({
     this.setData({
       navH: app.globalData.navHeight
     });
-    console.log(app.globalData.navHeight+'aa');
   },
   goBack:function(){
     wx.navigateBack({ delta: 1 })
@@ -35,16 +35,18 @@ Page({
   },
   getBargainList:function(){
     var that = this;
-    if (that.data.status) return;
-    var offset = that.data.offset;
-    var limit = that.data.limit;
-    var data = { offset: offset, limit:limit};
-    getBargainList(data).then(function (res) {
+    if (that.data.loadend) return;
+    if (that.data.loading) return;
+    that.setData({loading:true});
+    getBargainList({page:that.data.page,limit:that.data.limit}).then(function (res) {
       that.setData({ 
-        bargainList: res.data,
-        offset: Number(offset) + Number(limit),
-        status: limit > res.data.length,
+        bargainList: that.data.bargainList.concat(res.data),
+        page: that.data.page+1,
+        loadend: that.data.limit > res.data.length,
+        loading:false
       });
+     }).catch(res=>{
+       that.setData({loading:false});
      });
   },
   /**

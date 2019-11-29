@@ -62,7 +62,7 @@
         <div class="item acea-row row-between-wrapper">
           <div class="name">微信号</div>
           <div class="input">
-            <input placeholder="请填写微信号" v-model="post.weixin" />
+            <input placeholder="请输入微信号" v-model="post.weixin" />
           </div>
         </div>
         <div class="item acea-row row-between-wrapper">

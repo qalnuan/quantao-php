@@ -79,7 +79,7 @@ Page({
     })
     if (this.data.active == 0) this.getArticleHot();
     else{
-      this.setData({ articleList: [], first: 0, status: false});
+      this.setData({ articleList: [], page: 1, status: false});
       this.getCidArticle();
     }
   },
@@ -97,6 +97,7 @@ Page({
     this.getArticleHot();
     this.getArticleBanner();
     this.getArticleCate();
+    this.setData({ status: false, page: 1, articleList:[]});
     this.getCidArticle();
   },
 

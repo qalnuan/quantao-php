@@ -130,7 +130,7 @@ class StoreCombination extends BaseModel
         if(isset($where['mer_id']) && $where['mer_id']!=''){
             $model = $model->where('mer_id',$where['mer_id']);
         }
-        $statistics['browseCount'] = $model->find()->toArray()['browse'];//总展现量
+        $statistics['browseCount'] = self::value('sum(browse) as browse');//总展现量
         $statistics['browseCount'] = $statistics['browseCount'] ? $statistics['browseCount'] : 0;
         $statistics['visitCount'] = Db::name('store_visit')->where('product_type','combination')->count();//访客人数
         $statistics['partakeCount'] = StorePink::getCountPeopleAll(0, $where);//参与人数
@@ -204,7 +204,7 @@ class StoreCombination extends BaseModel
         $model = $model->where('c.is_del',0);
         $model = $model->where('c.id',$id);
         $model = $model->where('c.start_time','<',time());
-        $model = $model->where('c.stop_time','>',time()-86400);
+        $model = $model->where('c.stop_time','>',time() - 'c.effective_time');
         $list = $model->find();
         if($list) return $list->toArray();
         else return [];
@@ -409,7 +409,7 @@ class StoreCombination extends BaseModel
      */
     public static function ProfityTop10($where){
         $classs=['layui-bg-red','layui-bg-orange','layui-bg-green','layui-bg-blue','layui-bg-cyan'];
-        $model = StoreOrder::alias('a')->join('__store_combination__ b','b.id = a.combination_id')->where('a.paid',1);
+        $model = StoreOrder::alias('a')->join('store_combination b','b.id = a.combination_id')->where('a.paid',1);
         $list=self::getModelTime($where,$model,'a.add_time')->group('a.seckill_id')->order('profity desc')->limit(10)
             ->field('count(a.combination_id) as p_count,b.title as store_name,sum(b.price) as sum_price,(b.price-b.cost) as profity')
             ->select();
@@ -433,7 +433,7 @@ class StoreCombination extends BaseModel
     }
     public static function getMaxList($where){
         $classs=['layui-bg-red','layui-bg-orange','layui-bg-green','layui-bg-blue','layui-bg-cyan'];
-        $model=StoreOrder::alias('a')->join('__store_combination__ b','b.id=a.combination_id')->where('a.paid',1);
+        $model=StoreOrder::alias('a')->join('store_combination b','b.id=a.combination_id')->where('a.paid',1);
         $list=self::getModelTime($where,$model,'a.add_time')->group('a.combination_id')->order('p_count desc')->limit(10)
             ->field('count(a.combination_id) as p_count,b.title as store_name,sum(b.price) as sum_price')->select();
         if(count($list)) $list=$list->toArray();
@@ -461,7 +461,7 @@ class StoreCombination extends BaseModel
      * @return mixed
      */
     public static function getBargainRefundList($where = array()){
-        $model = StoreOrder::alias('a')->join('__store_combination__ b','b.id=a.combination_id');
+        $model = StoreOrder::alias('a')->join('store_combination b','b.id=a.combination_id');
         $list = self::getModelTime($where,$model,'a.add_time')->where('a.refund_status','<>',0)->group('a.combination_id')
             ->order('count desc')->page((int)$where['page'],(int)$where['limit'])
             ->field('count(a.combination_id) as count,b.title as store_name,sum(b.price) as sum_price')

@@ -215,7 +215,7 @@ import {
 } from "@api/activity";
 import { postCartAdd } from "@api/store";
 import { mapGetters } from "vuex";
-import { openShareAppMessage, openShareTimeline, ready } from "@libs/wechat";
+import { wechatEvevt } from "@libs/wechat";
 import { isWeixin } from "@utils/index";
 
 const NAME = "DargainDetails";
@@ -277,7 +277,7 @@ export default {
       var partake = parseInt(that.$route.params.partake);
       if (partake === undefined || partake <= 0 || isNaN(partake)) {
         that.bargainPartake = that.userInfo.uid;
-        that.$router.push({
+        return that.$router.replace({
           path:
             "/activity/dargain_detail/" +
             that.bargainId +
@@ -290,19 +290,27 @@ export default {
       that.getBargainShare(0);
       if (that.bargainPartake === that.userInfo.uid) that.getBargainStart();
       else that.getBargainStartUser();
+      console.log(
+        typeof that.bargainPartake,
+        that.bargainPartake,
+        typeof that.userInfo.uid,
+        that.userInfo.uid,
+        that.userBargainStatus,
+        that.surplusPrice
+      );
     },
     setOpenShare: function() {
       var that = this;
-      var configAppMessage = {
-        desc: "您的好友" + that.userInfo.nickname + "邀请您砍价",
-        title: that.bargain.title,
-        link:
-          window.location.protocol +
-          "//" +
-          window.location.host +
-          that.$router.currentRoute.path,
-        imgUrl: that.bargain.image
-      };
+      // var configAppMessage = {
+      //   desc: "您的好友" + that.userInfo.nickname + "邀请您砍价",
+      //   title: that.bargain.title,
+      //   link:
+      //     window.location.protocol +
+      //     "//" +
+      //     window.location.host +
+      //     that.$router.currentRoute.path,
+      //   imgUrl: that.bargain.image
+      // };
 
       var configTimeline = {
         title:
@@ -310,6 +318,7 @@ export default {
           that.userInfo.nickname +
           "邀请您砍价" +
           that.bargain.title,
+        desc: that.bargain.info,
         link:
           window.location.protocol +
           "//" +
@@ -318,12 +327,19 @@ export default {
         imgUrl: that.bargain.image
       };
       if (isWeixin() === true) {
-        console.log(1111);
-        ready().then(() => {
-          console.log(2222);
-          openShareAppMessage(configAppMessage);
-          openShareTimeline(configTimeline);
-        });
+        wechatEvevt(
+          ["updateAppMessageShareData", "updateTimelineShareData"],
+          configTimeline
+        )
+          .then(res => {
+            console.log(res);
+          })
+          .catch(res => {
+            if (res.is_ready) {
+              res.wx.updateAppMessageShareData(configTimeline);
+              res.wx.updateTimelineShareData(configTimeline);
+            }
+          });
       }
     },
     updateTitle() {

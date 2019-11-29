@@ -58,6 +58,11 @@ class StoreProduct extends BaseModel
         else return false;
     }
 
+    public static function getGoodList($limit=18,$field='*')
+    {
+        return self::validWhere()->where('is_good',1)->order('sort desc,id desc')->limit($limit)->field($field)->select();
+    }
+
     public static function validWhere()
     {
         return self::where('is_del', 0)->where('is_show', 1);
@@ -73,6 +78,7 @@ class StoreProduct extends BaseModel
         $news = $data['news'];
         $page = $data['page'];
         $limit = $data['limit'];
+        $type = $data['type']; // 某些模板需要购物车数量 1 = 需要查询，0 = 不需要
         $model = self::validWhere();
         if ($sId) {
             $product_ids = Db::name('store_product_cate')->where('cate_id', $sId)->column('product_id');
@@ -98,7 +104,14 @@ class StoreProduct extends BaseModel
         if ($salesOrder) $baseOrder = $salesOrder == 'desc' ? 'sales DESC' : 'sales ASC';//虚拟销量
         if ($baseOrder) $baseOrder .= ', ';
         $model->order($baseOrder . 'sort DESC, add_time DESC');
-        $list = $model->page((int)$page, (int)$limit)->field('id,store_name,cate_id,image,IFNULL(sales,0) + IFNULL(ficti,0) as sales,price,stock')->select();
+        $list = $model->page((int)$page, (int)$limit)->field('id,store_name,cate_id,image,IFNULL(sales,0) + IFNULL(ficti,0) as sales,price,stock')->select()->each(function ($item) use($uid,$type){
+            if($type) {
+                $item['is_att'] = StoreProductAttrValueModel::where('product_id', $item['id'])->count() ? true : false;
+                if ($uid) $item['cart_num'] = StoreCart::where('is_pay', 0)->where('is_del', 0)->where('is_new', 0)->where('type', 'product')->where('product_id', $item['id'])->where('uid', $uid)->value('cart_num');
+                else $item['cart_num'] = 0;
+                if (is_null($item['cart_num'])) $item['cart_num'] = 0;
+            }
+        });
         $list = count($list) ? $list->toArray() : [];
         return self::setLevelPrice($list, $uid);
     }
@@ -286,6 +299,13 @@ class StoreProduct extends BaseModel
             : StoreProductAttr::uniqueByStock($uniqueId);
     }
 
+    /**
+     * 加销量减销量
+     * @param $num
+     * @param $productId
+     * @param string $unique
+     * @return bool
+     */
     public static function decProductStock($num, $productId, $unique = '')
     {
         if ($unique) {
@@ -298,19 +318,21 @@ class StoreProduct extends BaseModel
             $stock = self::where('id', $productId)->value('stock');
             $replenishment_num = SystemConfigService::get('store_stock') ?? 0;//库存预警界限
             if($replenishment_num >= $stock){
-                ChannelService::instance()->send('STORE_STOCK', ['id'=>$productId]);
+                try{
+                    ChannelService::instance()->send('STORE_STOCK', ['id'=>$productId]);
+                }catch (\Exception $e){}
             }
         }
         return $res;
     }
 
-    /*
+    /**
      * 减少销量,增加库存
      * @param int $num 增加库存数量
      * @param int $productId 产品id
      * @param string $unique 属性唯一值
      * @return boolean
-     * */
+     */
     public static function incProductStock($num, $productId, $unique = '')
     {
         $product = self::where('id', $productId)->field(['sales', 'stock'])->find();
@@ -329,6 +351,12 @@ class StoreProduct extends BaseModel
         return $res;
     }
 
+    /**
+     * 获取产品分销佣金最低和最高
+     * @param $storeInfo
+     * @param $productValue
+     * @return int|string
+     */
     public static function getPacketPrice($storeInfo, $productValue)
     {
         $store_brokerage_ratio = SystemConfigService::get('store_brokerage_ratio');
@@ -370,9 +398,12 @@ class StoreProduct extends BaseModel
         }
     }
 
-    /*
+    /**
      * 获取二维数组中最大的值
-     * */
+     * @param $arr
+     * @param $field
+     * @return int|string
+     */
     public static function getArrayMax($arr, $field)
     {
         $temp = [];
@@ -386,9 +417,12 @@ class StoreProduct extends BaseModel
         return 0;
     }
 
-    /*
+    /**
      * 获取二维数组中最小的值
-     * */
+     * @param $arr
+     * @param $field
+     * @return int|string
+     */
     public static function getArrayMin($arr, $field)
     {
         $temp = [];
@@ -411,4 +445,18 @@ class StoreProduct extends BaseModel
     {
         return self::whereIn('id', $productIds)->column('store_name,image', 'id');
     }
+
+    /**
+     * TODO 获取某个字段值
+     * @param $id
+     * @param string $field
+     * @return mixed
+     */
+    public static function getProductField($id,$field = 'store_name'){
+        if(is_array($id))
+            return self::where('id','in',$id)->field($field)->select();
+        else
+            return self::where('id',$id)->value($field);
+    }
+
 }

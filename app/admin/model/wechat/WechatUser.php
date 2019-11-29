@@ -235,7 +235,7 @@ use app\admin\model\order\StoreOrderStatus;
                      $uids = array_merge($uids);
                  }
                  $item['extract_sum_price'] = self::getModelTime($where,UserExtract::where('uid',$item['uid']))->sum('extract_price');
-                 $item['extract_count_price'] = UserExtract::getUserCountPrice($item['uid'].$where);//累计提现金额
+                 $item['extract_count_price'] = UserExtract::getUserCountPrice($item['uid']);//累计提现金额
                  $item['extract_count_num'] = UserExtract::getUserCountNum($item['uid'],$where);//提现次数
                  $item['order_price'] = count($uids) ? StoreOrder::where('uid','in',$uids)->where(['paid'=>1,'refund_status'=>0])->sum('pay_price') : 0;//订单金额
                  $item['order_count'] = count($uids) ? StoreOrder::where('uid','in',$uids)->where(['paid'=>1,'refund_status'=>0])->count() : 0;//订单数量
@@ -298,7 +298,7 @@ use app\admin\model\order\StoreOrderStatus;
                  $uids = array_merge($uids);
              }
              $item['extract_sum_price'] = self::getModelTime($where,UserExtract::where('uid',$item['uid']))->sum('extract_price');
-             $item['extract_count_price'] = UserExtract::getUserCountPrice($item['uid'],$where);//累计提现金额
+             $item['extract_count_price'] = UserExtract::getUserCountPrice($item['uid']);//累计提现金额
              $item['extract_count_num'] = UserExtract::getUserCountNum($item['uid'],$where);//提现次数
              $item['order_price'] = count($uids) ? StoreOrder::where('uid','in',$uids)->where(['paid'=>1,'refund_status'=>0])->sum('pay_price') : 0;//订单金额
              $item['order_count'] = count($uids) ? StoreOrder::where('uid','in',$uids)->where(['paid'=>1,'refund_status'=>0])->count() : 0;//订单数量
@@ -539,7 +539,7 @@ use app\admin\model\order\StoreOrderStatus;
      public static function getStairList($where)
      {
          if(!isset($where['uid'])) return [];
-         $data = self::setSairWhere($where,new User())->page((int)$where['page'],(int)$where['limit'])->select();
+         $data = self::setSairWhere($where,new User())->order('add_time desc')->page((int)$where['page'],(int)$where['limit'])->select();
          $data = count($data) ? $data->toArray() : [];
          $userInfo = User::where('uid',$where['uid'])->find();
          foreach ($data as &$item){
@@ -574,7 +574,7 @@ use app\admin\model\order\StoreOrderStatus;
              $item['number_price'] = UserBill::where(['category'=>'now_money','type'=>'brokerage','link_id'=>$item['id']])->value('number');
              $item['_pay_time'] = date('Y-m-d H:i:s',$item['pay_time']);
              $item['_add_time'] = date('Y-m-d H:i:s',$item['add_time']);
-             $item['verify_time'] = ($change_time = StoreOrderStatus::where(['change_type'=>'verfiy_success','oid'=>$item['id']])->value('change_time')) ?
+             $item['take_time'] = ($change_time = StoreOrderStatus::where(['change_type'=>'user_take_delivery','oid'=>$item['id']])->value('change_time')) ?
                  date('Y-m-d H:i:s',$change_time) : '暂无';
          }
          $count = self::setSairOrderWhere($where,new StoreOrder())->count();
@@ -719,7 +719,7 @@ use app\admin\model\order\StoreOrderStatus;
 
      public static function clearUserTag()
      {
-         Cache::deleteItem('_wechat_tag');
+         Cache::delete('_wechat_tag');
      }
 
      public static function getUserGroup()
@@ -738,7 +738,8 @@ use app\admin\model\order\StoreOrderStatus;
 
      public static function clearUserGroup()
      {
-         Cache::rm('_wechat_group');
+
+         Cache::delete('_wechat_group');
      }
 
      /**

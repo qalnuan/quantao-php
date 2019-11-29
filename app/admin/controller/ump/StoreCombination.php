@@ -90,6 +90,7 @@ class StoreCombination extends AuthController
         $f[] = Form::dateTimeRange('section_time','拼团时间');
         $f[] = Form::frameImageOne('image','产品主图片(305*305px)',Url::buildUrl('admin/widget.images/index',array('fodder'=>'image')),$product->getData('image'))->icon('image')->width('100%')->height('500px');
         $f[] = Form::frameImages('images','产品轮播图(640*640px)',Url::buildUrl('admin/widget.images/index',array('fodder'=>'images')),json_decode($product->getData('slider_image')))->maxLength(5)->icon('images')->width('100%')->height('500px');
+        $f[] = Form::number('effective_time','拼团时效(单位 小时)',24)->placeholder('请输入拼团有效时间，单位：小时');
         $f[] = Form::number('price','拼团价')->min(0)->col(12);
         $f[] = Form::number('people','拼团人数')->min(2)->col(12);
         $f[] = Form::number('stock','库存',$product->getData('stock'))->min(0)->precision(0)->col(12);
@@ -125,6 +126,7 @@ class StoreCombination extends AuthController
         $f[] = Form::dateTimeRange('section_time','拼团时间');
         $f[] = Form::frameImageOne('image','产品主图片(305*305px)',Url::buildUrl('admin/widget.images/index',array('fodder'=>'image')))->icon('image')->width('100%')->height('500px');
         $f[] = Form::frameImages('images','产品轮播图(640*640px)',Url::buildUrl('admin/widget.images/index',array('fodder'=>'images')))->maxLength(5)->icon('images')->width('100%')->height('500px');
+        $f[] = Form::number('effective_time','拼团时效')->placeholder('请输入拼团订单有效时间，单位：小时');
         $f[] = Form::number('price','拼团价')->min(0)->col(12);
         $f[] = Form::number('people','拼团人数')->min(2)->col(12);
         $f[] = Form::number('stock','库存')->min(0)->precision(0)->col(12);
@@ -153,6 +155,7 @@ class StoreCombination extends AuthController
             ['image',''],
             ['images',[]],
             ['section_time',[]],
+            ['effective_time',0],
             'postage',
             'price',
             'people',
@@ -167,6 +170,7 @@ class StoreCombination extends AuthController
         if(!$data['info']) return Json::fail('请输入拼团简介');
         if(!$data['image']) return Json::fail('请上传产品图片');
         if(count($data['images'])<1) return Json::fail('请上传产品轮播图');
+        if($data['effective_time'] == 0 || $data['effective_time'] < 0) return Json::fail('请输入拼团有效时间');
         if($data['price'] == '' || $data['price'] < 0) return Json::fail('请输入产品售价');
         if($data['people'] == '' || $data['people'] < 1) return Json::fail('请输入拼团人数');
         if(count($data['section_time'])<1) return Json::fail('请选择活动时间');
@@ -210,6 +214,7 @@ class StoreCombination extends AuthController
         $f[] = Form::dateTimeRange('section_time','拼团时间',date("Y-m-d H:i:s",$product->getData('start_time')),date("Y-m-d H:i:s",$product->getData('stop_time')));
         $f[] = Form::frameImageOne('image','产品主图片(305*305px)',Url::buildUrl('admin/widget.images/index',array('fodder'=>'image')),$product->getData('image'))->icon('image')->width('100%')->height('500px');
         $f[] = Form::frameImages('images','产品轮播图(640*640px)',Url::buildUrl('admin/widget.images/index',array('fodder'=>'images')),json_decode($product->getData('images')))->maxLength(5)->icon('images')->width('100%')->height('500px');
+        $f[] = Form::number('effective_time','拼团时效(单位 小时)',$product->getData('effective_time'))->placeholder('请输入拼团订单有效时间，单位：小时');
         $f[] = Form::number('price','拼团价',$product->getData('price'))->min(0)->col(12);
         $f[] = Form::number('people','拼团人数',$product->getData('people'))->min(2)->col(12);
         $f[] = Form::number('stock','库存',$product->getData('stock'))->min(0)->precision(0)->col(12);
@@ -352,7 +357,7 @@ class StoreCombination extends AuthController
      */
     public function upload()
     {
-        $res = Upload::image('file','store/product/'.date('Ymd'));
+        $res = Upload::getInstance()->setUploadPath('store/product/'.date('Ymd'))->image('file');
         if(is_array($res)){
             SystemAttachment::attachmentAdd($res['name'],$res['size'],$res['type'],$res['dir'],$res['thumb_path'],2,$res['image_type'],$res['time']);
             return Json::successful('图片上传成功!',['name'=>$res['name'],'url'=>Upload::pathToUrl($res['thumb_path'])]);

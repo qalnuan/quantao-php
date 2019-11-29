@@ -7,7 +7,7 @@
     <div class="nav acea-row row-between-wrapper">
       <div class="money">
         ￥<span class="num" v-text="storeInfo.price"></span
-        ><span class="y-money" v-text="'￥' + storeInfo.price"></span>
+        ><span class="y-money" v-text="'￥' + storeInfo.ot_price"></span>
       </div>
       <div class="acea-row row-middle">
         <div class="times">
@@ -72,6 +72,9 @@ import StorePoster from "@components/StorePoster";
 import { getSeckillDetail } from "@api/activity";
 import { postCartAdd } from "@api/store";
 import { imageBase64 } from "@api/public";
+import { isWeixin } from "@utils/index";
+import { openShareAll } from "@libs/wechat";
+
 const NAME = "SeckillDetails";
 
 export default {
@@ -130,7 +133,7 @@ export default {
       var that = this;
       let id = that.$route.params.id;
       that.datatime = parseInt(that.$route.params.time);
-      getSeckillDetail(id, that.datatime).then(res => {
+      getSeckillDetail(id).then(res => {
         that.$set(that, "storeInfo", res.data.storeInfo);
         that.$set(that, "imgUrls", res.data.storeInfo.images);
         that.$set(that, "replyCount", res.data.replyCount);
@@ -147,18 +150,24 @@ export default {
         that.setProductSelect();
         that.domStatus = true;
         that.getImageBase64();
+        that.setShare();
       });
+    },
+    setShare: function() {
+      isWeixin() &&
+        openShareAll({
+          desc: this.storeInfo.info,
+          title: this.storeInfo.title,
+          link: location.href,
+          imgUrl: this.storeInfo.image
+        });
     },
     getImageBase64: function() {
       let that = this;
-      imageBase64(this.posterData.image, that.posterData.code)
-        .then(res => {
-          that.posterData.image = res.data.image;
-          that.posterData.code = res.data.code;
-        })
-        .catch(res => {
-          that.$dialog.error(res.msg);
-        });
+      imageBase64(this.posterData.image, that.posterData.code).then(res => {
+        that.posterData.image = res.data.image;
+        that.posterData.code = res.data.code;
+      });
     },
     updateTitle() {
       document.title = this.storeInfo.title || this.$route.meta.title;

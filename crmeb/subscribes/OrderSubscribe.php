@@ -7,8 +7,17 @@
 
 namespace crmeb\subscribes;
 
+use think\Event;
 use app\admin\model\order\StoreOrder as AdminStoreOrder;
 use app\models\store\StoreOrder;
+use app\models\user\User;
+use crmeb\repositories\NoticeRepositories;
+use crmeb\services\workerman\ChannelService;
+
+use app\models\store\StoreOrderCartInfo;
+use crmeb\services\SystemConfigService;
+use crmeb\services\YLYService;
+use think\facade\Log;
 
 /**
  * 订单事件
@@ -110,4 +119,22 @@ class OrderSubscribe
         StoreOrder::RegressionStock($order) && StoreOrder::RegressionIntegral($order) && StoreOrder::RegressionCoupon($order);
     }
 
+    /**
+     * 订单支付成功
+     * @param array $event
+     */
+    public function onOrderPaySuccess($event)
+    {
+        list($order,$formId) = $event;
+        //更新用户支付订单数量
+        User::bcInc($order['uid'], 'pay_count', 1, 'uid');
+        //发送模版消息、客服消息、短信、小票打印给客户和管理员
+        NoticeRepositories::noticeOrderPaySuccess($order,$formId);
+        //检测会员等级
+        event('UserLevelAfter', [$order['uid']]);
+
+
+        //向后台发送新订单消息
+        ChannelService::instance()->send('NEW_ORDER', ['order_id'=>$order['order_id']]);
+    }
 }

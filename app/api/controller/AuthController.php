@@ -24,6 +24,14 @@ use think\facade\Session;
 
 class AuthController
 {
+    /**
+     * H5账号登陆
+     * @param Request $request
+     * @return mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
     public function login(Request $request)
     {
 
@@ -114,6 +122,7 @@ class AuthController
             return app('json')->fail('验证码错误');
         if(strlen(trim($password)) < 6 || strlen(trim($password)) > 16)
             return app('json')->fail('密码必须是在6到16位之间');
+        if($password == '123456') return app('json')->fail('密码太过简单，请输入较为复杂的密码');
         $registerStatus = User::register($account, $password, $spread);
         if($registerStatus) return app('json')->success('注册成功');
         return app('json')->fail(User::getErrorInfo('注册失败'));
@@ -140,6 +149,7 @@ class AuthController
             return app('json')->fail('验证码错误');
         if(strlen(trim($password)) < 6 || strlen(trim($password)) > 16)
             return app('json')->fail('密码必须是在6到16位之间');
+        if($password == '123456') return app('json')->fail('密码太过简单，请输入较为复杂的密码');
         $resetStatus = User::reset($account, $password);
         if($resetStatus) return app('json')->success('修改成功');
         return app('json')->fail(User::getErrorInfo('修改失败'));
@@ -191,10 +201,14 @@ class AuthController
             return app('json')->fail('登录失败');
     }
 
-    /*
+    /**
      * H5切换登陆
-     *
-     * */
+     * @param Request $request
+     * @return mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
     public function switch_h5(Request $request){
         $from = $request->post('from','wechat');
         $user = $request->user();
@@ -245,11 +259,14 @@ class AuthController
             return app('json')->fail('登录失败');
     }
 
-
-    /*
+    /**
      * 绑定手机号
-     *
-     * */
+     * @param Request $request
+     * @return mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
     public function binding_phone(Request $request){
         list($phone,$captcha,$step) = UtilService::postMore([
             ['phone',''],

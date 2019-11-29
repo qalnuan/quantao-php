@@ -11,7 +11,7 @@
 		"minified": true,
 		"newFeature": true,
 		"coverView": true,
-		"nodeModules": true,
+		"nodeModules": false,
 		"autoAudits": false,
 		"uglifyFileName": true,
 		"checkInvalidKey": true,
@@ -24,9 +24,9 @@
 		}
 	},
 	"compileType": "miniprogram",
-	"libVersion": "2.7.7",
-	"appid": "",
-	"projectname": "crmeb_v3.0%E6%96%B0%E5%95%86%E5%9F%8E",
+	"libVersion": "2.8.2",
+	"appid": "wx6ca9ac1a01f617a1",
+	"projectname": "crmeb_v3.0%E6%96%B0%E5%95%86%E5%9F%8E111",
 	"debugOptions": {
 		"hidedInDevtools": []
 	},
@@ -51,7 +51,7 @@
 			"list": []
 		},
 		"miniprogram": {
-			"current": 27,
+			"current": 30,
 			"list": [
 				{
 					"id": 0,
@@ -71,7 +71,7 @@
 					"id": 2,
 					"name": "订单详情",
 					"pathName": "pages/order_details/index",
-					"query": "cartId=444",
+					"query": "order_id=wx156895994978031799",
 					"scene": null
 				},
 				{
@@ -246,6 +246,27 @@
 					"id": -1,
 					"name": "余额充值",
 					"pathName": "pages/user_payment/index",
+					"query": "",
+					"scene": null
+				},
+				{
+					"id": -1,
+					"name": "产品详情",
+					"pathName": "pages/goods_details/index",
+					"query": "id=2",
+					"scene": null
+				},
+				{
+					"id": -1,
+					"name": "详情",
+					"pathName": "pages/news_details/index",
+					"query": "id=1",
+					"scene": null
+				},
+				{
+					"id": -1,
+					"name": "推广人",
+					"pathName": "pages/promoter_rank/index",
 					"query": "",
 					"scene": null
 				}

@@ -114,9 +114,13 @@ class StoreSeckillController
         if(!$imageInfo){
             $codeUrl = UtilService::setHttpType($siteUrl.'/activity/seckill_detail/'.$id.'/'.$time, 1);//二维码链接
             $imageInfo = UtilService::getQRCodePath($codeUrl, $name);
-            if(!$imageInfo) return app('json')->fail('二维码生成失败');
-            SystemAttachment::attachmentAdd($imageInfo['name'],$imageInfo['size'],$imageInfo['type'],$imageInfo['dir'],$imageInfo['thumb_path'],1,$imageInfo['image_type'],$imageInfo['time'],2);
-            $url = $imageInfo['dir'];
+            if(is_array($imageInfo)){
+                SystemAttachment::attachmentAdd($imageInfo['name'],$imageInfo['size'],$imageInfo['type'],$imageInfo['dir'],$imageInfo['thumb_path'],1,$imageInfo['image_type'],$imageInfo['time'],2);
+                $url = $imageInfo['dir'];
+            }else {
+                $url = '';
+                $imageInfo = ['image_type'=>0];
+            }
         }else $url = $imageInfo['att_dir'];
         if($imageInfo['image_type'] == 1) $url = $siteUrl.$url;
         $storeInfo['image'] = UtilService::setSiteUrl($storeInfo['image'], $siteUrl);

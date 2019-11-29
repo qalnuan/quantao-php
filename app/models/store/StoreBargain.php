@@ -66,11 +66,12 @@ class StoreBargain extends BaseModel
      * @return array
      */
     public static function getList($page = 0,$limit = 20,$field = 'id,product_id,title,price,min_price,image'){
-        $model = self::validWhere();
-        if($page) $list = $model->field($field)->page($page,$limit)->select()->each(function ($item){ $item['people'] = count(StoreBargainUser::getUserIdList($item['id']));});
-        else  $list = $model->field($field)->select()->each(function ($item){ $item['people'] = count(StoreBargainUser::getUserIdList($item['id']));});
-        if($list) return $list->toArray();
-        else return [];
+        $model = self::validWhere()->field($field);
+        if($page) $model = $model->page($page,$limit);
+        $list = $model->select()->each(function ($item){
+            $item['people'] = count(StoreBargainUser::getUserIdList($item['id']));
+        });
+        return $list ? $list->toArray() : [];
     }
 
     /**
@@ -83,7 +84,7 @@ class StoreBargain extends BaseModel
      * @throws \think\db\exception\ModelNotFoundException
      * @throws \think\exception\DbException
      */
-    public static function getBargainTerm($bargainId = 0,$field = 'id,product_id,bargain_num,num,unit_name,image,title,price,min_price,image,description,start_time,stop_time,rule'){
+    public static function getBargainTerm($bargainId = 0,$field = 'id,product_id,bargain_num,num,unit_name,image,title,price,min_price,image,description,start_time,stop_time,rule,info'){
         if(!$bargainId) return [];
         $model = self::validWhere();
         $bargain = $model->field($field)->where('id',$bargainId)->find();
@@ -178,11 +179,11 @@ class StoreBargain extends BaseModel
      */
     public static function IncBargainStock($num,$bargainId)
     {
-        $bargain=self::where('id',$bargainId)->field(['stock','sales'])->find();
+        $bargain = self::where('id',$bargainId)->field(['stock','sales'])->find();
         if(!$bargain) return true;
-        if($bargain->sales > 0) $bargain->sales=bcsub($bargain->sales,$num,0);
-        if($bargain->sales < 0) $bargain->sales=0;
-        $bargain->stock=bcadd($bargain->stock,$num,0);
+        if($bargain->sales > 0) $bargain->sales = bcsub($bargain->sales,$num,0);
+        if($bargain->sales < 0) $bargain->sales = 0;
+        $bargain->stock = bcadd($bargain->stock,$num,0);
         return $bargain->save();
     }
 

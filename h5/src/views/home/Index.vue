@@ -16,7 +16,7 @@
             <img :src="item.pic" />
           </router-link>
         </swiper-slide>
-        <div class="swiper-pagination" slot="pagination"></div>
+        <div class="swiper-pagination paginationBanner" slot="pagination"></div>
       </swiper>
     </div>
     <div class="nav acea-row" v-if="menus.length >0">
@@ -251,7 +251,7 @@ import PromotionGood from "@components/PromotionGood";
 import CouponWindow from "@components/CouponWindow";
 import { getHomeData, getShare } from "@api/public";
 import cookie from "@utils/store/cookie";
-import { openShareAppMessage, openShareTimeline, ready } from "@libs/wechat";
+import { openShareAll } from "@libs/wechat";
 import { isWeixin } from "@utils/index";
 
 const HAS_COUPON_WINDOW = "has_coupon_window";
@@ -282,12 +282,12 @@ export default {
         bastList: []
       },
       likeInfo: [],
-      lovely: {},
+      lovely: [],
       benefit: [],
       couponList: [],
       swiperOption: {
         pagination: {
-          el: ".swiper-pagination",
+          el: ".paginationBanner",
           clickable: true
         },
         autoplay: {
@@ -319,7 +319,7 @@ export default {
       },
       swiperBoutique: {
         pagination: {
-          el: ".swiper-pagination",
+          el: ".paginationBoutique",
           clickable: true
         },
         autoplay: {
@@ -348,8 +348,10 @@ export default {
       that.$set(that, "menus", res.data.menus);
       that.$set(that, "roll", res.data.roll);
       that.$set(that, "activity", res.data.activity);
-      var activityOne = res.data.activity.shift() || {};
-      that.$set(that, "activityOne", activityOne);
+      if (res.data.activity.length) {
+        var activityOne = res.data.activity.shift();
+        that.$set(that, "activityOne", activityOne);
+      }
       that.$set(that, "info", res.data.info);
       that.$set(that, "likeInfo", res.data.likeInfo);
       that.$set(
@@ -359,7 +361,6 @@ export default {
       );
       that.$set(that, "benefit", res.data.benefit);
       that.$set(that, "couponList", res.data.couponList);
-      document.title = res.data.site_name;
       that.setOpenShare();
       this.showCoupon =
         !cookie.has(HAS_COUPON_WINDOW) &&
@@ -371,26 +372,18 @@ export default {
       cookie.set(HAS_COUPON_WINDOW, 1);
     },
     setOpenShare: function() {
-      getShare().then(res => {
-        var data = res.data.data;
-        var configAppMessage = {
-          desc: data.synopsis,
-          title: data.title,
-          link: location.href,
-          imgUrl: data.img
-        };
-        var configTimeline = {
-          title: data.title,
-          link: location.href,
-          imgUrl: data.img
-        };
-        if (isWeixin() === true) {
-          ready().then(() => {
-            openShareAppMessage(configAppMessage).then(() => {});
-            openShareTimeline(configTimeline).then(() => {});
-          });
-        }
-      });
+      if (isWeixin()) {
+        getShare().then(res => {
+          var data = res.data.data;
+          var configAppMessage = {
+            desc: data.synopsis,
+            title: data.title,
+            link: location.href,
+            imgUrl: data.img
+          };
+          openShareAll(configAppMessage);
+        });
+      }
     }
   }
 };

@@ -483,7 +483,7 @@ class User extends BaseModel
         (count($xdata) > $limit) && $Zoom = $xdata[$limit-5];
         //多次购物会员数量饼状图
         $count = self::setWherePage(self::getModelTime($where,new self),$where,['is_promoter'])->count();
-        $user_count = self::setWherePage(self::getModelTime($where,self::alias('a')->join('__store_order__ r','r.uid=a.uid'),'a.add_time'),$where,['is_promoter'])
+        $user_count = self::setWherePage(self::getModelTime($where,self::alias('a')->join('store_order r','r.uid=a.uid'),'a.add_time'),$where,['is_promoter'])
             ->where('r.paid',1)->count('a.uid');
         $shop_xdata = ['多次购买数量占比','无购买数量占比'];
         $shop_data = [];
@@ -503,7 +503,7 @@ class User extends BaseModel
                 ]
             ]
         ];
-       return compact('shop_data','shop_xdata','fenbu_data','fenbu_xdata','seriesdata','xdata','Zoom');
+       return compact('shop_data','shop_xdata','seriesdata','Zoom');
     }
     //获取$date的前一天或者其他的时间段
     public static function getOldDate($where,$moedls=null){
@@ -724,7 +724,7 @@ class User extends BaseModel
      */
     public static function getUserBusinessChart($where,$limit=20){
         //获取购物会员人数趋势图
-        $list=self::getModelTime($where,self::where('a.status',1)->alias('a')->join('__store_order__ r','r.uid=a.uid'),'a.add_time')
+        $list=self::getModelTime($where,self::where('a.status',1)->alias('a')->join('store_order r','r.uid=a.uid'),'a.add_time')
             ->where('r.paid', 1)
             ->where('a.is_promoter', 0)
             ->where('a.add_time','<>',0)
@@ -742,7 +742,7 @@ class User extends BaseModel
         }
         count($xdata) > $limit && $zoom=$xdata[$limit-5];
         //会员访问量
-        $visit=self::getModelTime($where,self::alias('a')->join('__store_visit__ t','t.uid=a.uid'),'t.add_time')
+        $visit=self::getModelTime($where,self::alias('a')->join('store_visit t','t.uid=a.uid'),'t.add_time')
             ->where('a.is_promoter',0)
             ->field('FROM_UNIXTIME(t.add_time,"%Y-%m-%d") as _add_time,count(t.uid) as count_user')
             ->group('_add_time')
@@ -759,7 +759,7 @@ class User extends BaseModel
         count($visit_xdata) > $limit && $visit_zoom=$visit_xdata[$limit-5];
         //多次购物会员数量饼状图
         $count=self::getModelTime($where,self::where('is_promoter',0))->count();
-        $user_count=self::getModelTime($where,self::alias('a')->join('__store_order__ r','r.uid=a.uid'),'a.add_time')
+        $user_count=self::getModelTime($where,self::alias('a')->join('store_order r','r.uid=a.uid'),'a.add_time')
             ->where('a.is_promoter',0)
             ->where('r.paid',1)
             ->group('a.uid')
@@ -817,7 +817,7 @@ class User extends BaseModel
         $orderPayCount = StoreOrder::getOrderPayCount($is_promoter);
         if($orderPayCount){
             $shopcount=self::alias('a')
-                ->join('__store_order__ r','r.uid=a.uid')
+                ->join('store_order r','r.uid=a.uid')
                 ->where('r.paid', 1)
                 ->where('a.is_promoter', $is_promoter)
                 ->group('r.uid')
@@ -830,7 +830,7 @@ class User extends BaseModel
         //购物金额排行榜
         if($orderPayCount){
             $order=self::alias('a')
-                ->join('__store_order__ r','r.uid=a.uid')
+                ->join('store_order r','r.uid=a.uid')
                 ->where('r.paid', 1)
                 ->where('a.is_promoter', $is_promoter)
                 ->group('r.uid')
@@ -844,7 +844,7 @@ class User extends BaseModel
         $orderPayCount = StoreOrder::getOrderPayMonthCount($is_promoter);
         if($orderPayCount){
             $lastorder=self::alias('a')
-                ->join('__store_order__ r','r.uid=a.uid')
+                ->join('store_order r','r.uid=a.uid')
                 ->where('r.paid', 1)
                 ->where('a.is_promoter', $is_promoter)
 //                ->whereTime('r.pay_time','last month')
@@ -1014,7 +1014,7 @@ class User extends BaseModel
         }
         count($visit_xdata) > $limit && $visit_zoom=$visit_xdata[$limit-5];
         //获取购物会员人数趋势图
-        $list=self::getModelTime($where,self::where('a.status',1)->alias('a')->join('__store_order__ r','r.uid=a.uid'),'a.add_time')
+        $list=self::getModelTime($where,self::where('a.status',1)->alias('a')->join('store_order r','r.uid=a.uid'),'a.add_time')
             ->where('r.paid', 1)
             ->where('a.is_promoter', 1)
             ->where('a.add_time','<>',0)
@@ -1034,7 +1034,7 @@ class User extends BaseModel
         //多次购物分销会员数量饼状图
         $count=self::getModelTime($where,self::where('is_promoter',1))->count();
         $user_count=self::getModelTime($where,self::alias('a')
-            ->join('__store_order__ r','r.uid=a.uid'),'a.add_time')
+            ->join('store_order r','r.uid=a.uid'),'a.add_time')
             ->where('a.is_promoter',1)
             ->where('r.paid',1)
             ->group('a.uid')

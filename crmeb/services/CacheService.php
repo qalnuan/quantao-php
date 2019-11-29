@@ -26,9 +26,14 @@ class CacheService
         return self::handler()->remember($name,$default);
     }
 
-    public static function rm($name)
+    public static function rm(string $name)
     {
-        return self::handler()->clear($name);
+        return self::handler()->remember($name);
+    }
+
+    public static function delete(string $name)
+    {
+        return CacheStatic::delete($name);
     }
 
     public static function handler()

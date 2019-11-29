@@ -1,4 +1,4 @@
-
+import { TOKENNAME } from './../config.js';
 const formatTime = date => {
   const year = date.getFullYear()
   const month = date.getMonth() + 1
@@ -342,7 +342,7 @@ const uploadImageOne=function (opt, successCallback, errorCallback) {
         },
         header: {
           "Content-Type": "multipart/form-data",
-          Authorization: 'Bearer '+getApp().globalData.token
+          [TOKENNAME]: 'Bearer '+getApp().globalData.token
         },
         success: function (res) {
           wx.hideLoading();
@@ -538,4 +538,5 @@ module.exports = {
   checkLogin: checkLogin,
   wxgetUserInfo: wxgetUserInfo,
   autoLogin: autoLogin,
+  logout: logout
 }

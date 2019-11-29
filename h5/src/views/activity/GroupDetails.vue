@@ -148,6 +148,9 @@ import StorePoster from "@components/StorePoster";
 import { getCombinationDetail } from "@api/activity";
 import { postCartAdd } from "@api/store";
 import { imageBase64 } from "@api/public";
+import { isWeixin } from "@utils/index";
+import { openShareAll } from "@libs/wechat";
+
 const NAME = "GroupDetails";
 
 export default {
@@ -242,18 +245,28 @@ export default {
         that.posterData.code = that.storeInfo.code_base;
         that.domStatus = true;
         that.getImageBase64();
+        that.setShare();
+        that.updateTitle();
       });
+    },
+    updateTitle() {
+      document.title = this.storeInfo.title || this.$route.meta.title;
+    },
+    setShare: function() {
+      isWeixin() &&
+        openShareAll({
+          desc: this.storeInfo.info,
+          title: this.storeInfo.title,
+          link: location.href,
+          imgUrl: this.storeInfo.image
+        });
     },
     getImageBase64: function() {
       let that = this;
-      imageBase64(this.posterData.image, that.posterData.code)
-        .then(res => {
-          that.posterData.image = res.data.image;
-          that.posterData.code = res.data.code;
-        })
-        .catch(res => {
-          that.$dialog.error(res.msg);
-        });
+      imageBase64(this.posterData.image, that.posterData.code).then(res => {
+        that.posterData.image = res.data.image;
+        that.posterData.code = res.data.code;
+      });
     },
     setPosterImageStatus: function() {
       var sTop = document.body || document.documentElement;

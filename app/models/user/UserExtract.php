@@ -50,12 +50,12 @@ class UserExtract extends BaseModel
         1 =>'已提现'
     );
 
-    /*
+    /**
      * 用户自主提现记录提现记录,后台执行审核
      * @param array $userInfo 用户个人信息
      * @param array $data 提现详细信息
-     * @return boolean
-     * */
+     * @return bool
+     */
     public static function userExtract($userInfo,$data){
         if(!in_array($data['extract_type'],self::$extractType))
             return self::setErrorInfo('提现方式不存在');
@@ -106,6 +106,7 @@ class UserExtract extends BaseModel
                 try{
                     ChannelService::instance()->send('WITHDRAW', ['id'=>$res1->id]);
                 }catch (\Exception $e){}
+                event('AdminNewPush');
                 //发送模板消息
                 return true;
             }else return self::setErrorInfo('提现失败!');
@@ -135,13 +136,16 @@ class UserExtract extends BaseModel
         return self::where('uid',$uid)->where('status',$status)->value('SUM(extract_price)')?:0;
     }
 
-    /*
+    /**
      * 用户提现记录列表
      * @param int $uid 用户uid
      * @param int $first 截取行数
      * @param int $limit 截取数
-     * @return array
-     * */
+     * @return \think\Collection
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
     public static function extractList($uid,$first = 0,$limit = 8)
     {
         $list=UserExtract::where('uid',$uid)->order('add_time desc')->limit($first,$limit)->select();
@@ -151,11 +155,11 @@ class UserExtract extends BaseModel
         return $list;
     }
 
-    /*
-   * 获取累计已提现佣金
-   * @param int $uid
-   * @return float
-   * */
+    /**
+     * 获取累计已提现佣金
+     * @param $uid
+     * @return float
+     */
     public static function extractSum($uid)
     {
         return self::where('uid',$uid)->where('status',1)->sum('extract_price');

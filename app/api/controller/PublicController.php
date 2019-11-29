@@ -35,7 +35,7 @@ class PublicController
         $banner = GroupDataService::getData('routine_home_banner') ?: [];//TODO 首页banner图
         $menus = GroupDataService::getData('routine_home_menus') ?: [];//TODO 首页按钮
         $roll = GroupDataService::getData('routine_home_roll_news') ?: [];//TODO 首页滚动新闻
-        $activity = GroupDataService::getData('routine_home_activity') ?: [];//TODO 首页活动区域图片
+        $activity = GroupDataService::getData('routine_home_activity', 3) ?: [];//TODO 首页活动区域图片
         $site_name = SystemConfigService::get('site_name');
         $routine_index_page = GroupDataService::getData('routine_index_page');
         $info['fastInfo'] = $routine_index_page[0]['fast_info'] ?? '';//SystemConfigService::get('fast_info');//TODO 快速选择简介
@@ -86,11 +86,19 @@ class PublicController
     {
         $menusInfo = GroupDataService::getData('routine_my_menus') ?? [];
         $user = $request->user();
+        $vipOpen = SystemConfigService::get('vip_open');
+        $vipOpen = is_string($vipOpen) ? (int)$vipOpen : $vipOpen;
         foreach ($menusInfo as $key=>&$value){
             $value['pic'] = UtilService::setSiteUrl($value['pic']);
             if($value['id'] == 137 && !(intval(SystemConfigService::get('store_brokerage_statu')) == 2 || $user->is_promoter == 1))
                 unset($menusInfo[$key]);
             if($value['id'] == 174 && !StoreService::orderServiceStatus($user->uid))
+                unset($menusInfo[$key]);
+            if(!StoreService::orderServiceStatus($user->uid) && $value['wap_url'] === '/order/order_cancellation')
+                unset($menusInfo[$key]);
+            if($value['wap_url'] == '/user/vip' && !$vipOpen)
+                unset($menusInfo[$key]);
+            if($value['wap_url'] == '/customer/index' && !StoreService::orderServiceStatus($user->uid))
                 unset($menusInfo[$key]);
         }
         return app('json')->successful(['routine_my_menus'=>$menusInfo]);
@@ -129,7 +137,7 @@ class PublicController
         ],$request);
         if(!$data['filename']) return app('json')->fail('参数有误');
         if(Cache::has('start_uploads_'.$request->uid()) && Cache::get('start_uploads_'.$request->uid()) >= 100) return app('json')->fail('非法操作');
-        $res = UploadService::image($data['filename'],'store/comment');
+        $res = UploadService::getInstance()->setUploadPath('store/comment')->image($data['filename']);
         if(!is_array($res)) return app('json')->fail($res);
         SystemAttachment::attachmentAdd($res['name'], $res['size'], $res['type'], $res['dir'], $res['thumb_path'],1, $res['image_type'], $res['time'], 2);
         if(Cache::has('start_uploads_'.$request->uid()))
@@ -177,26 +185,28 @@ class PublicController
         return app('json')->fail();
     }
 
-    /*
+    /**
      * 记录用户分享
-     * @return json
-     * */
+     * @param Request $request
+     * @return mixed
+     */
     public function user_share(Request $request){
         return app('json')->successful(UserBill::setUserShare($request->uid()));
     }
 
-    /*
+    /**
      * 获取图片base64
-     *
-     * */
+     * @param Request $request
+     * @return mixed
+     */
     public function get_image_base64(Request $request){
         list($imageUrl,$codeUrl) = UtilService::postMore([
             ['image',''],
             ['code',''],
         ],$request,true);
         try{
-            $code = UtilService::setImageBase64($codeUrl);
-            $image = UtilService::setImageBase64($imageUrl);
+            $code = $codeUrl ? UtilService::setImageBase64($codeUrl) : false;
+            $image = $imageUrl ? UtilService::setImageBase64($imageUrl) : false;
             return app('json')->successful(compact('code','image'));
         }catch (\Exception $e){
             return app('json')->fail($e->getMessage());

@@ -120,6 +120,8 @@ class StoreProduct extends BaseModel
             }
             if(isset($where['order']) && $where['order']!=''){
                 $model = $model->order(self::setOrder($where['order']));
+            }else{
+                $model = $model->order('p.sort desc,p.id desc');
             }
         }
         return $model;
@@ -362,7 +364,7 @@ class StoreProduct extends BaseModel
      */
     public static function getMaxList($where){
         $classs=['layui-bg-red','layui-bg-orange','layui-bg-green','layui-bg-blue','layui-bg-cyan'];
-        $model=StoreOrder::alias('a')->join('StoreOrderCartInfo c','a.id=c.oid')->join('__store_product__ b','b.id=c.product_id');
+        $model=StoreOrder::alias('a')->join('StoreOrderCartInfo c','a.id=c.oid')->join('store_product b','b.id=c.product_id');
         $list=self::getModelTime($where,$model,'a.add_time')->group('c.product_id')->order('p_count desc')->limit(10)
             ->field(['count(c.product_id) as p_count','b.store_name','sum(b.price) as sum_price'])->select();
         if(count($list)) $list=$list->toArray();
@@ -389,7 +391,7 @@ class StoreProduct extends BaseModel
         $classs=['layui-bg-red','layui-bg-orange','layui-bg-green','layui-bg-blue','layui-bg-cyan'];
         $model=StoreOrder::alias('a')
             ->join('StoreOrderCartInfo c','a.id=c.oid')
-            ->join('__store_product__ b','b.id=c.product_id')
+            ->join('store_product b','b.id=c.product_id')
             ->where('b.is_show',1)
             ->where('b.is_del',0);
         $list=self::getModelTime($where,$model,'a.add_time')->group('c.product_id')->order('profity desc')->limit(10)
@@ -483,7 +485,7 @@ class StoreProduct extends BaseModel
         }else{
             $time['data']=isset($where['data'])? $where['data']:'';
         }
-        $model=self::getModelTime($time, Db::name('store_cart')->alias('a')->join('__store_product__ b','a.product_id=b.id'),'a.add_time');
+        $model=self::getModelTime($time, Db::name('store_cart')->alias('a')->join('store_product b','a.product_id=b.id'),'a.add_time');
         if(isset($where['title']) && $where['title']!=''){
             $model=$model->where('b.store_name|b.id','like',"%$where[title]%");
         }

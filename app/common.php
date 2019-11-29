@@ -119,3 +119,15 @@ if (!function_exists('make_path')) {
 
     }
 }
+if(!function_exists('sysConfig'))
+{
+    /**
+     * 获取系统单个配置
+     * @param string $name
+     * @return string
+     */
+    function sysConfig($name)
+    {
+        return app('sysConfig')->get($name);
+    }
+}

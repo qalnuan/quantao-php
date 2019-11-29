@@ -19,7 +19,7 @@
 {block name="content"}
 <div class="row">
    <div class="col-sm-12 panel panel-default" >
-       <div class="panel-body">
+       <div class="panel-body" style="padding: 30px">
            <form class="form-horizontal" id="signupForm">
                <div class="form-group">
                    <div class="col-md-12">
@@ -301,7 +301,7 @@
                   $eb.message('error','一组图文消息最多可以添加8个');
                   return false;
                 }
-                var url = "/public/system/module/wechat/news/images/image.png";
+                var url = "{__MODULE_PATH}wechat/news/images/image.png";
                 html = '';
                 html += '<div class="news-item transition active news-image" style=" margin-bottom: 20px;background-image:url('+url+')">'
                     html += '<input type="hidden" name="new_id" value="" class="new-id">';

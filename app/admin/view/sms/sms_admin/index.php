@@ -58,8 +58,7 @@
             <div class="ibox float-e-margins">
                 <div class="ibox-title">
                     <h5>短信账号注册</h5>
-                </div>
-                <div id="store-attr" class="mp-form" v-cloak="">
+                </div><div id="store-attr" class="mp-form" v-cloak="">
                     <i-Form :label-width="80" style="width: 100%">
                         <template >
                             <template >

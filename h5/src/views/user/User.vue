@@ -66,7 +66,7 @@
             </div>
             <div>待付款</div>
           </router-link>
-          <!-- <router-link :to="{ path: '/order/list/' + 1 }" class="item">
+          <router-link :to="{ path: '/order/list/' + 1 }" class="item">
             <div class="pictrue">
               <img src="@assets/images/dfh.png" />
               <span
@@ -76,17 +76,17 @@
               >
             </div>
             <div>待发货</div>
-          </router-link> -->
-          <router-link :to="{ path: '/order/list/' + 5 }" class="item">
+          </router-link>
+          <router-link :to="{ path: '/order/list/' + 2 }" class="item">
             <div class="pictrue">
               <img src="@assets/images/dsh.png" />
               <span
                 class="order-status-num"
-                v-if="orderStatusNum.unchecked_count > 0"
-                >{{ orderStatusNum.unchecked_count }}</span
+                v-if="orderStatusNum.received_count > 0"
+                >{{ orderStatusNum.received_count }}</span
               >
             </div>
-            <div>待核销</div>
+            <div>待收货</div>
           </router-link>
           <router-link :to="{ path: '/order/list/' + 3 }" class="item">
             <div class="pictrue">
@@ -139,7 +139,7 @@
         </div>
       </div>
     </div>
-    <!-- <img src="@assets/images/support.png" class="support" /> -->
+    <img src="@assets/images/support.png" class="support" />
     <div class="footer-line-height"></div>
     <SwitchWindow
       v-on:changeswitch="changeswitch"

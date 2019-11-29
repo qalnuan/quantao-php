@@ -3,6 +3,7 @@
 namespace app\api\controller\store;
 
 use app\admin\model\system\SystemAttachment;
+use app\models\system\SystemStore;
 use app\models\store\StoreProduct;
 use app\models\store\StoreProductAttr;
 use app\models\store\StoreProductRelation;
@@ -34,7 +35,8 @@ class StoreProductController
             ['salesOrder', ''],
             ['news', 0],
             ['page', 0],
-            ['limit', 0]
+            ['limit', 0],
+            ['type', 0]
         ], $request);
         return app('json')->successful(StoreProduct::getProductList($data, $request->uid()));
     }
@@ -54,46 +56,54 @@ class StoreProductController
         if (!$id || !($storeInfo = StoreProduct::getValidProduct($id,'id'))) return app('json')->fail('商品不存在或已下架');
         $userType = $request->get('user_type','wechat');
         $user = $request->user();
-        switch ($userType){
-            case 'wechat':
-                //公众号
-                $name = $id.'_product_detail_'.$user['uid'].'_is_promoter_'.$user['is_promoter'].'.wap.jpg';
-                $imageInfo = SystemAttachment::getInfo($name,'name');
-                $siteUrl = SystemConfigService::get('site_url');
-                if(!$imageInfo){
-                    $codeUrl = UtilService::setHttpType($siteUrl.'/detail/'.$id.'?spread='.$user['uid'], 1);//二维码链接
-                    $imageInfo = UtilService::getQRCodePath($codeUrl, $name);
-                    if(!$imageInfo) return app('json')->fail('二维码生成失败');
-                    SystemAttachment::attachmentAdd($imageInfo['name'],$imageInfo['size'],$imageInfo['type'],$imageInfo['dir'],$imageInfo['thumb_path'],1,$imageInfo['image_type'],$imageInfo['time'],2);
-                    $url = $imageInfo['dir'];
-                }else $url = $imageInfo['att_dir'];
-                if($imageInfo['image_type'] == 1) $url = $siteUrl.$url;
-                return app('json')->successful(['code'=>UtilService::setImageBase64($url)]);
-                break;
-            case 'routine':
-                //小程序
-                $name = $id.'_'.$user['uid'].'_'.$user['is_promoter'].'_product.jpg';
-                $imageInfo = SystemAttachment::getInfo($name,'name');
-                $siteUrl = SystemConfigService::get('site_url').DS;
-                if(!$imageInfo){
-                    $data='id='.$id;
-                    if($user['is_promoter'] || SystemConfigService::get('store_brokerage_statu')==2) $data.='&pid='.$user['uid'];
-                    $res = \app\models\routine\RoutineCode::getPageCode('pages/goods_details/index',$data,280);
-                    if(!$res) return app('json')->fail('二维码生成失败');
-                    $imageInfo = \crmeb\services\UploadService::imageStream($name,$res,'routine/product');
-                    if(is_string($imageInfo)) return app('json')->fail($imageInfo);
-                    if($imageInfo['image_type'] == 1) $remoteImage = UtilService::remoteImage($siteUrl.$imageInfo['dir']);
-                    else $remoteImage = UtilService::remoteImage($imageInfo['dir']);
-                    if(!$remoteImage['status']) return app('json')->fail('小程序二维码未能生成');
-                    SystemAttachment::attachmentAdd($imageInfo['name'],$imageInfo['size'],$imageInfo['type'],$imageInfo['dir'],$imageInfo['thumb_path'],1,$imageInfo['image_type'],$imageInfo['time'],2);
-                    $url = $imageInfo['dir'];
-                }else $url = $imageInfo['att_dir'];
-                if($imageInfo['image_type'] == 1) $url = $siteUrl.$url;
-                return app('json')->successful(['code'=>$url]);
+        try{
+            switch ($userType){
+                case 'wechat':
+                    //公众号
+                    $name = $id.'_product_detail_'.$user['uid'].'_is_promoter_'.$user['is_promoter'].'_wap.jpg';
+                    $imageInfo = SystemAttachment::getInfo($name,'name');
+                    $siteUrl = SystemConfigService::get('site_url');
+                    if(!$imageInfo){
+                        $codeUrl = UtilService::setHttpType($siteUrl.'/detail/'.$id.'?spread='.$user['uid'], 1);//二维码链接
+                        $imageInfo = UtilService::getQRCodePath($codeUrl, $name);
+                        if(is_string($imageInfo)) return app('json')->fail('二维码生成失败');
+                        SystemAttachment::attachmentAdd($imageInfo['name'],$imageInfo['size'],$imageInfo['type'],$imageInfo['dir'],$imageInfo['thumb_path'],1,$imageInfo['image_type'],$imageInfo['time'],2);
+                        $url = $imageInfo['dir'];
+                    }else $url = $imageInfo['att_dir'];
+                    if($imageInfo['image_type'] == 1) $url = $siteUrl.$url;
+                    return app('json')->successful(['code'=>UtilService::setImageBase64($url)]);
+                    break;
+                case 'routine':
+                    //小程序
+                    $name = $id.'_'.$user['uid'].'_'.$user['is_promoter'].'_product.jpg';
+                    $imageInfo = SystemAttachment::getInfo($name,'name');
+                    $siteUrl = SystemConfigService::get('site_url').DS;
+                    if(!$imageInfo){
+                        $data='id='.$id;
+                        if($user['is_promoter'] || SystemConfigService::get('store_brokerage_statu')==2) $data.='&pid='.$user['uid'];
+                        $res = \app\models\routine\RoutineCode::getPageCode('pages/goods_details/index',$data,280);
+                        if(!$res) return app('json')->fail('二维码生成失败');
+                        $imageInfo = \crmeb\services\UploadService::getInstance()->setUploadPath('routine/product')->imageStream($name,$res);
+                        if(is_string($imageInfo)) return app('json')->fail($imageInfo);
+                        if($imageInfo['image_type'] == 1) $remoteImage = UtilService::remoteImage($siteUrl.$imageInfo['dir']);
+                        else $remoteImage = UtilService::remoteImage($imageInfo['dir']);
+                        if(!$remoteImage['status']) return app('json')->fail('小程序二维码未能生成');
+                        SystemAttachment::attachmentAdd($imageInfo['name'],$imageInfo['size'],$imageInfo['type'],$imageInfo['dir'],$imageInfo['thumb_path'],1,$imageInfo['image_type'],$imageInfo['time'],2);
+                        $url = $imageInfo['dir'];
+                    }else $url = $imageInfo['att_dir'];
+                    if($imageInfo['image_type'] == 1) $url = $siteUrl.$url;
+                    return app('json')->successful(['code'=>$url]);
+            }
+        }catch (\Exception $e){
+            return app('json')->fail($e->getMessage(),[
+                'code'=>$e->getCode(),
+                'line'=>$e->getLine(),
+                'message'=>$e->getMessage()
+            ]);
         }
     }
 
-    public function detail(Request $request, $id)
+    public function detail(Request $request, $id,$type = 0)
     {
         if (!$id || !($storeInfo = StoreProduct::getValidProduct($id))) return app('json')->fail('商品不存在或已下架');
 
@@ -104,9 +114,13 @@ class StoreProductController
         if(!$imageInfo){
             $codeUrl = UtilService::setHttpType($siteUrl.'/detail/'.$id, 1);//二维码链接
             $imageInfo = UtilService::getQRCodePath($codeUrl, $name);
-            if(!$imageInfo) return app('json')->fail('二维码生成失败');
-            SystemAttachment::attachmentAdd($imageInfo['name'],$imageInfo['size'],$imageInfo['type'],$imageInfo['dir'],$imageInfo['thumb_path'],1,$imageInfo['image_type'],$imageInfo['time'],2);
-            $url = $imageInfo['dir'];
+            if(is_array($imageInfo)){
+                SystemAttachment::attachmentAdd($imageInfo['name'],$imageInfo['size'],$imageInfo['type'],$imageInfo['dir'],$imageInfo['thumb_path'],1,$imageInfo['image_type'],$imageInfo['time'],2);
+                $url = $imageInfo['dir'];
+            }else {
+                $url = '';
+                $imageInfo = ['image_type'=>0];
+            }
         }else $url = $imageInfo['att_dir'];
         if($imageInfo['image_type'] == 1) $url = $siteUrl.$url;
         $storeInfo['image'] = UtilService::setSiteUrl($storeInfo['image'], $siteUrl);
@@ -120,7 +134,7 @@ class StoreProductController
         }, $storeInfo['description']);
         $storeInfo['userCollect'] = StoreProductRelation::isProductRelation($id, $uid, 'collect');
         $storeInfo['userLike'] = StoreProductRelation::isProductRelation($id, $uid, 'like');
-        list($productAttr, $productValue) = StoreProductAttr::getProductAttrDetail($id);
+        list($productAttr, $productValue) = StoreProductAttr::getProductAttrDetail($id,$uid,$type);
         setView($uid, $id, $storeInfo['cate_id'], 'viwe');
         $data['storeInfo'] = StoreProduct::setLevelPrice($storeInfo, $uid, true);
         $data['similarity'] = StoreProduct::cateIdBySimilarityProduct($storeInfo['cate_id'], 'id,store_name,image,price,sales,ficti', 4);
@@ -149,7 +163,10 @@ class StoreProductController
                 $data['replyChance'] = bcmul($data['replyChance'], 100, 2);
             }
         } else $data['replyChance'] = 0;
-        $data['mer_id'] = StoreProduct::where('id', $storeInfo['id'])->value('mer_id');
+        $data['mer_id'] = $storeInfo['mer_id'];
+        $data['system_store'] = ($res = SystemStore::getStoreDispose()) ? $res : [];
+        $data['good_list'] = StoreProduct::getGoodList(18,'image,store_name,price,id,ot_price');
+        $data['mapKey'] = SystemConfigService::get('tengxun_map_key');
         return app('json')->successful($data);
     }
 
@@ -169,7 +186,7 @@ class StoreProductController
             ['limit',0]
         ], $request, true);
         if(!$limit) return  app('json')->successful([]);
-        $productHot = StoreProduct::getHotProductLoading('id,image,store_name,cate_id,price,unit_name',(int)$page,(int)$limit);
+        $productHot = StoreProduct::getHotProductLoading('id,image,store_name,cate_id,price,unit_name,ot_price',(int)$page,(int)$limit);
         return app('json')->successful($productHot);
     }
 

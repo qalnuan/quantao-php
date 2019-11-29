@@ -10,7 +10,6 @@ namespace app\models\store;
 use crmeb\basic\BaseModel;
 use crmeb\services\UtilService;
 use crmeb\traits\ModelTrait;
-use app\models\system\SystemAdmin;
 
 /**
  * TODO 购物车Model
@@ -210,8 +209,6 @@ class StoreCart extends BaseModel
                 }
             }
         }
-
-        $merlist = array();
         foreach ($valid as $k=>$cart){
             if($cart['trueStock'] < $cart['cart_num']){
                 $cart['cart_num'] = $cart['trueStock'];
@@ -223,40 +220,15 @@ class StoreCart extends BaseModel
             if(isset($valid[$k]['productInfo'])){
                 unset($valid[$k]['productInfo']['is_del'],$valid[$k]['productInfo']['is_del'],$valid[$k]['productInfo']['is_show']);
             }
-            if (isset($merlist[$valid[$k]['productInfo']['mer_id']])) {
-              array_push($merlist[$valid[$k]['productInfo']['mer_id']]['validcarts'],($valid[$k]['id']));
-              array_push($merlist[$valid[$k]['productInfo']['mer_id']]['validindex'],($k));
-            } else {
-              $merlist[$valid[$k]['productInfo']['mer_id']]['mer_id'] = $valid[$k]['productInfo']['mer_id'];
-              $merlist[$valid[$k]['productInfo']['mer_id']]['name'] = SystemAdmin::getSystemAdminInfo($valid[$k]['productInfo']['mer_id'])['real_name'];
-              $merlist[$valid[$k]['productInfo']['mer_id']]['validcarts'] = array($valid[$k]['id']);
-              $merlist[$valid[$k]['productInfo']['mer_id']]['validindex'] = array($k);
-            }
         }
-        
         foreach ($invalid as $k=>$cart){
             unset($valid[$k]['uid'],$valid[$k]['is_del'],$valid[$k]['is_new'],$valid[$k]['is_pay'],$valid[$k]['add_time']);
             if(isset($invalid[$k]['productInfo'])){
                 unset($invalid[$k]['productInfo']['is_del'],$invalid[$k]['productInfo']['is_del'],$invalid[$k]['productInfo']['is_show']);
             }
-            
-            if (isset($merlist[$invalid[$k]['productInfo']['mer_id']])) {
-              array_push($merlist[$invalid[$k]['productInfo']['mer_id']]['validcarts'],($invalid[$k]['id']));
-              $merlist[$invalid[$k]['productInfo']['mer_id']]['validindex'] = array($k);
-            } else {
-              $merlist[$invalid[$k]['productInfo']['mer_id']]['mer_id'] = $invalid[$k]['productInfo']['mer_id'];
-              $merlist[$invalid[$k]['productInfo']['mer_id']]['name'] = SystemAdmin::getSystemAdminInfo($invalid[$k]['productInfo']['mer_id'])['real_name'];
-              $merlist[$invalid[$k]['productInfo']['mer_id']]['invalidcarts'] = array($invalid[$k]['id']);
-              $merlist[$invalid[$k]['productInfo']['mer_id']]['invalidindex'] = array($k);
-            }
         }
 
-        $merinfos = array();
-        foreach ($merlist as $key => $value) {
-          array_push($merinfos, $value);
-        }
-
-        return compact('valid','invalid','merinfos');
+        return compact('valid','invalid');
     }
 
     /**
@@ -316,6 +288,14 @@ class StoreCart extends BaseModel
     public static function getCartIdsProduct(array $ids)
     {
         return self::whereIn('id',$ids)->column('product_id','id');
+    }
+
+    /**
+    *  获取购物车内最新一张产品图
+     */
+    public static function getProductImage(array $cart_id){
+        return self::whereIn('a.id',$cart_id)->alias('a')->order('a.id desc')
+            ->join('store_product p','p.id = a.product_id')->value('p.image');
     }
 
 }
