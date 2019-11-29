@@ -850,14 +850,25 @@ class StoreOrder extends BaseModel
             ]);
         } else {
             $openid = WechatUser::where('uid', $order['uid'])->value('openid');
-            \crmeb\services\WechatTemplateService::sendTemplate($openid, \crmeb\services\WechatTemplateService::ORDER_TAKE_SUCCESS, [
-                'first' => '亲，您的订单已收货',
-                'keyword1' => $order['order_id'],
-                'keyword2' => '已收货',
-                'keyword3' => date('Y-m-d H:i:s', time()),
-                'keyword4' => $title,
-                'remark' => '感谢您的光临！'
-            ]);
+            if ($order['is_mer_check'] == 1) {
+                \crmeb\services\WechatTemplateService::sendTemplate($openid, \crmeb\services\WechatTemplateService::ORDER_TAKE_SUCCESS, [
+                    'first' => '亲，您的订单已核销',
+                    'keyword1' => $order['order_id'],
+                    'keyword2' => '已核销'.$order['is_mer_check'],
+                    'keyword3' => date('Y-m-d H:i:s', time()),
+                    'keyword4' => $title,
+                    'remark' => '感谢您的光临！'
+                ]);
+            } else {
+                \crmeb\services\WechatTemplateService::sendTemplate($openid, \crmeb\services\WechatTemplateService::ORDER_TAKE_SUCCESS, [
+                    'first' => '亲，您的订单已收货',
+                    'keyword1' => $order['order_id'],
+                    'keyword2' => '已收货'.$order['is_mer_check'],
+                    'keyword3' => date('Y-m-d H:i:s', time()),
+                    'keyword4' => $title,
+                    'remark' => '感谢您的光临！'
+                ]);
+            }
         }
     }
 
