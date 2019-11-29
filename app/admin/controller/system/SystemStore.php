@@ -23,7 +23,7 @@ class SystemStore extends AuthController
      * */
     public function index()
     {
-        $store = SystemStoreModel::getStoreDispose();
+        $store = SystemStoreModel::getStoreDispose($this->adminId);
         $this->assign(compact('store'));
         return $this->fetch();
     }
@@ -65,6 +65,7 @@ class SystemStore extends AuthController
             $data['longitude'] = $data['latlng'][1];
             $data['valid_time'] = implode(' - ',$data['valid_time']);
             $data['day_time'] = implode(' - ',$data['day_time']);
+            $data['mer_id'] = $this->adminId;
             unset($data['latlng']);
             if($data['image'] && strstr($data['image'],'http') === false){
                 $site_url = SystemConfig::getConfigValue('site_url');

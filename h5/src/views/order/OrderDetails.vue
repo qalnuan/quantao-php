@@ -498,7 +498,6 @@
 }
 </style>
 <script>
-import vueQr from 'vue-qr' //引入生成二维码插件
 import OrderGoods from "@components/OrderGoods";
 import { orderDetail } from "@api/order";
 import ClipboardJS from "clipboard";
@@ -519,8 +518,7 @@ export default {
   name: NAME,
   components: {
     OrderGoods,
-    Payment,
-    vueQr
+    Payment
   },
   props: {},
   data: function() {
@@ -533,7 +531,6 @@ export default {
       orderInfo: {
         _status: {}
       },
-      QRCodeMsg: "", //生成二维码信息
       status: {},
       pay: false,
       payType: ["yue", "weixin"],
@@ -669,9 +666,6 @@ export default {
         .then(res => {
           this.orderInfo = res.data;
           this.getOrderStatus();
-          if (this.orderInfo.verify_url) {
-            this.QRCodeMsg = this.orderInfo.verify_url;
-          }
           if (this.orderInfo.combination_id > 0) {
             this.orderTypeName = "拼团订单";
             this.orderTypeNameStatus = false;

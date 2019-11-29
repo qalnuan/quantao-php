@@ -33,20 +33,23 @@ class SystemStore extends BaseModel
         return $data['latitude'].','.$data['longitude'];
     }
 
-    public static function verificWhere()
+    public static function verificWhere($mer_id)
     {
+        if ($mer_id) {
+            return self::where('is_show',1)->where('is_del',0)->where('mer_id',$mer_id);
+        }
         return self::where('is_show',1)->where('is_del',0);
     }
     /*
      * 获取门店信息
      * @param int $id
      * */
-    public static function getStoreDispose($id = 0,$felid='')
+    public static function getStoreDispose($mer_id,$id=null,$felid='')
     {
         if($id)
-            $storeInfo = self::verificWhere()->where('id',$id)->find();
+            $storeInfo = self::verificWhere($mer_id)->where('id',$id)->find();
         else
-            $storeInfo = self::verificWhere()->find();
+            $storeInfo = self::verificWhere($mer_id)->find();
         if($storeInfo) {
             $storeInfo['latlng'] = self::getLatlngAttr(null, $storeInfo);
             $storeInfo['valid_time'] = $storeInfo['valid_time'] ? explode(' - ', $storeInfo['valid_time']) : [];

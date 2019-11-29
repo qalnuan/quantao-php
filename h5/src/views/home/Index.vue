@@ -82,7 +82,7 @@
             <div class="name">{{ item.title }}</div>
             <div class="infor">{{ item.info }}</div>
           </div> -->
-        </router-link>
+        </router-link> 
       </div>
     </div>
     <!-- <div class="wrapper" v-if="info.fastList.length > 0">

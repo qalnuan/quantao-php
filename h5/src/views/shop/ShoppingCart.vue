@@ -11,7 +11,7 @@
         <span class="iconfont icon-xuanzhong"></span>售后无忧
       </div>
     </div>
-    <div class="nav acea-row row-between-wrapper">
+    <div class="nav acea-row row-between-wrapper" v-if="count > 0">
       <div>
         购物数量 <span class="num font-color-red">{{ count }}</span>
       </div>
@@ -146,7 +146,7 @@
       class="noCart"
       v-if="cartList.valid.length === 0 && cartList.invalid.length === 0"
     >
-      <div class="pictrue"><img src="@assets/images/noCart.png" /></div>
+      <!-- <div class="pictrue"><img src="@assets/images/noCart.png" /></div> -->
       <Recommend></Recommend>
     </div>
     <div style="height:2.1rem"></div>

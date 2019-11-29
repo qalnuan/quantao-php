@@ -164,7 +164,7 @@ class StoreProductController
             }
         } else $data['replyChance'] = 0;
         $data['mer_id'] = $storeInfo['mer_id'];
-        $data['system_store'] = ($res = SystemStore::getStoreDispose()) ? $res : [];
+        $data['system_store'] = ($res = SystemStore::getStoreDispose($storeInfo['mer_id'])) ? $res : [];
         $data['good_list'] = StoreProduct::getGoodList(18,'image,store_name,price,id,ot_price');
         $data['mapKey'] = SystemConfigService::get('tengxun_map_key');
         return app('json')->successful($data);

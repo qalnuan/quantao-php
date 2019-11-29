@@ -65,7 +65,7 @@ class StoreOrder extends BaseModel
     }
 
     public static function OrderList($where){
-        $model = self::getOrderWhere($where,self::alias('a')->join('user r','r.uid=a.uid','LEFT'),'a.','r')->field('a.*,r.nickname,r.phone');
+        $model = self::getOrderWhere($where,self::alias('a')->join('user r','r.uid=a.uid','LEFT'),'a.','r')->field('a.*,r.nickname,r.phone,r.spread_uid');
         
         if(isset($where['mer_id']) && $where['mer_id']!=''){
           $model = $model->where('a.mer_id', $where['mer_id']);
@@ -91,7 +91,11 @@ class StoreOrder extends BaseModel
                 unset($cart_info);
             }
             $item['_info'] = $_info;
-            $item['spread_nickname'] = Db::name('user')->where('uid',$item['spread_uid'])->value('nickname');
+            if($item['spread_uid']){
+                $item['spread_nickname'] = Db::name('user')->where('uid',$item['spread_uid'])->value('nickname');
+            }else{
+                $item['spread_nickname'] = '无';
+            }
             $_verifyinfo = Db::name('store_verify_service')->where('uid', $item['check_uid'])->field('nickname,avatar')->find();
             $item['verifyname'] = $_verifyinfo['nickname'];
             $item['verifyimage'] = $_verifyinfo['avatar'];

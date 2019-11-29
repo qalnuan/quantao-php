@@ -358,10 +358,11 @@ class StoreOrder extends BaseModel
                 'add_time' => time(),
                 'unique' => $key,
                 'shipping_type'=>$shipping_type,
+                'mer_id' => $cartInfo[0]['productInfo']['mer_id'],
             ];
             if($shipping_type === 2){
                 $orderInfo['verify_code'] = self::getStoreCode();
-                $orderInfo['store_id'] = SystemStore::getStoreDispose(0,'id');
+                $orderInfo['store_id'] = SystemStore::getStoreDispose($orderInfo['mer_id'], null,'id');
                 if(!$orderInfo['store_id']) return self::setErrorInfo('暂无门店无法选择门店自提！',true);
             }
             $order = self::create($orderInfo);

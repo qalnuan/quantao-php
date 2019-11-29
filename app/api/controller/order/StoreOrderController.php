@@ -71,6 +71,7 @@ class StoreOrderController
         $data['bargain_id'] = $bargain_id;
         $data['cartInfo'] = $cartInfo;
         $data['priceGroup'] = $priceGroup;
+        $mer_id = $cartInfo[0]['productInfo']['mer_id'];
         $data['orderKey'] = StoreOrder::cacheOrderInfo($uid, $cartInfo, $priceGroup, $other);
         $data['offlinePostage'] = $other['offlinePostage'];
         $vipId = UserLevel::getUserLevel($uid);
@@ -85,7 +86,7 @@ class StoreOrderController
         $data['integralRatio'] = $other['integralRatio'];
         $data['offline_pay_status'] = (int)SystemConfigService::get('offline_pay_status') ?? (int)2;
         $data['store_self_mention']= (int)SystemConfigService::get('store_self_mention') ?? 0;//门店自提是否开启
-        $data['system_store'] = ($res = SystemStore::getStoreDispose()) ? $res : [];//门店信息
+        $data['system_store'] = ($res = SystemStore::getStoreDispose($mer_id)) ? $res : [];//门店信息
         return app('json')->successful($data);
     }
 
@@ -134,70 +135,6 @@ class StoreOrderController
             return app('json')->fail(StoreOrder::getErrorInfo('计算失败'));
     }
 
-    /**
-     * 核销订单
-     * @param Request $request
-     * @param $key
-     * @return mixed
-     * @throws \think\Exception
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\ModelNotFoundException
-     * @throws \think\exception\DbException
-     */
-    public function verifyOrder(Request $request)
-    {
-        $uid = $request->uid();
-        list($order_id) = UtilService::postMore([
-           'order_id'], $request, true);
-        
-        $order = StoreOrder::getVerifyOrderDetail($order_id);
-        if(!$order) return app('json')->fail('订单不存在');
-        $order = $order->toArray();
-        
-        $verifyInfo = StoreVerifyService::getVerifyServiceInfo($uid);
-        if(!$verifyInfo) return app('json')->fail('非核销员，权限不足');
-
-        if ($order['mer_id'] != $verifyInfo['mer_id']) return app('json')->fail('非商户绑定核销用户，无权限核销');
-        
-        $res = StoreOrder::verifyOrder($order['id'], $uid);
-        if($res){
-            return app('json')->successful('核销成功');
-        }else{
-            return app('json')->fail('核销失败');
-        }
-    }
-
-     /**
-     * 核销订单详情
-     * @param Request $request
-     * @param $orderId
-     * @return mixed
-     * @throws \think\Exception
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\ModelNotFoundException
-     * @throws \think\exception\DbException
-     */
-    public function getverifyorderdetail(Request $request, $orderId)
-    {
-        $uid = $request->uid();
-        $order = StoreOrder::getVerifyOrderDetail($orderId);
-        if(!$order) return app('json')->fail('订单不存在');
-        $order = $order->toArray();
-        
-        $verifyInfo = StoreVerifyService::getVerifyServiceInfo($uid);
-        if(!$verifyInfo) return app('json')->fail('非核销员，权限不足');
-
-        if ($order['mer_id'] != $verifyInfo['mer_id']) return app('json')->fail('非商户绑定核销用户，无权限核销');
-        
-        $adminInfo = SystemAdmin::getSystemAdminInfo($order['mer_id']);
-        if(!$adminInfo) return app('json')->fail('商户信息不存在');
-        
-        $nickname = User::getUserInfo($order['uid'], 'nickname')['nickname'];
-        $orderInfo = StoreOrder::tidyOrder($order, true);
-        $orderInfo['nickname'] = $nickname;
-        $orderInfo['mer_info'] = $adminInfo['real_name'];
-        return app('json')->successful('ok',$orderInfo);
-    }
 
     /**
      * 订单创建
@@ -454,7 +391,7 @@ class StoreOrderController
         }
         $order['add_time_y'] = date('Y-m-d',$order['add_time']);
         $order['add_time_h'] = date('H:i:s',$order['add_time']);
-        $order['system_store'] = SystemStore::getStoreDispose();
+        $order['system_store'] = SystemStore::getStoreDispose($order['mer_id']);
         if($order['shipping_type'] === 2 && $order['verify_code']){
             $name = $order['verify_code'].'.jpg';
             $imageInfo = SystemAttachment::getInfo($name,'name');
@@ -748,6 +685,71 @@ class StoreOrderController
             return app('json')->fail($e->getMessage());
         }
 
+    }
+
+    /**
+     * 核销订单
+     * @param Request $request
+     * @param $key
+     * @return mixed
+     * @throws \think\Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function verifyOrder(Request $request)
+    {
+        $uid = $request->uid();
+        list($order_id) = UtilService::postMore([
+           'order_id'], $request, true);
+        
+        $order = StoreOrder::getVerifyOrderDetail($order_id);
+        if(!$order) return app('json')->fail('订单不存在');
+        $order = $order->toArray();
+        
+        $verifyInfo = StoreVerifyService::getVerifyServiceInfo($uid);
+        if(!$verifyInfo) return app('json')->fail('非核销员，权限不足');
+
+        if ($order['mer_id'] != $verifyInfo['mer_id']) return app('json')->fail('非商户绑定核销用户，无权限核销');
+        
+        $res = StoreOrder::verifyOrder($order['id'], $uid);
+        if($res){
+            return app('json')->successful('核销成功');
+        }else{
+            return app('json')->fail('核销失败');
+        }
+    }
+
+     /**
+     * 核销订单详情
+     * @param Request $request
+     * @param $orderId
+     * @return mixed
+     * @throws \think\Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function getverifyorderdetail(Request $request, $orderId)
+    {
+        $uid = $request->uid();
+        $order = StoreOrder::getVerifyOrderDetail($orderId);
+        if(!$order) return app('json')->fail('订单不存在');
+        $order = $order->toArray();
+        
+        $verifyInfo = StoreVerifyService::getVerifyServiceInfo($uid);
+        if(!$verifyInfo) return app('json')->fail('非核销员，权限不足');
+
+        if ($order['mer_id'] != $verifyInfo['mer_id']) return app('json')->fail('非商户绑定核销用户，无权限核销');
+        
+        $adminInfo = SystemAdmin::getSystemAdminInfo($order['mer_id']);
+        if(!$adminInfo) return app('json')->fail('商户信息不存在');
+        
+        $nickname = User::getUserInfo($order['uid'], 'nickname')['nickname'];
+        $orderInfo = StoreOrder::tidyOrder($order, true);
+        $orderInfo['nickname'] = $nickname;
+        $orderInfo['mer_info'] = $adminInfo['real_name'];
+        return app('json')->successful('ok',$orderInfo);
     }
 
 }

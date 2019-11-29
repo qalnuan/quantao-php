@@ -392,7 +392,7 @@ export default {
       },
       mark: "",
       system_store: {},
-      shipping_type: 0,
+      shipping_type: 1,
       contacts: "",
       contactsTel: "",
       store_self_mention: 0,

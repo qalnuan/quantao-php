@@ -35,7 +35,7 @@ export default {
           url: "/category"
         },
         {
-          name: "购物车",
+          name: "推荐",
           icon1: "icon-caigou-xianxing",
           icon2: "icon-caigou",
           url: "/cart"
