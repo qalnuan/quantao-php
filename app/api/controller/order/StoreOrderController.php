@@ -651,6 +651,7 @@ class StoreOrderController
      * @param Request $request
      */
     public function order_verific(Request $request){
+        $uid = $request->uid();
         list($verify_code,$is_confirm) = UtilService::postMore([
             ['verify_code',''],
             ['is_confirm',0]
@@ -663,6 +664,12 @@ class StoreOrderController
             $res = StorePink::where('id',$orderInfo->pink_id)->where('status','<>',2)->count();
             if($res) return app('json')->fail('拼团订单暂未成功无法核销！');
         }
+        
+        $verifyInfo = StoreVerifyService::getVerifyServiceInfo($uid);
+        if(!$verifyInfo) return app('json')->fail('非核销员，权限不足');
+
+        if ($orderInfo['mer_id'] != $verifyInfo['mer_id']) return app('json')->fail('非商户绑定核销用户，无权限核销'.$orderInfo['mer_id'].'dd'.$verifyInfo['mer_id']);
+        
         if(!$is_confirm){
             $orderInfo['image'] = StoreCart::getProductImage($orderInfo->cart_id);
             return app('json')->success($orderInfo->toArray());
@@ -670,6 +677,9 @@ class StoreOrderController
         StoreOrder::beginTrans();
         try{
             $orderInfo->status = 2;
+            $orderInfo->check_uid = $uid;
+            $orderInfo->is_mer_check = 1;
+            $orderInfo->check_time = time();
             if($orderInfo->save()){
                 OrderRepository::storeProductOrderTakeDeliveryAdmin($orderInfo);
                 StoreOrderStatus::status($orderInfo->id,'take_delivery','已核销');

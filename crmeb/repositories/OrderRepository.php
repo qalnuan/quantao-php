@@ -59,7 +59,6 @@ class OrderRepository
      */
     public static function storeProductOrderTakeDeliveryAdmin($order)
     {
-
         $res1 = AdminStoreOrder::gainUserIntegral($order);
         $res2 = User::backOrderBrokerage($order);
         AdminStoreOrder::orderTakeAfter($order);
