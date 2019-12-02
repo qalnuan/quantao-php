@@ -6,6 +6,7 @@ use app\models\store\StoreCategory;
 use app\models\store\StoreCouponIssue;
 use app\models\store\StoreProduct;
 use app\models\store\StoreService;
+use app\models\store\StoreVerifyService;
 use app\models\system\Express;
 use app\models\user\UserBill;
 use app\Request;
@@ -94,7 +95,7 @@ class PublicController
                 unset($menusInfo[$key]);
             if($value['id'] == 174 && !StoreService::orderServiceStatus($user->uid))
                 unset($menusInfo[$key]);
-            if(!StoreService::orderServiceStatus($user->uid) && $value['wap_url'] === '/order/order_cancellation')
+            if(!StoreVerifyService::orderVerifyServiceStatus($user->uid) && $value['wap_url'] === '/order/order_cancellation')
                 unset($menusInfo[$key]);
             if($value['wap_url'] == '/user/vip' && !$vipOpen)
                 unset($menusInfo[$key]);
