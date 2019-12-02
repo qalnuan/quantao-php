@@ -118,6 +118,18 @@
         v-if="orderInfo.shipping_type === 2 && orderInfo.paid === 1"
       >
         <div class="title">核销信息</div>
+        <div v-if="orderInfo.is_mer_check == 1">
+          <div class="rules">
+            <div class="item">
+              <div class="rulesTitle acea-row row-middle">
+                <span class="iconfont icon-shijian"></span>核销时间
+              </div>
+              <div class="info">
+                <span class="time">{{ orderInfo.check_time }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
         <div class="grayBg">
           <div class="pictrue"><img :src="orderInfo.code" /></div>
         </div>
