@@ -134,6 +134,6 @@ class OrderSubscribe
         event('UserLevelAfter', [$order['uid']]);
 
         //向后台发送新订单消息
-        ChannelService::instance()->send('NEW_ORDER', ['order_id'=>$order['order_id']]);
+        // ChannelService::instance()->send('NEW_ORDER', ['order_id'=>$order['order_id']]);
     }
 }

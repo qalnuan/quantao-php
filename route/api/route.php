@@ -132,6 +132,9 @@ Route::group(function () {
     Route::get('combination/pink/:id', 'activity.StoreCombinationController/pink')->name('combinationPink');//拼团开团
     Route::post('combination/remove', 'activity.StoreCombinationController/remove')->name('combinationRemove');//拼团 取消开团
     Route::post('combination/poster', 'activity.StoreCombinationController/poster')->name('combinationPoster');//拼团海报
+    //活动--霸王餐
+    Route::post('dine/apply', 'activity.StoreDineController/apply')->name('dineApply');//霸王餐报名
+    Route::get('dine/user/list', 'activity.StoreDineController/user_list')->name('dineUserList');//砍价列表(已参与)
     //账单类
     Route::get('commission', 'user.UserBillController/commission')->name('commission');//推广数据 昨天的佣金 累计提现金额 当前佣金
     Route::post('spread/people', 'user.UserBillController/spread_people')->name('spreadPeople');//推荐用户
@@ -178,6 +181,10 @@ Route::group(function () {
     Route::get('seckill/index', 'activity.StoreSeckillController/index')->name('seckillIndex');//秒杀产品时间区间
     Route::get('seckill/list/:time', 'activity.StoreSeckillController/lst')->name('seckillList');//秒杀产品列表
     Route::get('seckill/detail/:id/[:time]', 'activity.StoreSeckillController/detail')->name('seckillDetail');//秒杀产品详情
+    //活动---霸王餐
+    Route::get('dine/index', 'activity.StoreDineController/index')->name('dineIndex');//霸王餐产品时间区间
+    Route::get('dine/list/:time', 'activity.StoreDineController/lst')->name('dineList');//霸王餐产品列表
+    Route::get('dine/detail/:id/[:time]', 'activity.StoreDineController/detail')->name('dineDetail');//霸王餐产品详情
     //活动---砍价
     Route::get('bargain/config', 'activity.StoreBargainController/config')->name('bargainConfig');//砍价产品列表配置
     Route::get('bargain/list', 'activity.StoreBargainController/lst')->name('bargainList');//砍价产品列表

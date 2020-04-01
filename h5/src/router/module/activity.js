@@ -92,5 +92,34 @@ export default [
       keepAlive: true
     },
     component: () => import("@views/activity/SeckillDetails.vue")
+  },
+  {
+    path: "/activity/goods_dine",
+    name: "GoodsDine",
+    meta: {
+      title: "霸王餐",
+      keepAlive: true,
+      backgroundColor: "#ffffff"
+    },
+    component: () => import("@views/activity/GoodsDine.vue")
+  },
+  {
+    path: "/activity/dine_detail/:id?/:time",
+    name: "DineDetails",
+    meta: {
+      title: "霸王餐详情页",
+      keepAlive: true
+    },
+    component: () => import("@views/activity/DineDetails.vue")
+  },
+  {
+    path: "/activity/dine/record",
+    name: "DineRecord",
+    meta: {
+      title: "霸王餐记录",
+      keepAlive: true,
+      auth: true
+    },
+    component: () => import("@views/activity/DineRecord.vue")
   }
 ];

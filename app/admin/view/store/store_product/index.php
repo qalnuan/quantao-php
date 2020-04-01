@@ -132,6 +132,10 @@
                                 <a href="javascript:void(0);" onclick="$eb.createModalFrame(this.innerText,'{:Url('ump.store_combination/combination')}?id={{d.id}}')">
                                     <i class="fa fa-hand-lizard-o"></i> 开启拼团</a>
                             </li>
+                            <li>
+                                <a href="javascript:void(0);" onclick="$eb.createModalFrame(this.innerText,'{:Url('ump.store_dine/dine')}?id={{d.id}}')"">
+                                <i class="fa fa-film"></i> 开启霸王餐</a>
+                            </li>
                             {{# if(d.is_del){ }}
                             <li>
                                 <a href="javascript:void(0);" lay-event='delstor'>

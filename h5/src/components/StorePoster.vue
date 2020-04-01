@@ -160,6 +160,7 @@ export default {
       let canvasBox = that.$refs.poster;
       const width = parseInt(window.getComputedStyle(canvasBox).width);
       const height = parseInt(window.getComputedStyle(canvasBox).height);
+      // let unit=750/width;
       canvas.width = width * 2;
       canvas.height = height * 2;
       canvas.style.width = width + "px";

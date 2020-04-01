@@ -10,6 +10,7 @@ namespace app\models\store;
 use crmeb\basic\BaseModel;
 use crmeb\services\UtilService;
 use crmeb\traits\ModelTrait;
+use think\facade\Log;
 
 /**
  * TODO 购物车Model
@@ -39,7 +40,7 @@ class StoreCart extends BaseModel
         return time();
     }
 
-    public static function setCart($uid,$product_id,$cart_num = 1,$product_attr_unique = '',$type='product',$is_new = 0,$combination_id=0,$seckill_id = 0,$bargain_id = 0)
+    public static function setCart($uid,$product_id,$cart_num = 1,$product_attr_unique = '',$type='product',$is_new = 0,$combination_id=0,$seckill_id = 0,$bargain_id = 0,$dine_id = 0)
     {
         if($cart_num < 1) $cart_num = 1;
         if($seckill_id){
@@ -61,6 +62,11 @@ class StoreCart extends BaseModel
                 return self::setErrorInfo('该产品库存不足'.$cart_num);
             if(!StoreCombination::isValidCombination($combination_id))
                 return self::setErrorInfo('该产品已下架或删除');
+        }elseif($dine_id){//霸王餐
+            if(!StoreDine::getProductStock($dine_id,$cart_num))
+                return self::setErrorInfo('该产品库存不足'.$cart_num);
+            if(!StoreDine::validRunDine($dine_id))
+                return self::setErrorInfo('该产品已下架或删除');
         }else{
             if(!StoreProduct::isValidProduct($product_id))
                 return self::setErrorInfo('该产品已下架或删除');
@@ -69,7 +75,10 @@ class StoreCart extends BaseModel
             if(StoreProduct::getProductStock($product_id,$product_attr_unique) < $cart_num)
                 return self::setErrorInfo('该产品库存不足'.$cart_num);
         }
-        if($cart = self::where('type', $type)->where('uid', $uid)->where('product_id', $product_id)->where('product_attr_unique', $product_attr_unique)->where('is_new', $is_new)->where('is_pay', 0)->where('is_del', 0)->where('combination_id', $combination_id)->where('bargain_id', $bargain_id)->where('seckill_id', $seckill_id)->find()){
+        if($cart = self::where('type', $type)->where('uid', $uid)->where('product_id', $product_id)
+        ->where('product_attr_unique', $product_attr_unique)->where('is_new', $is_new)->where('is_pay', 0)
+        ->where('is_del', 0)->where('combination_id', $combination_id)->where('bargain_id', $bargain_id)
+        ->where('seckill_id', $seckill_id)->where('dine_id', $dine_id)->find()){
             if($is_new)
                 $cart->cart_num = $cart_num;
             else
@@ -79,7 +88,7 @@ class StoreCart extends BaseModel
             return $cart;
         }else{
             $add_time = time();
-            return self::create(compact('uid','product_id','cart_num','product_attr_unique','is_new','type','combination_id','add_time','bargain_id','seckill_id'));
+            return self::create(compact('uid','product_id','cart_num','product_attr_unique','is_new','type','combination_id','add_time','bargain_id','seckill_id', 'dine_id'));
         }
     }
 
@@ -136,11 +145,15 @@ class StoreCart extends BaseModel
 
     public static function getUserProductCartList($uid,$cartIds='',$status=0)
     {
+        Log::info("getUserProductCartList");
         $productInfoField = 'id,mer_id,image,price,ot_price,vip_price,postage,give_integral,sales,stock,store_name,unit_name,is_show,is_del,is_postage,cost';
         $seckillInfoField = 'id,mer_id,image,price,ot_price,postage,give_integral,sales,stock,title as store_name,unit_name,is_show,is_del,is_postage,cost';
         $bargainInfoField = 'id,mer_id,image,min_price as price,price as ot_price,postage,give_integral,sales,stock,title as store_name,unit_name,status as is_show,is_del,is_postage,cost';
         $combinationInfoField = 'id,mer_id,image,price,postage,sales,stock,title as store_name,is_show,is_del,is_postage,cost';
+        $dineInfoField = 'id,mer_id,image,price,ot_price,postage,give_integral,sales,stock,title as store_name,unit_name,is_show,is_del,is_postage,cost,num,isrun';
         $model = new self();
+        
+        Log::info("cartIds:".json_encode($cartIds));
         $valid = $invalid = [];
         $model = $model->where('uid',$uid)->where('type','product')->where('is_pay',0)
             ->where('is_del',0);
@@ -148,6 +161,8 @@ class StoreCart extends BaseModel
         if($cartIds) $model = $model->where('id','IN',$cartIds);
         $model = $model->order('add_time DESC');
         $list = $model->select()->toArray();
+        
+        Log::info("list:".json_encode($list));
         if(!count($list)) return compact('valid','invalid');
         foreach ($list as $k=>$cart){
             if($cart['seckill_id']){
@@ -159,6 +174,9 @@ class StoreCart extends BaseModel
             }elseif($cart['combination_id']){
                 $product = StoreCombination::field($combinationInfoField)
                     ->find($cart['combination_id'])->toArray();
+            }elseif($cart['dine_id']){
+                $product = StoreDine::field($dineInfoField)
+                    ->find($cart['dine_id'])->toArray();
             }else{
                 $product = StoreProduct::field($productInfoField)
                     ->find($cart['product_id'])->toArray();

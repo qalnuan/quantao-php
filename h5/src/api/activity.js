@@ -60,6 +60,57 @@ export function getSeckillDetail(id) {
 }
 
 /**
+ * 霸王餐列表配置
+ */
+export function getDineConfig() {
+  return request.get(
+    "/dine/index",
+    {},
+    {
+      login: false
+    }
+  );
+}
+
+/**
+ * 霸王餐列表
+ */
+export function getDineList(time, data) {
+  return request.get("/dine/list/" + time, data, {
+    login: false
+  });
+}
+
+/**
+ * 霸王餐报名
+ */
+export function applyDine(data) {
+  return request.post("/dine/apply", data);
+}
+
+/**
+ * 霸王餐产品详情
+ */
+export function getDineDetail(id) {
+  return request.get(
+    "/dine/detail/" + id,
+    {},
+    {
+      login: false
+    }
+  );
+}
+
+/**
+ * 
+ * 霸王餐列表(已参与)
+ * @param object data
+ */
+export function getDineUserList(data) {
+  return request.get("/dine/user/list", data);
+}
+
+/**
  * 砍价列表
  * @param {*} data
  */

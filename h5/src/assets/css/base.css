@@ -11,6 +11,9 @@
 .bg-color-red {
   background-color: #e93323 !important;
 }
+.bg-color-grey {
+  background-color: grey !important;
+}
 .icon-color {
   color: #ff3c2b;
 }

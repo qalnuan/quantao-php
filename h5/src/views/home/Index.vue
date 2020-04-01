@@ -19,7 +19,7 @@
         <div class="swiper-pagination paginationBanner" slot="pagination"></div>
       </swiper>
     </div>
-    <div class="nav acea-row" v-if="menus.length >0">
+    <div class="nav acea-row" v-if="menus.length > 0">
       <router-link
         :to="item.wap_url ? item.wap_url : ''"
         class="item"
@@ -30,14 +30,10 @@
         <div>{{ item.name }}</div>
       </router-link>
     </div>
-    <div class="news acea-row row-between-wrapper" 
-          v-if="roll.length > 0">
+    <div class="news acea-row row-between-wrapper" v-if="roll.length > 0">
       <div class="pictrue"><img src="@assets/images/news.png" /></div>
       <div class="swiper-no-swiping new-banner">
-        <swiper
-          class="swiper-wrapper"
-          :options="swiperRoll"
-        >
+        <swiper class="swiper-wrapper" :options="swiperRoll">
           <swiper-slide
             class="swiper-slide"
             v-for="(item, index) in roll"
@@ -57,9 +53,7 @@
         </swiper>
       </div>
     </div>
-    <div
-      class="specialArea acea-row row-column-between"
-    >
+    <div class="specialArea acea-row row-column-between">
       <router-link
         :to="activityOne.wap_link ? activityOne.wap_link : ''"
         class="assemble"
@@ -82,7 +76,7 @@
             <div class="name">{{ item.title }}</div>
             <div class="infor">{{ item.info }}</div>
           </div> -->
-        </router-link> 
+        </router-link>
       </div>
     </div>
     <!-- <div class="wrapper" v-if="info.fastList.length > 0">
@@ -141,7 +135,7 @@
           >更多<span class="iconfont icon-jiantou"></span
         ></router-link>
       </div>
-      
+
       <Good-list :good-list="info.bastList" :is-sort="false"></Good-list>
     </div>
     <div class="hotList" v-if="likeInfo.length > 0">

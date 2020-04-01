@@ -3,10 +3,13 @@ namespace crmeb\subscribes;
 
 use app\admin\model\system\SystemAttachment;
 use app\models\store\StoreBargainUser;
+use app\models\store\StoreDineUser;
 use app\models\store\StoreOrder;
 use app\models\store\StorePink;
 use app\models\user\UserToken;
 use think\facade\Db;
+use think\facade\Log;
+
 
 /**
  * 定时任务类
@@ -48,11 +51,13 @@ class TaskSubscribe
         try{
             Db::startTrans();
             StoreBargainUser::startBargainUserStatus();//批量修改砍价状态为 砍价失败
+            StoreDineUser::startDineUserStatus(); //霸王餐开奖
             StoreOrder::orderUnpaidCancel();//订单未支付默认取消
             StoreOrder::startTakeOrder();//7天自动收货
             StorePink::statusPink();//拼团到期修改状态
             Db::commit();
         }catch (\Exception $e){
+            Log::error('30秒钟执行的方法错误信息：'.$e->getMessage());
             Db::rollback();
         }
     }

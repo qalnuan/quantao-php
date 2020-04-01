@@ -54,8 +54,7 @@
       <div class="item acea-row row-between">
         <div>订单编号：</div>
         <div class="conter acea-row row-middle row-right">
-          {{ orderInfo.order_id
-          }}
+          {{ orderInfo.order_id }}
         </div>
       </div>
       <div class="item acea-row row-between">
@@ -136,24 +135,17 @@
       >
         确认核销
       </div>
-      <div
-        class=""
-        v-else
-      >
+      <div class="" v-else>
         订单已核销
       </div>
     </div>
   </div>
 </template>
 <script>
-import {
-  getVerifyOrderDetail,
-  verifyOrder
-} from "../../api/order";
+import { getVerifyOrderDetail, verifyOrder } from "../../api/order";
 export default {
   name: "VerifyOrder",
-  components: {
-  },
+  components: {},
   props: {},
   data: function() {
     return {

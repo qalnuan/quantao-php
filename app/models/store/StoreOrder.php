@@ -395,6 +395,107 @@ class StoreOrder extends BaseModel
         }
     }
 
+    public static function cacheKeyCreateDineOrder($uid, $cartInfo, $addressId, $payType, $payPrice, $isChannel = 0,$shipping_type = 1)
+    {
+        Log::info("cacheKeyCreateDineOrder:");
+        self::beginTrans();
+        try{
+            $shipping_type = (int)$shipping_type;
+            $offlinePayStatus = (int)SystemConfigService::get('offline_pay_status') ?? (int)2;
+            if($offlinePayStatus == 2) unset(self::$payType['offline']);
+            if (!array_key_exists($payType, self::$payType)) return self::setErrorInfo('选择支付方式有误!',true);
+            $userInfo = User::getUserInfo($uid);
+            if (!$userInfo) return self::setErrorInfo('用户不存在!',true);
+            if($shipping_type === 1) {
+                if (!$addressId) return self::setErrorInfo('请选择收货地址!', true);
+                if (!UserAddress::be(['uid' => $uid, 'id' => $addressId, 'is_del' => 0]) || !($addressInfo = UserAddress::find($addressId)))
+                    return self::setErrorInfo('地址选择有误!', true);
+            }else{
+                // if(!$real_name || !$phone) return self::setErrorInfo('请填写姓名和电话',true);
+                $addressInfo['real_name'] = "";
+                $addressInfo['phone'] = '';
+                $addressInfo['province'] = '';
+                $addressInfo['city'] = '';
+                $addressInfo['district'] = '';
+                $addressInfo['detail'] = '';
+            }
+            $cartIds = [];
+            $totalNum = 0;
+            $gainIntegral = 0;
+            $dine_id = 0;
+            foreach ($cartInfo as $cart) {
+                $cartIds[] = $cart['id'];
+                $totalNum += $cart['cart_num'];
+                $dine_id = $cart['dine_id'];
+                $cartInfoGainIntegral = isset($cart['productInfo']['give_integral']) ? bcmul($cart['cart_num'],$cart['productInfo']['give_integral'],2) :  0;
+                $gainIntegral = bcadd($gainIntegral, $cartInfoGainIntegral, 2);
+            }
+
+            //$shipping_type = 1 快递发货 $shipping_type = 2 门店自提
+            $store_self_mention = SystemConfigService::get('store_self_mention') ?? 0;
+            if(!$store_self_mention) $shipping_type = 1;
+            if($shipping_type === 1) {
+                //是否包邮
+                if ((isset($other['offlinePostage']) && $other['offlinePostage'] && $payType == 'offline')) $payPostage = 0;
+                $payPrice = (float)bcadd($payPrice, $payPostage, 2);
+            }else if($shipping_type === 2){
+                //门店自提没有邮费支付
+                $priceGroup['storePostage'] = 0;
+                $payPostage = 0;
+            }
+
+            if($payPrice <= 0) $payPrice = 0;
+            $orderInfo = [
+                'uid' => $uid,
+                'order_id' => self::getNewOrderId($uid),
+                'real_name' => $addressInfo['real_name'],
+                'user_phone' => $addressInfo['phone'],
+                'user_address' => $addressInfo['province'] . ' ' . $addressInfo['city'] . ' ' . $addressInfo['district'] . ' ' . $addressInfo['detail'],
+                'cart_id' => $cartIds,
+                'total_num' => $totalNum,
+                'total_price' => $payPrice,
+                'pay_price' => $payPrice,
+                'paid' => 0,
+                'pay_type' => $payType,
+                'mark' => htmlspecialchars('霸王餐订单'),
+                'dine_id' => $dine_id,
+                'paid' => 1,
+                'is_channel' => $isChannel,
+                'add_time' => time(),
+                'unique' => md5(microtime()),
+                'shipping_type'=>$shipping_type,
+                'mer_id' => $cartInfo[0]['productInfo']['mer_id'],
+            ];
+            if($shipping_type === 2){
+                $orderInfo['verify_code'] = self::getStoreCode();
+                $orderInfo['store_id'] = SystemStore::getStoreDispose($orderInfo['mer_id'], null,'id');
+                if(!$orderInfo['store_id']) return self::setErrorInfo('暂无门店无法选择门店自提！',true);
+            }
+            $order = self::create($orderInfo);
+            if (!$order) return self::setErrorInfo('订单生成失败!',true);
+            $res5 = true;
+            foreach ($cartInfo as $cart) {
+                //减库存加销量
+                $res5 = $res5 && StoreDine::decDineStock($cart['cart_num'], $dine_id); }
+            //保存购物车商品信息
+            $res4 = false !== StoreOrderCartInfo::setCartInfo($order['id'], $cartInfo);
+            //购物车状态修改
+            $res6 = false !== StoreCart::where('id', 'IN', $cartIds)->update(['is_pay' => 1]);
+            if (!$res4 || !$res5 || !$res6) return self::setErrorInfo('订单生成失败!',true);
+            //自动设置默认地址
+            UserRepository::storeProductOrderCreateEbApi($order, compact('cartInfo', 'addressId'));
+            self::commitTrans();
+            StoreOrderStatus::status($order['id'], 'cache_key_create_order', '订单生成');
+            return $order;
+        }catch (\PDOException $e) {
+            self::rollbackTrans();
+            return self::setErrorInfo('生成订单时SQL执行错误错误原因：'.$e->getMessage());
+        }catch (\Exception $e){
+            self::rollbackTrans();
+            return self::setErrorInfo('生成订单时系统错误错误原因：'.$e->getMessage());
+        }
+    }
+
 
     /**
      * 回退积分
@@ -644,7 +745,7 @@ class StoreOrder extends BaseModel
         $orderInfo = self::where('uid', $uid)->where('order_id', $order_id)->where('is_del', 0)->find();
         if (!$orderInfo) return self::setErrorInfo('订单不存在!');
         if ($orderInfo['paid']) return self::setErrorInfo('该订单已支付!');
-//        if($orderInfo['pay_type'] != 'yue') return self::setErrorInfo('该订单不能使用余额支付!');
+        // if($orderInfo['pay_type'] != 'yue') return self::setErrorInfo('该订单不能使用余额支付!');
         $userInfo = User::getUserInfo($uid);
         if ($userInfo['now_money'] < $orderInfo['pay_price'])
             return self::setErrorInfo(['status' => 'pay_deficiency', 'msg' => '余额不足' . floatval($orderInfo['pay_price'])]);
