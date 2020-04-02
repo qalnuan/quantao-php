@@ -228,6 +228,7 @@ export default {
       applyDine(data)
         .then(res => {
           that.$dialog.success(res.msg);
+          that.isIn = true;
         })
         .catch(res => {
           that.$dialog.error(res.msg);
