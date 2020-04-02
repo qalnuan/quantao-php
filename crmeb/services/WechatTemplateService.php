@@ -59,6 +59,9 @@ class WechatTemplateService
 
     //核销成功
     const VERIFYORDER_SUCCESS = 'OPENTM405896004';
+    
+    //抽奖成功
+    const DINE_SUCCESS = 'OPENTM412181311';
 
 
 

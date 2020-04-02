@@ -57,10 +57,11 @@ class StoreOrder extends BaseModel
         $data['yt']=self::statusByWhere(-2,new self())->where(['is_system_del'=>0, 'mer_id'=>$mer_id])->count();
         $data['del']=self::statusByWhere(-4,new self())->where(['is_system_del'=>0, 'mer_id'=>$mer_id])->count();
         $data['write_off'] =self::statusByWhere(5,new self())->where(['is_system_del'=>0])->count();
-        $data['general']=self::where(['pink_id'=>0,'combination_id'=>0,'seckill_id'=>0,'bargain_id'=>0,'is_system_del'=>0, 'mer_id'=>$mer_id])->count();
+        $data['general']=self::where(['pink_id'=>0,'combination_id'=>0,'seckill_id'=>0,'bargain_id'=>0,'dine_id'=>0,'is_system_del'=>0, 'mer_id'=>$mer_id])->count();
         $data['pink']=self::where('pink_id|combination_id','>',0)->where(['is_system_del'=>0, 'mer_id'=>$mer_id])->count();
         $data['seckill']=self::where('seckill_id','>',0)->where(['is_system_del'=>0, 'mer_id'=>$mer_id])->count();
         $data['bargain']=self::where('bargain_id','>',0)->where(['is_system_del'=>0, 'mer_id'=>$mer_id])->count();
+        $data['dine']=self::where('dine_id','>',0)->where(['is_system_del'=>0, 'mer_id'=>$mer_id])->count();
         return $data;
     }
 
@@ -127,6 +128,9 @@ class StoreOrder extends BaseModel
             }elseif ($item['bargain_id']){
                 $item['pink_name'] = '[砍价订单]';
                 $item['color'] = '#12c5e9';
+            }elseif($item['dine_id']){
+                   $item['pink_name'] = '[霸王餐订单]';
+                   $item['color'] = '#52c599';
             }else{
                 if($item['shipping_type']==1){
                     $item['pink_name'] = '[普通订单]';
@@ -366,6 +370,9 @@ HTML;
                }elseif ($item['bargain_id']){
                    $item['pink_name'] = '[砍价订单]';
                    $item['color'] = '#12c5e9';
+               }elseif($item['dine_id']){
+                   $item['pink_name'] = '[霸王餐订单]';
+                   $item['color'] = '#52c599';
                }else{
                    $item['pink_name'] = '[普通订单]';
                    $item['color'] = '#895612';
@@ -490,7 +497,7 @@ HTML;
         if(isset($where['is_del']) && $where['is_del'] != '' && $where['is_del'] != -1) $model = $model->where($aler.'is_del',$where['is_del']);
         if(isset($where['combination_id'])){
             if($where['combination_id'] =='普通订单'){
-                $model = $model->where($aler.'combination_id',0)->where($aler.'seckill_id',0)->where($aler.'bargain_id',0);
+                $model = $model->where($aler.'combination_id',0)->where($aler.'seckill_id',0)->where($aler.'bargain_id',0)->where($aler.'dine_id',0);
             }
             if($where['combination_id'] =='拼团订单'){
                 $model = $model->where($aler.'combination_id',">",0)->where($aler.'pink_id',">",0);
@@ -500,6 +507,9 @@ HTML;
             }
             if($where['combination_id'] =='砍价订单'){
                 $model = $model->where($aler.'bargain_id',">",0);
+            }
+            if($where['combination_id'] =='霸王餐订单'){
+                $model = $model->where($aler.'dine_id',">",0);
             }
         }
         if(isset($where['pay_type'])){
@@ -518,7 +528,7 @@ HTML;
         if(isset($where['type'])){
             switch ($where['type']){
                 case 1:
-                    $model = $model->where($aler.'combination_id',0)->where($aler.'seckill_id',0)->where($aler.'bargain_id',0);
+                    $model = $model->where($aler.'combination_id',0)->where($aler.'seckill_id',0)->where($aler.'bargain_id',0)->where($aler.'dine_id',0);
                     break;
                 case 2:
 //                    $model = $model->where($aler.'combination_id',">",0)->where($aler.'pink_id',">",0);
@@ -529,6 +539,9 @@ HTML;
                     break;
                 case 4:
                     $model = $model->where($aler.'bargain_id',">",0);
+                    break;
+                case 5:
+                    $model = $model->where($aler.'dine_id',">",0);
                     break;
             }
         }
@@ -859,7 +872,7 @@ HTML;
         return self::where('uid', $where['uid'])
             ->order('add_time desc')
             ->page((int)$where['page'],(int)$where['limit'])
-            ->field(['order_id,real_name,total_num,total_price,pay_price,FROM_UNIXTIME(pay_time,"%Y-%m-%d") as pay_time,paid,pay_type,pink_id,seckill_id,bargain_id'
+            ->field(['order_id,real_name,total_num,total_price,pay_price,FROM_UNIXTIME(pay_time,"%Y-%m-%d") as pay_time,paid,pay_type,pink_id,seckill_id,bargain_id,dine_id'
             ])->select()
             ->toArray();
     }
@@ -875,7 +888,7 @@ HTML;
         switch ($where['type']){
             case 1:
                 //普通商品
-                $model=$model->where('combination_id',0)->where('seckill_id',0)->where('bargain_id',0);
+                $model=$model->where('combination_id',0)->where('seckill_id',0)->where('bargain_id',0)->where('dine_id', 0);
                 break;
             case 2:
                 //拼团商品
@@ -888,6 +901,10 @@ HTML;
             case 4:
                 //砍价商品
                 $model=$model->where('bargain_id','>',0);
+                break;
+            case 5:
+                //砍价商品
+                $model=$model->where('dine_id','>',0);
                 break;
         }
         return self::getModelTime($where,$model);
@@ -986,6 +1003,16 @@ HTML;
                 'content'=>'秒杀总订单数量',
                 'background_color'=>'layui-bg-cyan',
                 'sum'=>self::setEchatWhere($where,3,true)->count(),
+                'class'=>'fa fa-line-chart',
+                'col'=>2
+            ],
+            [
+                'name'=>'霸王餐订单数量',
+                'field'=>'个',
+                'count'=>self::setEchatWhere($where,5)->count(),
+                'content'=>'秒杀总订单数量',
+                'background_color'=>'layui-bg-cyan',
+                'sum'=>self::setEchatWhere($where,5,true)->count(),
                 'class'=>'fa fa-line-chart',
                 'col'=>2
             ],

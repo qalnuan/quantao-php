@@ -63,6 +63,14 @@
                             <span class="seconds">00</span>
                         </div>
                     </script>
+                    
+                    <script type="text/html" id="win_users">
+                        <div>
+                        {{#  layui.each(d.win_users, function(index, item){ }}
+                            <span>{{item.nickname}}&nbsp;</span>
+                        {{#  }); }}
+                        </div>
+                    </script>
                     <script type="text/html" id="statusCn">
                         {{ d.status == 1 ? d.start_name : '关闭' }}
                     </script>
@@ -116,12 +124,13 @@
             {field: 'id', title: 'ID', sort: true,width:'6%',event:'id'},
             {field: 'image', title: '产品图片', width: '10%',templet: '<p><img src="{{d.image}}" alt="{{d.title}}" class="open_image" data-image="{{d.image}}"></p>'},
             {field: 'title', title: '活动标题'},
-            {field: 'info', title: '活动简介',width:'20%'},
+            {field: 'info', title: '活动简介',width:'10%'},
             {field: 'ot_price', title: '原价',width:'6%'},
             {field: 'price', title: '霸王餐价',width:'6%'},
             {field: 'stock', title: '库存',width:'6%'},
             {field: 'start_name', title: '霸王餐状态',width:'8%',toolbar:"#statusCn"},
             {field: 'stop_time', title: '结束时间', width: '13%',toolbar: '#stopTime'},
+            {field: 'win_users', title: '中奖用户信息',templet:'#win_users',width:'10%',align:'center'},
             {field: 'status', title: '状态',width:'6%',toolbar:"#status"},
             {field: 'right', title: '操作', width: '6%', align: 'center', toolbar: '#barDemo'}
         ]

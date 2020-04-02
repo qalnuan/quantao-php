@@ -12,6 +12,7 @@ use app\admin\model\system\SystemConfig;
 use crmeb\traits\ModelTrait;
 use crmeb\basic\BaseModel;
 use app\admin\model\store\StoreProduct;
+use app\admin\model\ump\StoreDineUser;
 use crmeb\services\PHPExcelService;
 
 /**
@@ -289,6 +290,7 @@ class StoreDine extends BaseModel
         $model = $model->where('s.is_del',0);
         return self::page($model,function($item){
             $item['store_name'] = StoreProduct::where('id',$item['product_id'])->value('store_name');
+            $item['win_users'] = StoreDineUser::getDineWinUsers($item['id']);
             if($item['status']){
                 if($item['start_time'] > time())
                     $item['start_name'] = '活动未开始';

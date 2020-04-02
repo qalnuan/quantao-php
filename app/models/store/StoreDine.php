@@ -15,6 +15,7 @@ use app\models\user\WechatUser;
 use app\models\routine\RoutineTemplate;
 use think\facade\Route;
 use think\facade\Log;
+use crmeb\services\SystemConfigService;
 
 
 
@@ -274,18 +275,16 @@ class StoreDine extends BaseModel
         $openid = WechatUser::uidToOpenid($uid, 'openid');
         $routineOpenid = WechatUser::uidToOpenid($uid, 'routine_openid');
         $nickname = WechatUser::uidToOpenid($uid, 'nickname');
-        Log::info("sendDineTemplateMessageSuccess 1.");
-        Log::info("openid:".json_encode($openid));
-        Log::info("routineOpenid:".json_encode($routineOpenid));
-        Log::info("nickname:".json_encode($nickname));
         if($openid){
             //公众号模板消息
             $firstWeChat = '亲，恭喜抽中霸王餐';
             $keyword1WeChat = $order->order_id;
             $keyword2WeChat = self::where('id',$dine)->value('title');
             $remarkWeChat = '点击查看订单详情';
-            $urlWeChat = Route::buildUrl('order/detail/'.$keyword1WeChat)->suffix('')->domain(true)->build();
-            WechatTemplateService::sendTemplate($openid,WechatTemplateService::ORDER_USER_GROUPS_SUCCESS,[
+            $siteUrl = SystemConfigService::get('site_url');
+            $urlWeChat = Route::buildUrl('order/detail/'.$keyword1WeChat)->suffix('')->domain('www.taoyizuan.com')->build();
+            Log::info("urlWeChat 1.".$urlWeChat);
+            WechatTemplateService::sendTemplate($openid,WechatTemplateService::DINE_SUCCESS,[
                 'first'=> $firstWeChat,
                 'keyword1'=> $keyword1WeChat,
                 'keyword2'=> $keyword2WeChat,

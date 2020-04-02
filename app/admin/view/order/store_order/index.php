@@ -532,6 +532,7 @@
                     {name: '拼团订单', value: 2,count:orderCount.pink},
                     {name: '秒杀订单', value: 3,count:orderCount.seckill},
                     {name: '砍价订单', value: 4,count:orderCount.bargain},
+                    {name: '霸王餐订单', value: 5,count:orderCount.dine},
                 ],
                 orderStatus: [
                     {name: '全部', value: ''},
