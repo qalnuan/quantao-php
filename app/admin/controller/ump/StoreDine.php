@@ -13,6 +13,7 @@ use think\facade\Route as Url;
 use app\admin\model\ump\StoreDineAttr;
 use app\admin\model\ump\StoreDineAttrResult;
 use app\admin\model\ump\StoreDine as StoreDineModel;
+use app\admin\model\ump\StoreDineUser;
 use app\admin\model\system\SystemAttachment;
 
 /**
@@ -261,7 +262,10 @@ class StoreDine extends AuthController
         if(!StoreDineModel::edit($data,$id))
             return Json::fail(StoreDineModel::getErrorInfo('删除失败,请稍候再试!'));
         else
-            return Json::successful('删除成功!');
+            if (!StoreDineUser::delDine($id))
+              return Json::fail(StoreDineUser::getErrorInfo('删除失败,请稍候再试!'));
+            else
+              return Json::successful('删除成功!');
     }
 
     public function edit_content($id){

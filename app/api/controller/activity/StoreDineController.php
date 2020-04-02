@@ -194,6 +194,6 @@ class StoreDineController
         StoreDineUser::editDineUserStatus($uid);// TODO 判断过期砍价活动
         $list = StoreDineUser::getDineUserAll($uid, $page, $limit);
         if(count($list)) return app('json')->successful($list);
-        else return app('json')->fail('暂无参与砍价');
+        else return app('json')->fail('暂无参与霸王餐');
     }
 }
