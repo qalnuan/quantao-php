@@ -107,7 +107,7 @@
         "pagePath": "pages/order_addcart/order_addcart",
         "iconPath": "images/3-001.png",
         "selectedIconPath": "images/3-002.png",
-        "text": "购物车"
+        "text": "推荐"
       },
       {
         "pagePath": "pages/user/user",

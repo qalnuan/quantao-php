@@ -5,7 +5,7 @@
     <view class='item'><text class='iconfont icon-xuanzhong'></text>所有商品精挑细选</view>
     <view class='item'><text class='iconfont icon-xuanzhong'></text>售后无忧</view>
   </view>
-  <view class='nav acea-row row-between-wrapper' style='top:{{navH+76}}rpx'>
+  <view class='nav acea-row row-between-wrapper' style='top:{{navH+76}}rpx' wx:if="{{cartCount > 0}}">
      <view>购物数量 <text class='num font-color'>{{cartCount}}</text></view>
      <view wx:if="{{cartList.valid.length > 0 || cartList.invalid.length > 0}}" class='administrate acea-row row-center-wrapper' bindtap='manage'>管理</view>
   </view>
@@ -62,7 +62,7 @@
     </view>
   </view>
   <view class='noCart' wx:if="{{cartList.valid.length == 0 && cartList.invalid.length == 0}}">
-     <view class='pictrue'><image src='/images/noCart.png'></image></view>
+     <!-- <view class='pictrue'><image src='/images/noCart.png'></image></view> -->
      <recommend host_product='{{host_product}}'></recommend>
   </view>
   <view style='height:120rpx;'></view>

@@ -46,7 +46,7 @@ Page({
     is_address:false,
     isClose:false,
     toPay:false,//修复进入支付时页面隐藏从新刷新页面
-    shippingType:0,
+    shippingType:1,
     system_store:{},
     storePostage:0,
     contacts:'',

@@ -10,7 +10,8 @@ Page({
   data: {
     imgUrls: [],
     itemNew:[],
-    activityList:[],
+    activityList: [],
+    activityOne: {},
     menus: [],
     bastBanner: [],
     bastInfo: '',
@@ -75,6 +76,7 @@ Page({
         menus: res.data.menus,
         itemNew: res.data.roll,
         activityList: res.data.activity,
+        activityOne: res.data.activity.shift(),
         bastBanner: res.data.info.bastBanner,
         bastInfo: res.data.info.bastInfo,
         bastList: res.data.info.bastList,
