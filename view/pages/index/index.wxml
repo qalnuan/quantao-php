@@ -55,16 +55,14 @@
               </swiper> 
        </view>
     </view>
-    <view class='specialArea acea-row row-column-between' wx:if="{{activityList.length}}">
-      <block wx:for="{{activityList}}" wx:key>
-       <navigator class='assemble' url='{{item.link}}' wx:if="{{index < 1}}">
-          <image src='{{item.pic}}'></image>
+    <view class='specialArea acea-row row-column-between' wx:if="{{activityOne}}">
+       <navigator class='assemble' url='{{activityOne.link}}'>
+          <image src='{{activityOne.pic}}'></image>
           <!-- <view class='text'>
              <view class='name'>{{item.title}}</view>
              <view class='infor'>{{item.info}}</view>
           </view> -->
        </navigator>
-      </block> 
        <view class='list acea-row row-between-wrapper'>
           <block wx:for="{{activityList}}" wx:key>
             <navigator class='item' url='{{item.link}}'>

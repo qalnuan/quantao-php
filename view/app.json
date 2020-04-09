@@ -71,10 +71,13 @@
         "goods_combination_status/index",
         "goods_seckill_details/index",
         "goods_seckill/index",
+        "goods_dine_details/index",
+        "goods_dine/index",
         "goods_bargain_details/index",
         "goods_bargain/index",
         "poster-poster/index",
-        "user_goods_bargain_list/index"
+        "user_goods_bargain_list/index",
+        "user_goods_dine_list/index"
       ]
     }
   ],

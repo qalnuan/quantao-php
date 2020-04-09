@@ -33,6 +33,7 @@ view{box-sizing:border-box;}
   color: #a8a3a3d2 !important;
 }
 .bg-color{background-color:#e93323!important;}
+.bg-color-grey{background-color:#a8a3a3d2!important;}
 .icon-color{color:#ff3c2b;}
 .cart-color{color:#ff3700!important;border:1px solid #ff3700!important;}
 /* 单选 */

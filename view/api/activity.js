@@ -159,3 +159,44 @@ export function getBargainPoster(data){
 export function getCombinationPoster(data){
   return request.post('combination/poster',data)
 }
+
+/**
+ * 霸王餐产品时间区间
+ * 
+*/
+export function getDineIndexTime() {
+  return request.get('dine/index', {}, { noAuth: true });
+}
+
+/**
+ * 霸王餐产品列表
+ * @param int time
+ * @param object data
+*/
+export function getDineList(time, data) {
+  return request.get('dine/list/' + time, data, { noAuth: true });
+}
+
+/**
+ * 霸王餐产品详情
+ * @param int id
+*/
+export function getDineDetail(id) {
+  return request.get('dine/detail/' + id);
+}
+
+/**
+ * 霸王餐报名
+ */
+export function applyDine(data) {
+  return request.post("/dine/apply", data);
+}
+
+/**
+ * 
+ * 霸王餐列表(已参与)
+ * @param object data
+ */
+export function getDineUserList(data) {
+  return request.get("/dine/user/list", data);
+}

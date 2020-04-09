@@ -1,0 +1,16 @@
+.dine-record .item{background-color:#fff;margin-top:12rpx;}
+.dine-record .item .picTxt{height:210rpx;border-bottom:1rpx solid #f0f0f0;padding:0 30rpx;}
+.dine-record .item .picTxt .pictrue{width:150rpx;height:150rpx;}
+.dine-record .item .picTxt .pictrue image{width:100%;height:100%;border-radius:6rpx;}
+.dine-record .item .picTxt .text{width:515rpx;font-size:30rpx;color:#282828;height:150rpx;}
+.dine-record .item .picTxt .text .time{font-size:24rpx;color:#868686;}
+.dine-record .item .picTxt .text .money{font-size:24rpx;}
+.dine-record .item .picTxt .text .money .num{font-size:32rpx;font-weight:bold;}
+.dine-record .item .picTxt .text .money .symbol{font-weight:bold;}
+.dine-record .item .bottom{height:100rpx;padding:0 30rpx;font-size:27rpx;}
+.dine-record .item .bottom .purple{color:#f78513;}
+.dine-record .item .bottom .end{color:#999;}
+.dine-record .item .bottom .success{color:#e93323;}
+.dine-record .item .bottom .bnt{font-size:27rpx;color:#fff;width:176rpx;height:60rpx;border-radius:6rpx;text-align:center;line-height:60rpx;}
+.dine-record .item .bottom .bnt.cancel{color:#aaa;border:1rpx solid #ddd;}
+.dine-record .item .bottom .bnt~.bnt{margin-left:18rpx;}
