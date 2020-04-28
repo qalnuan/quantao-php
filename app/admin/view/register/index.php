@@ -19,7 +19,8 @@
 <div class="middle-box text-center loginscreen  animated fadeInDown">
     <div class="login-group" style="margin-top:3vh">
         <h3 class="login-logo">
-            <img src="{__ADMIN_PATH}images/logo.png">
+            <!-- <img src="{__ADMIN_PATH}images/logo.png"> -->
+            <p sytle="margin:30px auto;">淘易赚</p>
         </h3>
         <form role="form" action="{:url('register')}" method="post">
             <div class="form-group">

@@ -2,7 +2,7 @@
   <div class="lottie-bg">
     <div id="lottie">
       <img
-        src="@assets/images/live-logo.gif"
+        src="@assets/images/newlogo.png"
         rel="preload"
         style="width: 100%;"
       />

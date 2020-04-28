@@ -20,8 +20,9 @@
 <canvas id="canvas" width="900" height="300" style="position: fixed;top: -50px;width: 60%;left: 20%"></canvas>
 <div class="middle-box text-center loginscreen  animated fadeInDown">
     <div class="login-group">
-        <h3 class="login-logo">
-            <img src="{__ADMIN_PATH}images/logo.png">
+        <h3 class="login-logo" style="height:30px;">
+            <!-- <img src="{__ADMIN_PATH}images/logo.png"> -->
+            <!-- <p>淘易赚</p> -->
         </h3>
         <form role="form" action="{:url('verify')}" method="post" id="form" onsubmit="return false">
             <div class="form-group">
@@ -46,7 +47,7 @@
             <button type="submit" class="btn btn-primary block full-width m-b">登 录</button>
             <?php /*  <p class="text-muted text-center"> <a href="{:url('./forgetpwd')}"><small>忘记密码了？</small></a> | <a href="{:url('./register')}">注册一个新账号</a>
               </p>  */ ?>
-            <p class="text-muted text-center"> <a href="{:url('./register')}">注册新商户</a>
+            <p class="text-muted text-center" style="color:white;"> <a href="{:url('./register')}" style="color:white;">注册新商户</a>
               </p>
         </form>
     </div>
